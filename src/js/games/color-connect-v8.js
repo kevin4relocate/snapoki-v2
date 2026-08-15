@@ -11,6 +11,7 @@ import {
   scoreFromPerformance,
   scoreTimeDivisor
 } from './utils.js';
+import {colorConnectDifficultyScore,colorConnectSolverInvariant} from './color-connect-v8-difficulty.js';
 
 const LEVEL={
   easy:{size:6,colors:4,blockedRuns:[],candidates:12,maxCandidates:16,pathFlips:44,weaveAttempts:14,minRoute:5,splitAttempts:1,shortlist:3,variants:6,variantSlack:4,nodeLimit:700,solutionLimit:2},
@@ -281,9 +282,8 @@ function evaluateSolverModel(puzzle,cfg,seed){
 }
 
 function solverGate(difficulty,s){
-  if(difficulty==='easy')return s.solutions>=1;
-  if(difficulty==='medium')return s.solutions>=1&&s.decisions>=2&&s.backtracks>=2&&s.deadEnds>=1&&s.temptingRoutes>=1;
-  return s.solutions>=1&&s.uniqueModel&&s.decisions>=9&&s.backtracks>=10&&s.deadEnds>=8&&s.greedyTraps>=8&&s.temptingRoutes>=2&&s.shortcutVictimPairs>=2;
+  if(!colorConnectSolverInvariant(s))return false;
+  return difficulty!=='hard'||s.uniqueModel;
 }
 
 export function colorConnectComplexity(puzzle){return puzzle.quality||{};}
@@ -298,11 +298,12 @@ export function generateColorConnect(difficulty='easy',seed='color-connect'){
   cheap.sort((a,b)=>b.quality.cheapScore-a.quality.cheapScore);
   const finalists=cheap.slice(0,cfg.shortlist),evaluated=[];
   for(let i=0;i<finalists.length;i++){
-    const candidate=finalists[i],solver=evaluateSolverModel({...candidate,size:cfg.size},cfg,`${seed}:solver:${i}`);candidate.quality={...candidate.quality,solver,tacticalValid:solverGate(difficulty,solver),score:candidate.quality.cheapScore+solver.score*4};evaluated.push(candidate);
+    const candidate=finalists[i],solver=evaluateSolverModel({...candidate,size:cfg.size},cfg,`${seed}:solver:${i}`),difficultyScore=colorConnectDifficultyScore(solver),tacticalValid=solverGate(difficulty,solver);
+    candidate.quality={...candidate.quality,solver,difficultyScore:difficultyScore.total,difficultyBreakdown:difficultyScore.breakdown,tacticalValid,score:candidate.quality.cheapScore+difficultyScore.total*250};evaluated.push(candidate);
   }
-  const valid=evaluated.filter(candidate=>candidate.quality.tacticalValid),pool=valid.length?valid:evaluated;
-  pool.sort((a,b)=>b.quality.score-a.quality.score);const chosen=pool[0];
-  if(difficulty==='hard'&&!chosen.quality.tacticalValid)throw new Error('Unable to construct solver-verified Hard Color Connect V8 layout.');
+  const valid=evaluated.filter(candidate=>candidate.quality.tacticalValid);
+  if(!valid.length)throw new Error(`Unable to construct solver-valid ${difficulty} Color Connect V8 layout.`);
+  valid.sort((a,b)=>b.quality.score-a.quality.score||b.quality.difficultyScore-a.quality.difficultyScore);const chosen=valid[0];
   return{size:cfg.size,segments:chosen.segments,blocked:chosen.blocked,openCount:chosen.openCount,quality:chosen.quality,weaves:chosen.weaves,seed,difficulty,version:8};
 }
 
@@ -353,7 +354,7 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
     solution(){if(complete)return;practice=true;solutionVisible=true;hintedCells=new Set();render();onStatus('');},
     hideSolution(){if(complete)return;solutionVisible=false;hintedCells=new Set();render();queueMicrotask(()=>onStatus(''));},
     previewScore(timeMs,hints=0){return scoreFromPerformance({timeMs,timeDivisor,actionPenalty:redraws*80,hintPenalty:hints*190});},
-    getResult(timeMs,hints=0){const routes=[...paths.entries()].map(([color,path])=>({color,path:[...path]}));return{score:scoreFromPerformance({timeMs,timeDivisor,actionPenalty:redraws*80,hintPenalty:hints*190}),metadata:{redraws,paths:connectedCount(),open_cells:puzzle.openCount,blocked_cells:puzzle.blocked.length,size:puzzle.size,routes,complexity:puzzle.quality?.score||0,solver_nodes:puzzle.quality?.solver?.nodes||0,solver_backtracks:puzzle.quality?.solver?.backtracks||0}};},
+    getResult(timeMs,hints=0){const routes=[...paths.entries()].map(([color,path])=>({color,path:[...path]}));return{score:scoreFromPerformance({timeMs,timeDivisor,actionPenalty:redraws*80,hintPenalty:hints*190}),metadata:{redraws,paths:connectedCount(),open_cells:puzzle.openCount,blocked_cells:puzzle.blocked.length,size:puzzle.size,routes,complexity:puzzle.quality?.score||0,solver_nodes:puzzle.quality?.solver?.nodes||0,solver_backtracks:puzzle.quality?.solver?.backtracks||0,difficulty_score:puzzle.quality?.difficultyScore||0}};},
     destroy(){host.classList.remove('game-solved-bloom');}
   };
 }
