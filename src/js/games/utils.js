@@ -1,90 +1,18 @@
 export function hashString(input = '') {
   let h = 2166136261 >>> 0;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
+  for (let i = 0; i < input.length; i++) { h ^= input.charCodeAt(i); h = Math.imul(h, 16777619); }
   return h >>> 0;
 }
-
-export function rngFromSeed(seed = '') {
-  let a = hashString(seed) || 0x6d2b79f5;
-  return () => {
-    a |= 0;
-    a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-export function shuffle(items, rng = Math.random) {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-export const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-export const indexOf = (row, col, cols) => row * cols + col;
-export const rcOf = (index, cols) => [Math.floor(index / cols), index % cols];
-
-export function orthogonalNeighbors(index, rows, cols) {
-  const [row, col] = rcOf(index, cols);
-  const out = [];
-  if (row > 0) out.push(indexOf(row - 1, col, cols));
-  if (col < cols - 1) out.push(indexOf(row, col + 1, cols));
-  if (row < rows - 1) out.push(indexOf(row + 1, col, cols));
-  if (col > 0) out.push(indexOf(row, col - 1, cols));
-  return out;
-}
-
-export function areAdjacent(a, b, cols) {
-  const [ar, ac] = rcOf(a, cols), [br, bc] = rcOf(b, cols);
-  return Math.abs(ar - br) + Math.abs(ac - bc) === 1;
-}
-
-function transformCoord(row, col, size, variant) {
-  let r = row, c = col;
-  if (variant & 1) c = size - 1 - c;
-  if (variant & 2) r = size - 1 - r;
-  if (variant & 4) [r, c] = [c, r];
-  return [r, c];
-}
-
-export function deterministicHamiltonianPath(size, seed = '') {
-  const base = [];
-  for (let row = 0; row < size; row++) {
-    if (row % 2 === 0) {
-      for (let col = 0; col < size; col++) base.push([row, col]);
-    } else {
-      for (let col = size - 1; col >= 0; col--) base.push([row, col]);
-    }
-  }
-  const variant = hashString(seed) % 8;
-  let path = base.map(([r, c]) => transformCoord(r, c, size, variant));
-  if (hashString(`${seed}:reverse`) % 2) path = path.reverse();
-  return path.map(([r, c]) => indexOf(r, c, size));
-}
-
-export function dailySeed(game, difficulty, date = new Date()) {
-  const day = date.toISOString().slice(0, 10);
-  return `${game}:${day}:${difficulty}`;
-}
-
-export function randomSeed(game, difficulty) {
-  const values = crypto.getRandomValues(new Uint32Array(3));
-  return `${game}:${difficulty}:${Date.now().toString(36)}:${Array.from(values).join('-')}`;
-}
-
-export function formatTime(ms) {
-  const seconds = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(seconds / 60);
-  return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-}
-
-export function scoreFromPerformance({timeMs = 0, actionPenalty = 0, mistakePenalty = 0, hintPenalty = 0}) {
-  return clamp(Math.round(5000 - timeMs / 40 - actionPenalty - mistakePenalty - hintPenalty), 250, 5000);
-}
+export function rngFromSeed(seed = '') { let a = hashString(seed) || 0x6d2b79f5; return () => { a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+export function shuffle(items,rng=Math.random){const out=[...items];for(let i=out.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
+export const clamp=(value,min,max)=>Math.max(min,Math.min(max,value)); export const indexOf=(row,col,cols)=>row*cols+col; export const rcOf=(index,cols)=>[Math.floor(index/cols),index%cols];
+export function orthogonalNeighbors(index,rows,cols){const [row,col]=rcOf(index,cols),out=[];if(row>0)out.push(indexOf(row-1,col,cols));if(col<cols-1)out.push(indexOf(row,col+1,cols));if(row<rows-1)out.push(indexOf(row+1,col,cols));if(col>0)out.push(indexOf(row,col-1,cols));return out;}
+export function areAdjacent(a,b,cols){const [ar,ac]=rcOf(a,cols),[br,bc]=rcOf(b,cols);return Math.abs(ar-br)+Math.abs(ac-bc)===1;}
+function transformCoord(row,col,size,variant){let r=row,c=col;if(variant&1)c=size-1-c;if(variant&2)r=size-1-r;if(variant&4)[r,c]=[c,r];return[r,c];}
+export function deterministicHamiltonianPath(size,seed=''){const base=[];for(let row=0;row<size;row++){if(row%2===0){for(let col=0;col<size;col++)base.push([row,col]);}else{for(let col=size-1;col>=0;col--)base.push([row,col]);}}const variant=hashString(seed)%8;let path=base.map(([r,c])=>transformCoord(r,c,size,variant));if(hashString(`${seed}:reverse`)%2)path=path.reverse();return path.map(([r,c])=>indexOf(r,c,size));}
+export function randomizedOpenPath(size,targetCount,seed=''){const total=size*size,target=clamp(Math.round(targetCount),2,total),rng=rngFromSeed(`${seed}:open-path`),starts=shuffle(Array.from({length:total},(_,i)=>i),rng),maxNodes=180000;let visitedNodes=0;for(const start of starts.slice(0,Math.min(total,14))){const path=[start],used=new Set(path);function dfs(current){if(path.length===target)return true;if(++visitedNodes>maxNodes)return false;let candidates=orthogonalNeighbors(current,size,size).filter(next=>!used.has(next));candidates=candidates.map(next=>({next,onward:orthogonalNeighbors(next,size,size).filter(n=>!used.has(n)).length,jitter:rng()})).sort((a,b)=>a.onward-b.onward||a.jitter-b.jitter);for(const {next} of candidates){used.add(next);path.push(next);if(dfs(next))return true;path.pop();used.delete(next);}return false;}if(dfs(start))return path;if(visitedNodes>maxNodes)break;}return deterministicHamiltonianPath(size,seed).slice(0,target);}
+export function directionLabel(from,to,cols){const [fr,fc]=rcOf(from,cols),[tr,tc]=rcOf(to,cols);if(tr<fr)return'up';if(tr>fr)return'down';if(tc<fc)return'left';if(tc>fc)return'right';return'forward';}
+export function dailySeed(game,difficulty,date=new Date()){return `${game}:${date.toISOString().slice(0,10)}:${difficulty}`;}
+export function randomSeed(game,difficulty){const values=crypto.getRandomValues(new Uint32Array(3));return `${game}:${difficulty}:${Date.now().toString(36)}:${Array.from(values).join('-')}`;}
+export function formatTime(ms){const seconds=Math.max(0,Math.floor(ms/1000)),minutes=Math.floor(seconds/60);return `${String(minutes).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
+export function scoreFromPerformance({timeMs=0,actionPenalty=0,mistakePenalty=0,hintPenalty=0}){return clamp(Math.round(5000-timeMs/40-actionPenalty-mistakePenalty-hintPenalty),250,5000);}
