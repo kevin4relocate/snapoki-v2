@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.dev.vars
+.wrangler/
+.DS_Store
+public/brand/logo-mark-*.png
+public/brand/social-card.png
+public/favicon-32.png
+public/apple-touch-icon.png

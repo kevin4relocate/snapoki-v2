@@ -1,0 +1,9 @@
+name = "snapoki-v2"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-08-15"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "snapoki-v2-db"
+database_id = "1ff03f04-d7e6-4549-b750-89801c56c3c0"
+migrations_dir = "migrations"

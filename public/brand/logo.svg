@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" role="img" aria-labelledby="title">
+  <title>Snapoki</title>
+  <defs>
+    <linearGradient id="g" x1="5" y1="5" x2="75" y2="75" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7357FF"/>
+      <stop offset="1" stop-color="#28C9F5"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="72" height="72" rx="20" fill="url(#g)"/>
+  <path d="M55 24H32c-7 0-11 4-11 10s4 10 11 10h18c3.5 0 5 1.5 5 4s-1.5 4-5 4H26" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="94" y="53" fill="#F5F7FC" font-family="Inter,Arial,sans-serif" font-size="39" font-weight="800" letter-spacing="-1.5">Snapoki</text>
+</svg>
