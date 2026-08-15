@@ -40,10 +40,10 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete})
     else onStatus(solutionVisible?`Practice: follow step ${path.length+1} next.`:`Filled ${path.length} of ${puzzle.openCount} open cells.`);return true;
   }
   function indexAt(clientX,clientY){const rect=grid.getBoundingClientRect(),x=clientX-rect.left,y=clientY-rect.top;if(x<0||y<0||x>=rect.width||y>=rect.height)return-1;const c=Math.min(puzzle.size-1,Math.floor(x/rect.width*puzzle.size)),r=Math.min(puzzle.size-1,Math.floor(y/rect.height*puzzle.size));return r*puzzle.size+c;}
-  function dragThrough(clientX,clientY){if(!lastPointer){lastPointer=[clientX,clientY];const idx=indexAt(clientX,clientY);if(idx>=0)addCell(idx);return;}const [sx,sy]=lastPointer,dx=clientX-sx,dy=clientY-sy,rect=grid.getBoundingClientRect(),cellSize=rect.width/puzzle.size,steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/Math.max(5,cellSize*.28)));for(let i=1;i<=steps;i++){const idx=indexAt(sx+dx*i/steps,sy+dy*i/steps);if(idx>=0)addCell(idx);}lastPointer=[clientX,clientY];}
+  function dragThrough(clientX,clientY){if(!lastPointer){lastPointer=[clientX,clientY];const idx=indexAt(clientX,clientY);if(idx>=0)addCell(idx);return;}const [sx,sy]=lastPointer,dx=clientX-sx,dy=clientY-sy,rect=grid.getBoundingClientRect(),cellSize=rect.width/puzzle.size,steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/Math.max(4,cellSize*.18)));for(let i=1;i<=steps;i++){const idx=indexAt(sx+dx*i/steps,sy+dy*i/steps);if(idx>=0)addCell(idx);}lastPointer=[clientX,clientY];}
   grid.addEventListener('click',e=>{if(dragging)return;const cell=e.target.closest('.number-cell');if(cell)addCell(Number(cell.dataset.index));});
   grid.addEventListener('pointerdown',e=>{const idx=indexAt(e.clientX,e.clientY);if(idx<0||!openSet.has(idx))return;dragging=true;lastPointer=[e.clientX,e.clientY];grid.setPointerCapture?.(e.pointerId);addCell(idx);e.preventDefault();});
-  grid.addEventListener('pointermove',e=>{if(dragging)dragThrough(e.clientX,e.clientY);});
+  grid.addEventListener('pointermove',e=>{if(!dragging)return;const events=e.getCoalescedEvents?.()||[e];for(const point of events)dragThrough(point.clientX,point.clientY);e.preventDefault();});
   const end=()=>{dragging=false;lastPointer=null;};grid.addEventListener('pointerup',end);grid.addEventListener('pointercancel',end);
 
   onMetrics({cells:1,mistakes:0,hints:0});onStatus(`Start at 1. Hold and drag through all ${puzzle.openCount} open cells; dark cells are blocked.`);render();
@@ -55,6 +55,6 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete})
     solution(){solutionVisible=true;hintGuide=[];render();onStatus(`Practice guide on: follow the numbered cells from 1 to ${puzzle.solution.length}. The green badge is your next step.`);},
     hideSolution(){solutionVisible=false;hintGuide=[];render();onStatus('Solution hidden. Continue practicing, or Reset Puzzle to make a new ranked attempt.');},
     previewScore(timeMs,hints=0){return scoreFromPerformance({timeMs,timeDivisor,mistakePenalty:mistakes*180,hintPenalty:hints*190});},
-    getResult(timeMs,hints=0){return{score:scoreFromPerformance({timeMs,timeDivisor,mistakePenalty:mistakes*180,hintPenalty:hints*190}),metadata:{cells:path.length,open_cells:puzzle.openCount,blocked_cells:puzzle.blocked.length,mistakes,size:puzzle.size}};},destroy(){}
+    getResult(timeMs,hints=0){return{score:scoreFromPerformance({timeMs,timeDivisor,mistakePenalty:mistakes*180,hintPenalty:hints*190}),metadata:{cells:path.length,open_cells:puzzle.openCount,blocked_cells:puzzle.blocked.length,mistakes,size:puzzle.size,path:[...path]}};},destroy(){}
   };
 }
