@@ -1,20 +1,20 @@
 export const COLOR_CONNECT_REVIEW_SAMPLES=[
-  {band:'75–80',seed:'color-v8-holdout-h1:hard:0097',score:77.5,greedyTraps:9,backtracks:23,deadEnds:19,decisions:13,temptingRoutes:2,shortcutVictims:3},
-  {band:'75–80',seed:'color-v8-holdout-h1:hard:0159',score:77.3,greedyTraps:9,backtracks:24,deadEnds:21,decisions:12,temptingRoutes:2,shortcutVictims:2},
-  {band:'75–80',seed:'color-v8-holdout-h1:hard:0070',score:77.3,greedyTraps:9,backtracks:21,deadEnds:21,decisions:9,temptingRoutes:4,shortcutVictims:6},
-  {band:'80–85',seed:'color-v8-holdout-h1:hard:0015',score:82.4,greedyTraps:9,backtracks:29,deadEnds:21,decisions:17,temptingRoutes:1,shortcutVictims:1},
-  {band:'80–85',seed:'color-v8-holdout-h1:hard:0050',score:82.4,greedyTraps:8,backtracks:29,deadEnds:26,decisions:11,temptingRoutes:3,shortcutVictims:3},
-  {band:'80–85',seed:'color-v8-holdout-h1:hard:0127',score:82.7,greedyTraps:9,backtracks:29,deadEnds:24,decisions:15,temptingRoutes:1,shortcutVictims:1},
-  {band:'85–90',seed:'color-v8-holdout-h1:hard:0087',score:87.5,greedyTraps:10,backtracks:32,deadEnds:29,decisions:13,temptingRoutes:1,shortcutVictims:2},
-  {band:'85–90',seed:'color-v8-holdout-h1:hard:0101',score:87.5,greedyTraps:8,backtracks:49,deadEnds:39,decisions:19,temptingRoutes:2,shortcutVictims:3},
-  {band:'85–90',seed:'color-v8-holdout-h1:hard:0190',score:87.6,greedyTraps:9,backtracks:30,deadEnds:27,decisions:12,temptingRoutes:3,shortcutVictims:3},
-  {band:'90+',seed:'color-v8-holdout-h1:hard:0161',score:93.0,greedyTraps:10,backtracks:28,deadEnds:26,decisions:12,temptingRoutes:4,shortcutVictims:6},
-  {band:'90+',seed:'color-v8-holdout-h1:hard:0008',score:92.7,greedyTraps:10,backtracks:48,deadEnds:39,decisions:19,temptingRoutes:2,shortcutVictims:2},
-  {band:'90+',seed:'color-v8-holdout-h1:hard:0194',score:92.7,greedyTraps:10,backtracks:48,deadEnds:38,decisions:20,temptingRoutes:2,shortcutVictims:2}
+  {band:'80–87',seed:'color-v8-11-prod:h1:021',score:83.9,greedyTraps:9,backtracks:30,deadEnds:23,decisions:15,temptingRoutes:1,shortcutVictims:2},
+  {band:'80–87',seed:'color-v8-11-prod:h1:019',score:84.0,greedyTraps:11,backtracks:42,deadEnds:36,decisions:17,temptingRoutes:0,shortcutVictims:0},
+  {band:'80–87',seed:'color-v8-11-prod:h1:028',score:85.5,greedyTraps:9,backtracks:35,deadEnds:29,decisions:15,temptingRoutes:1,shortcutVictims:1},
+  {band:'87–91',seed:'color-v8-11-prod:h1:003',score:89.1,greedyTraps:10,backtracks:31,deadEnds:28,decisions:13,temptingRoutes:2,shortcutVictims:2},
+  {band:'87–91',seed:'color-v8-11-prod:h1:015',score:89.8,greedyTraps:10,backtracks:85,deadEnds:59,decisions:36,temptingRoutes:1,shortcutVictims:1},
+  {band:'87–91',seed:'color-v8-11-prod:h1:001',score:90.7,greedyTraps:10,backtracks:76,deadEnds:52,decisions:34,temptingRoutes:1,shortcutVictims:2},
+  {band:'91–94',seed:'color-v8-11-prod:h1:011',score:91.2,greedyTraps:8,backtracks:35,deadEnds:23,decisions:17,temptingRoutes:4,shortcutVictims:6},
+  {band:'91–94',seed:'color-v8-11-prod:h1:000',score:92.7,greedyTraps:10,backtracks:55,deadEnds:45,decisions:20,temptingRoutes:2,shortcutVictims:2},
+  {band:'91–94',seed:'color-v8-11-prod:h1:025',score:93.1,greedyTraps:10,backtracks:38,deadEnds:29,decisions:19,temptingRoutes:2,shortcutVictims:3},
+  {band:'94+',seed:'color-v8-11-prod:h1:027',score:94.3,greedyTraps:10,backtracks:37,deadEnds:27,decisions:20,temptingRoutes:3,shortcutVictims:3},
+  {band:'94+',seed:'color-v8-11-prod:h1:029',score:95.5,greedyTraps:10,backtracks:108,deadEnds:75,decisions:42,temptingRoutes:3,shortcutVictims:3},
+  {band:'94+',seed:'color-v8-11-prod:h1:012',score:99.2,greedyTraps:11,backtracks:56,deadEnds:47,decisions:20,temptingRoutes:5,shortcutVictims:5}
 ];
 
-export const COLOR_CONNECT_REVIEW_BANDS=['75–80','80–85','85–90','90+'];
-export const DEFAULT_COLOR_CONNECT_REVIEW_SEED='color-v8-holdout-h1:hard:0015';
+export const COLOR_CONNECT_REVIEW_BANDS=['80–87','87–91','91–94','94+'];
+export const DEFAULT_COLOR_CONNECT_REVIEW_SEED='color-v8-11-prod:h1:028';
 
 export function resolveColorConnectReview(params){
   if(params?.get('review')!=='1')return null;
