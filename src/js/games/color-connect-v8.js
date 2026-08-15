@@ -283,7 +283,7 @@ function evaluateSolverModel(puzzle,cfg,seed){
 function solverGate(difficulty,s){
   if(difficulty==='easy')return s.solutions>=1;
   if(difficulty==='medium')return s.solutions>=1&&s.decisions>=2&&s.backtracks>=2&&s.deadEnds>=1&&s.temptingRoutes>=1;
-  return s.solutions>=1&&s.uniqueModel&&s.nodes>=20&&s.decisions>=5&&s.backtracks>=7&&s.deadEnds>=4&&s.temptingRoutes>=2&&s.shortcutVictimPairs>=3&&s.multiVictimTemptations>=1;
+  return s.solutions>=1&&s.uniqueModel&&s.decisions>=9&&s.backtracks>=10&&s.deadEnds>=8&&s.greedyTraps>=8&&s.temptingRoutes>=2&&s.shortcutVictimPairs>=2;
 }
 
 export function colorConnectComplexity(puzzle){return puzzle.quality||{};}
