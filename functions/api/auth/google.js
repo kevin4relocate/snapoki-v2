@@ -1,10 +1,11 @@
 import {error, json, methodNotAllowed, readJson} from '../../_lib/http.js';
 import {newExpiry, randomToken, sessionCookie, sha256} from '../../_lib/auth.js';
+import {compactPublicName} from '../../_lib/public-name.js';
 
 function publicFirstName(token) {
   const given = String(token?.given_name || '').replace(/[\u0000-\u001F\u007F]/g, '').replace(/\s+/g, ' ').trim();
   const fallback = String(token?.email || '').split('@')[0].replace(/[\u0000-\u001F\u007F]/g, '').trim();
-  return (given || fallback || 'Player').slice(0, 80);
+  return compactPublicName(given || fallback || 'Player');
 }
 
 export async function onRequest(context) {
@@ -28,8 +29,8 @@ export async function onRequest(context) {
     if (String(token.email_verified) !== 'true') return error('Google account email is not verified.', 401, 'EMAIL_NOT_VERIFIED');
     if (!token.sub || !token.email) return error('Google credential is incomplete.', 401, 'INVALID_CREDENTIAL');
 
-    // Public identity intentionally uses Google's given_name only. We never expose
-    // the full Google profile name in Snapoki headers or rankings.
+    // Snapoki public identity intentionally uses Google's given_name only.
+    // Full Google profile names are never stored as the public display name.
     const displayName = publicFirstName(token);
     const avatarUrl = token.picture ? String(token.picture).slice(0, 500) : null;
     await env.DB.prepare(`
