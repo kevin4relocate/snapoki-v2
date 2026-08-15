@@ -18,14 +18,20 @@ export function blockedLayoutStats(blocked,size){
   return{adjacentPairs,isolated,largestCluster,quadrants:quadrants.size,rowSpread:rows.size,colSpread:cols.size};
 }
 function pathTurns(path,size){let turns=0,last='';for(let i=1;i<path.length;i++){const[aR,aC]=rcOf(path[i-1],size),[bR,bC]=rcOf(path[i],size),dir=bR<aR?'u':bR>aR?'d':bC<aC?'l':'r';if(last&&dir!==last)turns++;last=dir;}return turns;}
-export function selectScatteredOpenPath(size,targetCount,seed='',maxCandidates=14){
+function blockedCandidateQuality(candidate,size,blockedCount){
+  const {stats,path}=candidate,maxCluster=Math.max(2,Math.ceil(blockedCount*.60));
+  const gatePenalty=(stats.largestCluster>maxCluster?1600+(stats.largestCluster-maxCluster)*500:0)+(stats.quadrants<Math.min(3,blockedCount)?600:0)+(stats.rowSpread<Math.min(3,blockedCount)?300:0)+(stats.colSpread<Math.min(3,blockedCount)?300:0);
+  return -gatePenalty-stats.largestCluster*180-stats.adjacentPairs*70+stats.isolated*54+stats.quadrants*70+(stats.rowSpread+stats.colSpread)*18+pathTurns(path,size)*.45;
+}
+export function selectScatteredOpenPath(size,targetCount,seed='',maxCandidates=28){
   const total=size*size,target=clamp(Math.round(targetCount),2,total);if(target===total)return randomizedOpenPath(size,target,seed);
-  let best=null;const blockedCount=total-target;
+  const blockedCount=total-target,maxCluster=Math.max(2,Math.ceil(blockedCount*.60));let best=null;
   for(let i=0;i<maxCandidates;i++){
     const path=randomizedOpenPath(size,target,`${seed}:layout:${i}`),open=new Set(path),blocked=[];for(let index=0;index<total;index++)if(!open.has(index))blocked.push(index);
-    const stats=blockedLayoutStats(blocked,size),score=stats.isolated*18+stats.quadrants*15+(stats.rowSpread+stats.colSpread)*5+pathTurns(path,size)*.35-stats.adjacentPairs*15-stats.largestCluster*24;
-    if(!best||score>best.score)best={path,blocked,stats,score};
-    if(stats.adjacentPairs===0&&stats.quadrants>=Math.min(4,blockedCount)&&stats.rowSpread>=Math.min(3,blockedCount)&&stats.colSpread>=Math.min(3,blockedCount))break;
+    const stats=blockedLayoutStats(blocked,size),candidate={path,blocked,stats},score=blockedCandidateQuality(candidate,size,blockedCount);candidate.score=score;
+    if(!best||score>best.score)best=candidate;
+    const spreadEnough=stats.quadrants>=Math.min(3,blockedCount)&&stats.rowSpread>=Math.min(3,blockedCount)&&stats.colSpread>=Math.min(3,blockedCount);
+    if(spreadEnough&&stats.largestCluster<=maxCluster&&stats.adjacentPairs<=Math.max(1,Math.floor(blockedCount*.35)))break;
   }
   return best?.path||randomizedOpenPath(size,target,seed);
 }
