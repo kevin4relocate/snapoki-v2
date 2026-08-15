@@ -1,0 +1,22 @@
+/* Shared UI safety for long numeric values and compact right-rail cards. */
+.right-panel .ranking-row{grid-template-columns:28px 26px minmax(0,1fr) minmax(0,78px)}
+.right-panel .ranking-row>strong,
+.right-panel .ranking-target,
+.profile-stats b,
+.mastery-level b{
+  display:block;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.right-panel .ranking-row>strong{text-align:right}
+.profile-stats>div,.mastery-level{min-width:0;overflow:hidden}
+.profile-stats b{width:100%}
+.mastery-level span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+@media(max-width:620px){
+  .right-panel .ranking-row{grid-template-columns:28px 26px minmax(0,1fr) minmax(0,70px)}
+}
