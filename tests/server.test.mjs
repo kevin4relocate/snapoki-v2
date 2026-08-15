@@ -1,52 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {rankingPoints, validDifficulty, validGame, validMode} from '../functions/_lib/games.js';
-import {verifyAndScoreResult, expectedDailySeed} from '../functions/_lib/scoring.js';
+import {rankingPoints,validDifficulty,validGame,validMode} from '../functions/_lib/games.js';
+import {verifyAndScoreResult,expectedDailySeed} from '../functions/_lib/scoring.js';
+import {generateMaze,solveMaze} from '../src/js/games/maze.js';
+import {generateNumberPath} from '../src/js/games/number-path.js';
+import {generateColorConnect} from '../src/js/games/color-connect.js';
+import {generateLightsOut} from '../src/js/games/lights-out.js';
+import {generateLoopPuzzle} from '../src/js/games/loop-puzzle.js';
 
-test('server validates the exact five game ids', () => {
-  ['maze','number-path','color-connect','lights-out','loop-puzzle'].forEach(game => assert.equal(validGame(game), true));
-  assert.equal(validGame('unknown'), false);
-});
+function mazeProof(difficulty,seed){const p=generateMaze(difficulty,seed),trace=solveMaze(p);return{seed,size:p.size,ideal_moves:trace.length-1,moves:trace.length-1,trace};}
+function numberProof(difficulty,seed){const p=generateNumberPath(difficulty,seed);return{seed,size:p.size,cells:p.openCount,open_cells:p.openCount,blocked_cells:p.blocked.length,mistakes:0,path:[...p.solution]};}
+function colorProof(difficulty,seed){const p=generateColorConnect(difficulty,seed);return{seed,size:p.size,paths:p.segments.length,open_cells:p.openCount,blocked_cells:p.blocked.length,redraws:0,routes:p.segments.map((segment,color)=>({color,path:[...segment.path]}))};}
+function lightsProof(difficulty,seed){const p=generateLightsOut(difficulty,seed);return{seed,size:p.size,moves:p.solution.length,minimum_moves:p.minimumMoves,presses:[...p.solution]};}
+function loopProof(difficulty,seed){const p=generateLoopPuzzle(difficulty,seed);return{seed,size:p.size,edges:p.solution.length,conflicts:0,clues:p.clues.length,actual_edges:[...p.solution]};}
 
-test('ranking points reward difficulty and performance while penalizing hints', () => {
-  const easy = rankingPoints({difficulty:'easy', mode:'normal', score:3000, hints:0});
-  const hard = rankingPoints({difficulty:'hard', mode:'normal', score:3000, hints:0});
-  const hinted = rankingPoints({difficulty:'hard', mode:'normal', score:3000, hints:2});
-  const daily = rankingPoints({difficulty:'hard', mode:'daily', score:3000, hints:0});
-  assert.ok(hard > easy);
-  assert.ok(hard > hinted);
-  assert.ok(daily > hard);
-});
+const proofFor={maze:mazeProof,'number-path':numberProof,'color-connect':colorProof,'lights-out':lightsProof,'loop-puzzle':loopProof};
 
-test('difficulty and mode validation is strict', () => {
-  ['easy','medium','hard'].forEach(value => assert.equal(validDifficulty(value), true));
-  ['normal','daily'].forEach(value => assert.equal(validMode(value), true));
-  assert.equal(validDifficulty('extreme'), false);
-  assert.equal(validMode('global'), false);
-});
+test('server game validation is sourced from the shared registry',()=>{for(const game of Object.keys(proofFor))assert.equal(validGame(game),true);assert.equal(validGame('unknown'),false);});
 
-test('server recomputes a plausible Maze score instead of trusting client score', () => {
-  const checked = verifyAndScoreResult({game:'maze', difficulty:'easy', mode:'normal', time_ms:18000, hints_used:1, metadata:{seed:'maze:easy:test-seed', size:11, ideal_moves:30, moves:34}});
-  assert.equal(checked.ok, true);
-  assert.ok(checked.score > 250 && checked.score < 5000);
-});
+test('ranking points reward difficulty and performance while penalizing hints',()=>{const easy=rankingPoints({difficulty:'easy',mode:'normal',score:3000,hints:0}),hard=rankingPoints({difficulty:'hard',mode:'normal',score:3000,hints:0}),hinted=rankingPoints({difficulty:'hard',mode:'normal',score:3000,hints:2}),daily=rankingPoints({difficulty:'hard',mode:'daily',score:3000,hints:0});assert.ok(hard>easy);assert.ok(hard>hinted);assert.ok(daily>hard);});
 
-test('server rejects impossible completion metadata', () => {
-  const bad = verifyAndScoreResult({game:'lights-out', difficulty:'hard', mode:'normal', time_ms:10000, hints_used:0, metadata:{seed:'lights-out:hard:test-seed', size:7, minimum_moves:12, moves:3}});
-  assert.equal(bad.ok, false);
-  assert.equal(bad.reason, 'IMPLAUSIBLE_RESULT');
-});
+test('difficulty and mode validation is strict',()=>{['easy','medium','hard'].forEach(value=>assert.equal(validDifficulty(value),true));['normal','daily'].forEach(value=>assert.equal(validMode(value),true));assert.equal(validDifficulty('extreme'),false);assert.equal(validMode('global'),false);});
 
-test('Daily Challenge result must use today exact deterministic seed', () => {
-  const good = verifyAndScoreResult({game:'number-path', difficulty:'medium', mode:'daily', time_ms:25000, hints_used:0, metadata:{seed:expectedDailySeed('number-path','medium'), size:6, cells:32, open_cells:32, blocked_cells:4, mistakes:0}});
-  const bad = verifyAndScoreResult({game:'number-path', difficulty:'medium', mode:'daily', time_ms:25000, hints_used:0, metadata:{seed:'number-path:2000-01-01:medium', size:6, cells:32, open_cells:32, blocked_cells:4, mistakes:0}});
-  assert.equal(good.ok, true);
-  assert.equal(bad.ok, false);
-  assert.equal(bad.reason, 'INVALID_SEED');
-});
+for(const game of Object.keys(proofFor))test(`server regenerates and verifies a real ${game} proof`,()=>{const difficulty='medium',seed=`${game}:${difficulty}:server-proof`,metadata=proofFor[game](difficulty,seed),checked=verifyAndScoreResult({game,difficulty,mode:'normal',time_ms:26000,hints_used:1,metadata});assert.equal(checked.ok,true,checked.reason);assert.ok(checked.score>=250&&checked.score<5000);});
 
-test('difficulty-aware timing gives harder games more time before score decay', () => {
-  const easy = verifyAndScoreResult({game:'maze', difficulty:'easy', mode:'normal', time_ms:60000, hints_used:0, metadata:{seed:'maze:easy:test', size:11, ideal_moves:30, moves:30}});
-  const hard = verifyAndScoreResult({game:'maze', difficulty:'hard', mode:'normal', time_ms:60000, hints_used:0, metadata:{seed:'maze:hard:test', size:19, ideal_moves:80, moves:80}});
-  assert.equal(easy.ok, true);assert.equal(hard.ok, true);assert.ok(hard.score > easy.score);
-});
+test('server ignores a forged client score because score is recomputed from proof and time',()=>{const seed='maze:easy:score-proof',metadata=mazeProof('easy',seed),checked=verifyAndScoreResult({game:'maze',difficulty:'easy',mode:'normal',time_ms:18000,hints_used:1,metadata,score:999999});assert.equal(checked.ok,true);assert.ok(checked.score<5000);});
+
+test('server rejects a forged Maze trace through a wall',()=>{const seed='maze:easy:forged-trace',metadata=mazeProof('easy',seed);metadata.trace=[metadata.trace[0],metadata.trace.at(-1)];metadata.moves=1;const checked=verifyAndScoreResult({game:'maze',difficulty:'easy',mode:'normal',time_ms:10000,hints_used:0,metadata});assert.equal(checked.ok,false);assert.equal(checked.reason,'IMPLAUSIBLE_RESULT');});
+
+test('server rejects incomplete Number Path proof',()=>{const seed='number-path:hard:forged-path',metadata=numberProof('hard',seed);metadata.path=metadata.path.slice(0,-1);metadata.cells=metadata.path.length;const checked=verifyAndScoreResult({game:'number-path',difficulty:'hard',mode:'normal',time_ms:20000,hints_used:0,metadata});assert.equal(checked.ok,false);});
+
+test('server rejects Lights Out presses that do not solve the generated board',()=>{const seed='lights-out:hard:bad-presses',metadata=lightsProof('hard',seed);metadata.presses=[];metadata.moves=0;const checked=verifyAndScoreResult({game:'lights-out',difficulty:'hard',mode:'normal',time_ms:10000,hints_used:0,metadata});assert.equal(checked.ok,false);assert.equal(checked.reason,'IMPLAUSIBLE_RESULT');});
+
+test('Daily Challenge proof must use today exact deterministic seed',()=>{const seed=expectedDailySeed('number-path','medium'),good=verifyAndScoreResult({game:'number-path',difficulty:'medium',mode:'daily',time_ms:25000,hints_used:0,metadata:numberProof('medium',seed)}),oldSeed='number-path:2000-01-01:medium',bad=verifyAndScoreResult({game:'number-path',difficulty:'medium',mode:'daily',time_ms:25000,hints_used:0,metadata:numberProof('medium',oldSeed)});assert.equal(good.ok,true,good.reason);assert.equal(bad.ok,false);assert.equal(bad.reason,'INVALID_SEED');});
+
+test('difficulty-aware timing gives harder Maze more time before score decay',()=>{const easySeed='maze:easy:timing',hardSeed='maze:hard:timing',easy=verifyAndScoreResult({game:'maze',difficulty:'easy',mode:'normal',time_ms:60000,hints_used:0,metadata:mazeProof('easy',easySeed)}),hard=verifyAndScoreResult({game:'maze',difficulty:'hard',mode:'normal',time_ms:60000,hints_used:0,metadata:mazeProof('hard',hardSeed)});assert.equal(easy.ok,true,easy.reason);assert.equal(hard.ok,true,hard.reason);assert.ok(hard.score>easy.score);});
