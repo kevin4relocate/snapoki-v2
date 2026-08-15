@@ -28,6 +28,16 @@ function cutoffRates(values){
   return Object.fromEntries([70,75,80,85,90].map(cutoff=>[String(cutoff),values.length?Math.round(values.filter(value=>value>=cutoff).length/values.length*1000)/10:0]));
 }
 
+function compactRow(row){return{seed:row.seed,score:row.score,greedyTraps:row.greedyTraps,backtracks:row.backtracks,deadEnds:row.deadEnds,decisions:row.decisions,temptingRoutes:row.temptingRoutes,shortcutVictimPairs:row.shortcutVictimPairs};}
+
+function reviewSamples(rows){
+  const bands=[['75-80',75,80,77.5],['80-85',80,85,82.5],['85-90',85,90,87.5],['90+',90,101,93]];
+  return Object.fromEntries(bands.map(([label,min,max,target])=>{
+    const candidates=rows.filter(row=>row.score>=min&&row.score<max).sort((a,b)=>Math.abs(a.score-target)-Math.abs(b.score-target)||b.greedyTraps-a.greedyTraps||b.backtracks-a.backtracks);
+    return[label,candidates.slice(0,3).map(compactRow)];
+  }));
+}
+
 async function loadInternals(){
   const sourcePath=path.join(root,'src/js/games/color-connect-v8.js'),tempPath=path.join(root,'src/js/games/__color-v8-calibration.mjs');
   const source=fs.readFileSync(sourcePath,'utf8')+'\nexport {LEVEL,candidateFor,evaluateSolverModel};\n';
@@ -83,8 +93,9 @@ function summarize(group){
       nodes:stats(field('nodes'))
     },
     uniqueModelPct:rows.length?Math.round(rows.filter(row=>row.uniqueModel).length/rows.length*1000)/10:0,
-    top5:[...rows].sort((a,b)=>b.score-a.score).slice(0,5).map(row=>({seed:row.seed,score:row.score,greedyTraps:row.greedyTraps,backtracks:row.backtracks,deadEnds:row.deadEnds,decisions:row.decisions,temptingRoutes:row.temptingRoutes,shortcutVictimPairs:row.shortcutVictimPairs})),
-    bottom5:[...rows].sort((a,b)=>a.score-b.score).slice(0,5).map(row=>({seed:row.seed,score:row.score,greedyTraps:row.greedyTraps,backtracks:row.backtracks,deadEnds:row.deadEnds,decisions:row.decisions,temptingRoutes:row.temptingRoutes,shortcutVictimPairs:row.shortcutVictimPairs}))
+    reviewSamples:reviewSamples(rows),
+    top5:[...rows].sort((a,b)=>b.score-a.score).slice(0,5).map(compactRow),
+    bottom5:[...rows].sort((a,b)=>a.score-b.score).slice(0,5).map(compactRow)
   };
 }
 
