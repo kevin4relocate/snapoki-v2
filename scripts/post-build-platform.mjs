@@ -1,0 +1,14 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const dist=path.join(root,'dist');
+
+async function walk(dir){const out=[];for(const entry of await fs.readdir(dir,{withFileTypes:true})){const full=path.join(dir,entry.name);if(entry.isDirectory())out.push(...await walk(full));else out.push(full);}return out;}
+
+for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
+  let html=await fs.readFile(file,'utf8');
+  if(!html.includes('/assets/styles/platform-extra.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/platform-extra.css"></head>');
+  await fs.writeFile(file,html);
+}
