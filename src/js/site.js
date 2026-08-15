@@ -83,14 +83,17 @@ function setupGamesSearch(gamesMenu){
 function setupNavigation(){
   const mobileToggle=$('#mobileMenuToggle'),mobileMenu=$('#mobileMenu'),gamesToggle=$('#gamesMenuToggle'),gamesMenu=$('#gamesMenu'),accountButton=$('#userButton'),accountMenu=$('#accountMenu');
   setupGamesSearch(gamesMenu);
-  const closeMenus=()=>{if(gamesMenu)gamesMenu.hidden=true;gamesToggle?.setAttribute('aria-expanded','false');if(accountMenu)accountMenu.hidden=true;accountButton?.setAttribute('aria-expanded','false');};
-  mobileToggle?.addEventListener('click',()=>{const open=mobileToggle.getAttribute('aria-expanded')==='true';mobileToggle.setAttribute('aria-expanded',String(!open));mobileToggle.setAttribute('aria-label',open?'Open menu':'Close menu');if(mobileMenu)mobileMenu.hidden=open;closeMenus();});
-  gamesToggle?.addEventListener('click',event=>{event.stopPropagation();const open=gamesToggle.getAttribute('aria-expanded')==='true';closeMenus();gamesToggle.setAttribute('aria-expanded',String(!open));if(gamesMenu)gamesMenu.hidden=open;if(!open&&gamesMenu?._search)requestAnimationFrame(()=>gamesMenu._search.focus());});
+  const closeDesktopMenus=()=>{if(gamesMenu)gamesMenu.hidden=true;gamesToggle?.setAttribute('aria-expanded','false');if(accountMenu)accountMenu.hidden=true;accountButton?.setAttribute('aria-expanded','false');};
+  const closeMobileMenu=(restoreFocus=false)=>{if(!mobileMenu||mobileMenu.hidden)return;mobileMenu.hidden=true;mobileToggle?.setAttribute('aria-expanded','false');mobileToggle?.setAttribute('aria-label','Open menu');if(restoreFocus)mobileToggle?.focus();};
+  mobileToggle?.addEventListener('click',event=>{event.stopPropagation();const open=mobileToggle.getAttribute('aria-expanded')==='true';closeDesktopMenus();if(open){closeMobileMenu();return;}mobileToggle.setAttribute('aria-expanded','true');mobileToggle.setAttribute('aria-label','Close menu');if(mobileMenu)mobileMenu.hidden=false;});
+  mobileMenu?.addEventListener('click',event=>event.stopPropagation());
+  gamesToggle?.addEventListener('click',event=>{event.stopPropagation();const open=gamesToggle.getAttribute('aria-expanded')==='true';closeDesktopMenus();closeMobileMenu();gamesToggle.setAttribute('aria-expanded',String(!open));if(gamesMenu)gamesMenu.hidden=open;if(!open&&gamesMenu?._search)requestAnimationFrame(()=>gamesMenu._search.focus());});
   gamesMenu?.addEventListener('click',event=>event.stopPropagation());
-  accountButton?.addEventListener('click',event=>{event.stopPropagation();const open=accountButton.getAttribute('aria-expanded')==='true';closeMenus();accountButton.setAttribute('aria-expanded',String(!open));if(accountMenu)accountMenu.hidden=open;});
-  document.addEventListener('click',closeMenus);
-  document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;const gamesWasOpen=gamesMenu&&!gamesMenu.hidden;closeMenus();if(gamesWasOpen)gamesToggle?.focus();if(mobileMenu&&!mobileMenu.hidden){mobileMenu.hidden=true;mobileToggle?.setAttribute('aria-expanded','false');mobileToggle?.setAttribute('aria-label','Open menu');mobileToggle?.focus();}});
-  $$('#mobileMenu a').forEach(link=>link.addEventListener('click',()=>{if(mobileMenu)mobileMenu.hidden=true;mobileToggle?.setAttribute('aria-expanded','false');mobileToggle?.setAttribute('aria-label','Open menu');}));
+  accountButton?.addEventListener('click',event=>{event.stopPropagation();const open=accountButton.getAttribute('aria-expanded')==='true';closeDesktopMenus();closeMobileMenu();accountButton.setAttribute('aria-expanded',String(!open));if(accountMenu)accountMenu.hidden=open;});
+  document.addEventListener('click',event=>{closeDesktopMenus();if(mobileMenu&&!mobileMenu.hidden&&!mobileMenu.contains(event.target)&&!mobileToggle?.contains(event.target))closeMobileMenu();});
+  document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;const gamesWasOpen=gamesMenu&&!gamesMenu.hidden,mobileWasOpen=mobileMenu&&!mobileMenu.hidden;closeDesktopMenus();closeMobileMenu();if(gamesWasOpen)gamesToggle?.focus();else if(mobileWasOpen)mobileToggle?.focus();});
+  $$('#mobileMenu a').forEach(link=>link.addEventListener('click',()=>closeMobileMenu()));
+  window.addEventListener('resize',()=>{if(window.innerWidth>900)closeMobileMenu();},{passive:true});
 }
 
 function setupAuthActions(){
