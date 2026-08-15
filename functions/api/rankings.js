@@ -1,6 +1,9 @@
 import {error, json} from '../_lib/http.js';
 import {getSession} from '../_lib/auth.js';
 import {validGame} from '../_lib/games.js';
+import {compactPublicName} from '../_lib/public-name.js';
+
+const normalizeRow = row => ({...row, display_name: compactPublicName(row.display_name), is_me: Boolean(row.is_me)});
 
 export async function onRequestGet({request, env}) {
   const url = new URL(request.url);
@@ -34,7 +37,7 @@ export async function onRequestGet({request, env}) {
                          AND COALESCE((SELECT position FROM mepos), 0) + 2
       ORDER BY position ASC
     `).bind(game, userId, userId).all();
-    const all = (query.results || []).map(row => ({...row, is_me: Boolean(row.is_me)}));
+    const all = (query.results || []).map(normalizeRow);
     const me = all.find(row => Number(row.user_id) === userId) || null;
     let rows;
     if (me && Number(me.position) === 1) {
@@ -49,7 +52,7 @@ export async function onRequestGet({request, env}) {
         )
         SELECT *, CASE WHEN user_id = ? THEN 1 ELSE 0 END AS is_me FROM ranked WHERE position <= ? ORDER BY position ASC
       `).bind(game, userId, limit).all();
-      rows = (top.results || []).map(row => ({...row, is_me: Boolean(row.is_me)}));
+      rows = (top.results || []).map(normalizeRow);
     } else {
       const byPosition = new Map(all.map(row => [Number(row.position), row]));
       const wanted = [1,2,3];
