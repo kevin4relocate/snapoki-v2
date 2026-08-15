@@ -5,7 +5,8 @@ import {verifyAndScoreResult} from '../_lib/scoring.js';
 
 export async function onRequest({request, env}) {
   if (request.method !== 'POST') return methodNotAllowed();
-  if (request.headers.get('sec-fetch-site') === 'cross-site') return error('Cross-site result submission is not allowed.', 403, 'CROSS_SITE_BLOCKED');
+  const origin=request.headers.get('origin');
+  if (request.headers.get('sec-fetch-site') === 'cross-site' || (origin && origin !== new URL(request.url).origin)) return error('Cross-site result submission is not allowed.', 403, 'CROSS_SITE_BLOCKED');
 
   const session = await requireSession(request, env);
   if (!session) return error('Sign in to save ranked results.', 401, 'AUTH_REQUIRED');
@@ -38,34 +39,17 @@ export async function onRequest({request, env}) {
     if (attempt.game !== body.game || attempt.difficulty !== body.difficulty || attempt.mode !== body.mode) return error('Ranked attempt details do not match.', 409, 'ATTEMPT_MISMATCH');
     if (!body.metadata || body.metadata.seed !== attempt.seed) return error('Puzzle seed does not match this ranked attempt.', 409, 'ATTEMPT_SEED_MISMATCH');
 
-    // Ranked time is measured by the server-issued attempt, not trusted from the browser.
     const serverTimeMs = Math.max(1000, Date.now() - Date.parse(attempt.started_at));
-    const verified = verifyAndScoreResult({
-      game: body.game,
-      difficulty: body.difficulty,
-      mode: body.mode,
-      time_ms: serverTimeMs,
-      hints_used: body.hints_used,
-      metadata: body.metadata
-    });
+    const verified = verifyAndScoreResult({game:body.game,difficulty:body.difficulty,mode:body.mode,time_ms:serverTimeMs,hints_used:body.hints_used,metadata:body.metadata});
     if (!verified.ok) return error('This result could not be verified as a valid ranked finish.', 422, verified.reason || 'RESULT_NOT_VERIFIED');
 
-    const score = verified.score;
-    const timeMs = verified.timeMs;
-    const hints = verified.hints;
-    const points = rankingPoints({difficulty:body.difficulty, mode:body.mode, score, hints});
-    const playedDate = new Date().toISOString().slice(0,10);
-    const metadata = JSON.stringify({...verified.metadata, seed:attempt.seed}).slice(0,8000);
-    const consumedAt = new Date().toISOString();
-
-    const insert = env.DB.prepare(`
-      INSERT INTO results (run_id, user_id, game, difficulty, mode, score, ranking_points, time_ms, hints_used, solution_used, played_date, metadata_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
-    `).bind(runId, session.user.id, body.game, body.difficulty, body.mode, score, points, timeMs, hints, playedDate, metadata);
-    const consume = env.DB.prepare(`UPDATE ranked_attempts SET consumed_at = ? WHERE run_id = ? AND user_id = ? AND consumed_at IS NULL`).bind(consumedAt, runId, session.user.id);
-    const [saved] = await env.DB.batch([insert, consume]);
-
-    return json({eligible:true, duplicate:false, id:saved?.meta?.last_row_id || null, score, ranking_points:points, verified:true, time_ms:timeMs});
+    const score=verified.score,timeMs=verified.timeMs,hints=verified.hints;
+    const points=rankingPoints({difficulty:body.difficulty,mode:body.mode,score,hints});
+    const playedDate=new Date().toISOString().slice(0,10),metadata=JSON.stringify({...verified.metadata,seed:attempt.seed}).slice(0,8000),consumedAt=new Date().toISOString();
+    const insert=env.DB.prepare(`INSERT INTO results (run_id, user_id, game, difficulty, mode, score, ranking_points, time_ms, hints_used, solution_used, played_date, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`).bind(runId,session.user.id,body.game,body.difficulty,body.mode,score,points,timeMs,hints,playedDate,metadata);
+    const consume=env.DB.prepare(`UPDATE ranked_attempts SET consumed_at = ? WHERE run_id = ? AND user_id = ? AND consumed_at IS NULL`).bind(consumedAt,runId,session.user.id);
+    const [saved]=await env.DB.batch([insert,consume]);
+    return json({eligible:true,duplicate:false,id:saved?.meta?.last_row_id||null,score,ranking_points:points,verified:true,time_ms:timeMs});
   } catch (exception) {
     console.error('Result save failed', exception);
     return error('Ranked result could not be saved right now.', 500, 'RESULT_SAVE_FAILED');
