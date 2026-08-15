@@ -17,7 +17,7 @@ const r=value=>Math.round(value*10)/10;
 
 async function loadVariant(colors){
   const tempPath=path.join(root,`src/js/games/__color-v8-${colors}-experiment.mjs`);
-  let variant=source
+  const variant=source
     .replace(/hard:\{size:12,colors:10,/,`hard:{size:12,colors:${colors},`)
     .replace(/const COLORS=\[[^\n]+\];\nconst NAMES=\[[^\n]+\];/,palette);
   fs.writeFileSync(tempPath,variant);
@@ -38,12 +38,13 @@ for(const colors of [10,11,12]){
         }catch(error){failures++;console.log('COLOR_COUNT_FAILURE',JSON.stringify({colors,seed,message:error.message}));}
       }
       assert.ok(rows.length>=18,`${colors} colors should generate enough valid samples`);
+      const times=rows.map(x=>x.time);
       const summary={
         colors,samples:SEEDS.length,valid:rows.length,failures,
         difficulty:{mean:r(avg(rows.map(x=>x.score))),p50:r(percentile(rows.map(x=>x.score),.5)),p75:r(percentile(rows.map(x=>x.score),.75)),p90:r(percentile(rows.map(x=>x.score),.9)),max:r(Math.max(...rows.map(x=>x.score)))},
         solver:{backtracks:r(avg(rows.map(x=>x.backtracks))),deadEnds:r(avg(rows.map(x=>x.deadEnds))),decisions:r(avg(rows.map(x=>x.decisions))),greedyTraps:r(avg(rows.map(x=>x.greedyTraps))),temptingRoutes:r(avg(rows.map(x=>x.temptingRoutes))),shortcutVictims:r(avg(rows.map(x=>x.shortcutVictims)))},
         routes:{averageLength:r(avg(rows.map(x=>x.avgRoute))),averageMinLength:r(avg(rows.map(x=>x.minRoute))),averageMaxLength:r(avg(rows.map(x=>x.maxRoute)))},
-        generationMs:{mean:r(avg(rows.map(x=>x.time)),p50:r(percentile(rows.map(x=>x.time),.5)),p90:r(percentile(rows.map(x=>x.time),.9))}
+        generationMs:{mean:r(avg(times)),p50:r(percentile(times,.5)),p90:r(percentile(times,.9))}
       };
       console.log('COLOR_COUNT_SUMMARY',JSON.stringify(summary));
     }finally{fs.rmSync(tempPath,{force:true});}
