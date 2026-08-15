@@ -5,6 +5,7 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 let authUser = null;
 let googleScriptPromise = null;
 let loginReturnFocus = null;
+window.SnapokiAuth = {user:null, ready:false};
 
 function setAccountState(user) {
   authUser = user || null;
@@ -14,13 +15,14 @@ function setAccountState(user) {
   if (userButton) { userButton.hidden = !user; userButton.setAttribute('aria-expanded','false'); }
   if (userName) userName.textContent = user?.display_name || 'Player';
   if (userAvatar) { userAvatar.src = user?.avatar_url || '/brand/avatar-placeholder.svg'; userAvatar.alt = user?.display_name ? `${user.display_name} avatar` : 'Player avatar'; }
-  window.SnapokiAuth = {user: authUser};
+  window.SnapokiAuth = {user: authUser, ready:true};
   window.dispatchEvent(new CustomEvent('snapoki:auth-changed', {detail:{user:authUser}}));
 }
 
 async function refreshAuth() {
   try { const data = await api('/api/me'); setAccountState(data.user || null); }
   catch (error) { console.warn('Auth state unavailable', error); setAccountState(null); }
+  return window.SnapokiAuth;
 }
 
 function loadGoogleScript() {
@@ -85,4 +87,4 @@ function setupAuthActions(){
   $('#logoutButton')?.addEventListener('click',async()=>{try{await post('/api/logout');}catch(error){console.warn(error);}setAccountState(null);if($('#accountMenu'))$('#accountMenu').hidden=true;});
 }
 function setupFooter(){const year=$('#footerYear');if(year)year.textContent=String(new Date().getFullYear());}
-setupNavigation();setupAuthActions();setupFooter();refreshAuth();
+setupNavigation();setupAuthActions();setupFooter();window.SnapokiAuthReady=refreshAuth();
