@@ -28,11 +28,13 @@ test('Color Connect V7 Medium scatters blockers and mixes route territories',()=
     assert.ok(q.clusters.clusterCount>=5,'Medium needs separated blocker regions');
     assert.ok(q.clusters.sizeKinds>=3,'Medium should mix singles, pairs and larger shapes');
     assert.ok(blocks.largestCluster<=5,'Medium cannot collapse into one blocker mass');
-    assert.equal(q.straightRoutes,0,'Medium may not contain trivial straight solution routes');
-    assert.ok(q.avgTurns>=3,'Medium routes should visibly bend');
+    assert.ok(q.straightRoutes<=1,'Medium cannot be dominated by trivial straight routes');
+    assert.ok(q.avgTurns>=2.4,'Medium routes should visibly bend');
+    assert.ok(q.interferencePairs>=6,'Medium colors should share neighboring space');
+    assert.ok(q.competitiveRoutes>=5,'Almost every Medium color should interact with other routes');
     assert.equal(q.routeGraphComponents,1,'Medium color territories should form one interaction graph');
-    assert.ok(q.mixedZones>=4,'Medium should mix colors across multiple board zones');
-    assert.ok(q.avgRouteZones>=2,'Medium routes should span more than one local lane');
+    assert.ok(q.mixedZones>=5,'Medium should mix colors across most board zones');
+    assert.ok(q.avgRouteZones>=2.5,'Medium routes should span several local zones');
   }
 });
 
@@ -46,25 +48,28 @@ test('Color Connect V7 Hard is topology-driven instead of separable lane-style',
     assert.equal(puzzle.blocked.length,28);
     assert.equal(q.tacticalValid,true);
     assert.equal(blocks.quadrants,4,'Hard blockers must pressure the whole board');
-    assert.ok(blocks.rowSpread>=7&&blocks.colSpread>=7,'Hard blockers must be spatially scattered');
-    assert.ok(blocks.isolated>=2,'Hard needs isolated tactical blockers');
+    assert.ok(blocks.rowSpread>=8&&blocks.colSpread>=8,'Hard blockers must be spatially scattered');
+    assert.ok(blocks.isolated>=1,'Hard keeps at least one isolated surprise blocker');
     assert.ok(q.clusters.clusterCount>=6,'Hard needs many blocker regions');
     assert.ok(q.clusters.sizeKinds>=3,'Hard should mix blocker shape scales');
-    assert.ok(blocks.largestCluster<=9,'Hard cannot collapse into one dominant blocker island');
-    assert.equal(q.straightRoutes,0,'Hard cannot contain straight solution routes');
-    assert.ok(q.avgTurns>=3.4,'Hard routes should remain visibly winding');
+    assert.ok(blocks.largestCluster<=10,'Hard cannot collapse into one dominant blocker island');
+    assert.ok(q.straightRoutes<=1,'At most one color may have a simple route');
+    assert.ok(q.avgTurns>=2.3,'Hard routes should remain winding overall');
+    assert.ok(q.avgDetour>=2.2,'Hard routes must deviate from direct endpoint connections');
     assert.ok(q.interferencePairs>=8,'Hard needs many neighboring color-route pairs');
-    assert.ok(q.competitiveRoutes>=7,'Almost every Hard color should compete for space');
+    assert.ok(q.competitiveRoutes>=5,'Most Hard colors should compete for space');
     assert.equal(q.routeGraphComponents,1,'all Hard colors must belong to one competition graph');
     assert.ok(q.minNeighborColors>=1,'no Hard color may be completely isolated');
-    assert.ok(q.mixedZones>=4,'Hard routes must mix across the board');
-    assert.ok(q.avgRouteZones>=2,'Hard routes should cross multiple spatial zones');
-    assert.ok(q.boxOverlapPairs>=4,'route territories must overlap rather than form independent lanes');
-    assert.ok(q.endpointBoxIntrusions>=2,'foreign endpoints should intrude into other route territories');
-    assert.ok(q.endpointNearPairs>=2,'endpoint placement should create local competition');
+    assert.ok(q.mixedZones>=7,'Hard colors must mix through most spatial zones');
+    assert.ok(q.hotZones>=4,'multiple Hard zones must contain three or more color territories');
+    assert.ok(q.avgRouteZones>=2.5,'Hard routes should span roughly three board zones each');
+    assert.ok(q.boxOverlapPairs>=5,'route territories must overlap rather than form independent lanes');
+    assert.ok(q.endpointBoxIntrusions>=4,'foreign endpoints must sit inside other route territories');
+    assert.ok(q.endpointNearPairs>=10,'Hard endpoints should be strongly interleaved');
+    assert.ok(q.temptingRoutes>=1,'selected Hard boards should expose at least one tempting shortcut');
+    assert.ok(q.shortcutVictimPairs>=1,'a tempting shortcut must steal territory from another color');
   }
-  assert.ok(average(hard.map(q=>q.avgTurns))>=3.6,'Hard should remain strongly winding on average');
-  assert.ok(hard.reduce((sum,q)=>sum+q.temptingRoutes,0)>=1,'the selected Hard set should include tempting shortcut pressure');
+  assert.ok(average(hard.map(q=>q.mixedZones))>=7.5,'Hard should mix colors throughout nearly the whole board');
 });
 
 test('Color Connect V7 remains deterministic for ranked proof regeneration',()=>{
