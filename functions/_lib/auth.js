@@ -1,3 +1,5 @@
+import {compactPublicName} from './public-name.js';
+
 const COOKIE = 'snapoki_session';
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
 
@@ -48,7 +50,7 @@ export async function getSession(request, env) {
     user: {
       id: row.id,
       email: row.email,
-      display_name: row.display_name,
+      display_name: compactPublicName(row.display_name),
       avatar_url: row.avatar_url
     }
   };
