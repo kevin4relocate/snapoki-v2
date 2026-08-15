@@ -1,9 +1,21 @@
-.board-panel{scroll-margin-top:calc(var(--header-height) + 14px)}
+.board-panel{scroll-margin-top:calc(var(--header-height) + 14px);position:relative}
 .games-dropdown{max-height:min(70vh,560px);overflow:auto;overscroll-behavior:contain}
 .games-search{position:sticky;top:0;z-index:2;width:100%;height:40px;margin:0 0 7px;padding:0 11px;border:1px solid var(--border);border-radius:10px;background:#0b1020;color:var(--text);outline:none}
 .games-search:focus{border-color:#6d61cc;box-shadow:0 0 0 3px rgba(115,87,255,.12)}
 .games-search-empty{padding:16px 12px;color:var(--muted);font-size:12px;text-align:center}
 .footer-inner{grid-template-columns:minmax(260px,1fr) minmax(130px,180px) minmax(130px,180px) minmax(130px,180px);gap:48px}
+
+/* Shared gameplay lifecycle */
+.control-stack button:disabled,.difficulty-button:disabled,.mode-button:disabled,.daily-level:disabled{cursor:not-allowed;opacity:.42;filter:saturate(.65);transform:none!important;box-shadow:none!important}
+.control-stack button:disabled:hover,.difficulty-button:disabled:hover,.mode-button:disabled:hover,.daily-level:disabled:hover{transform:none;background:inherit}
+.practice-complete-notice{position:absolute;z-index:12;top:66px;left:50%;transform:translateX(-50%);width:min(calc(100% - 32px),480px);display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(55,217,154,.42);border-radius:14px;background:rgba(8,18,25,.94);box-shadow:0 16px 44px rgba(0,0,0,.36),0 0 28px rgba(55,217,154,.08);backdrop-filter:blur(12px)}
+.practice-complete-notice[hidden]{display:none!important}.practice-complete-icon{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:grid;place-items:center;background:rgba(55,217,154,.16);color:var(--success);font-size:17px;font-weight:900}.practice-complete-notice div{min-width:0;display:flex;flex-direction:column}.practice-complete-notice strong{font-size:12px;color:#dffff1}.practice-complete-notice small{margin-top:1px;color:var(--muted);font-size:10px;line-height:1.35}.board-panel.practice-complete{border-color:rgba(55,217,154,.32);box-shadow:0 10px 35px rgba(0,0,0,.12),inset 0 0 0 1px rgba(55,217,154,.05)}
+
+/* Blocked cells are game mechanics, not decoration. Keep them unmistakable. */
+.number-cell.blocked,.color-cell.blocked{opacity:1!important;cursor:not-allowed!important;border-color:#46516c!important;background:repeating-linear-gradient(135deg,#0a0f1b 0,#0a0f1b 7px,#1b2234 7px,#1b2234 13px)!important;box-shadow:inset 0 0 0 1px rgba(132,146,177,.09),inset 0 0 22px rgba(0,0,0,.34)!important}
+.number-cell.blocked:before,.color-cell.blocked:before{content:"";position:absolute;inset:17%;border:1px solid rgba(132,146,177,.24);border-radius:7px;background:linear-gradient(45deg,transparent 46%,rgba(132,146,177,.24) 47%,rgba(132,146,177,.24) 53%,transparent 54%),linear-gradient(-45deg,transparent 46%,rgba(132,146,177,.16) 47%,rgba(132,146,177,.16) 53%,transparent 54%)}
+.number-cell.blocked:after,.color-cell.blocked:after{content:""!important;position:absolute!important;inset:7px!important;border-radius:6px!important;border:1px solid rgba(116,128,154,.08)!important;pointer-events:none}
+
 @media(max-width:960px){.footer-inner{grid-template-columns:1.4fr 1fr 1fr;gap:34px}.footer-brand{grid-column:1/-1}}
-@media(max-width:620px){.footer-inner{grid-template-columns:1fr 1fr;gap:30px}.footer-brand{grid-column:1/-1}}
+@media(max-width:620px){.footer-inner{grid-template-columns:1fr 1fr;gap:30px}.footer-brand{grid-column:1/-1}.practice-complete-notice{top:62px}}
 @media(max-width:420px){.footer-inner{grid-template-columns:1fr}}

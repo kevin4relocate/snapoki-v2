@@ -11,6 +11,25 @@ export function areAdjacent(a,b,cols){const [ar,ac]=rcOf(a,cols),[br,bc]=rcOf(b,
 function transformCoord(row,col,size,variant){let r=row,c=col;if(variant&1)c=size-1-c;if(variant&2)r=size-1-r;if(variant&4)[r,c]=[c,r];return[r,c];}
 export function deterministicHamiltonianPath(size,seed=''){const base=[];for(let row=0;row<size;row++){if(row%2===0){for(let col=0;col<size;col++)base.push([row,col]);}else{for(let col=size-1;col>=0;col--)base.push([row,col]);}}const variant=hashString(seed)%8;let path=base.map(([r,c])=>transformCoord(r,c,size,variant));if(hashString(`${seed}:reverse`)%2)path=path.reverse();return path.map(([r,c])=>indexOf(r,c,size));}
 export function randomizedOpenPath(size,targetCount,seed=''){const total=size*size,target=clamp(Math.round(targetCount),2,total),rng=rngFromSeed(`${seed}:open-path`),starts=shuffle(Array.from({length:total},(_,i)=>i),rng),maxNodes=180000;let visitedNodes=0;for(const start of starts.slice(0,Math.min(total,14))){const path=[start],used=new Set(path);function dfs(current){if(path.length===target)return true;if(++visitedNodes>maxNodes)return false;let candidates=orthogonalNeighbors(current,size,size).filter(next=>!used.has(next));candidates=candidates.map(next=>({next,onward:orthogonalNeighbors(next,size,size).filter(n=>!used.has(n)).length,jitter:rng()})).sort((a,b)=>a.onward-b.onward||a.jitter-b.jitter);for(const {next} of candidates){used.add(next);path.push(next);if(dfs(next))return true;path.pop();used.delete(next);}return false;}if(dfs(start))return path;if(visitedNodes>maxNodes)break;}return deterministicHamiltonianPath(size,seed).slice(0,target);}
+
+export function blockedLayoutStats(blocked,size){
+  const set=new Set(blocked),seen=new Set();let adjacentPairs=0,isolated=0,largestCluster=0;const quadrants=new Set(),rows=new Set(),cols=new Set();
+  for(const index of set){const[r,c]=rcOf(index,size),neighbors=orthogonalNeighbors(index,size,size).filter(next=>set.has(next));adjacentPairs+=neighbors.filter(next=>next>index).length;if(!neighbors.length)isolated++;quadrants.add(`${r<size/2?0:1}:${c<size/2?0:1}`);rows.add(r);cols.add(c);if(seen.has(index))continue;let cluster=0,queue=[index];seen.add(index);while(queue.length){const current=queue.shift();cluster++;for(const next of orthogonalNeighbors(current,size,size))if(set.has(next)&&!seen.has(next)){seen.add(next);queue.push(next);}}largestCluster=Math.max(largestCluster,cluster);}
+  return{adjacentPairs,isolated,largestCluster,quadrants:quadrants.size,rowSpread:rows.size,colSpread:cols.size};
+}
+function pathTurns(path,size){let turns=0,last='';for(let i=1;i<path.length;i++){const[aR,aC]=rcOf(path[i-1],size),[bR,bC]=rcOf(path[i],size),dir=bR<aR?'u':bR>aR?'d':bC<aC?'l':'r';if(last&&dir!==last)turns++;last=dir;}return turns;}
+export function selectScatteredOpenPath(size,targetCount,seed='',maxCandidates=14){
+  const total=size*size,target=clamp(Math.round(targetCount),2,total);if(target===total)return randomizedOpenPath(size,target,seed);
+  let best=null;const blockedCount=total-target;
+  for(let i=0;i<maxCandidates;i++){
+    const path=randomizedOpenPath(size,target,`${seed}:layout:${i}`),open=new Set(path),blocked=[];for(let index=0;index<total;index++)if(!open.has(index))blocked.push(index);
+    const stats=blockedLayoutStats(blocked,size),score=stats.isolated*18+stats.quadrants*15+(stats.rowSpread+stats.colSpread)*5+pathTurns(path,size)*.35-stats.adjacentPairs*15-stats.largestCluster*24;
+    if(!best||score>best.score)best={path,blocked,stats,score};
+    if(stats.adjacentPairs===0&&stats.quadrants>=Math.min(4,blockedCount)&&stats.rowSpread>=Math.min(3,blockedCount)&&stats.colSpread>=Math.min(3,blockedCount))break;
+  }
+  return best?.path||randomizedOpenPath(size,target,seed);
+}
+
 export function directionLabel(from,to,cols){const [fr,fc]=rcOf(from,cols),[tr,tc]=rcOf(to,cols);if(tr<fr)return'up';if(tr>fr)return'down';if(tc<fc)return'left';if(tc>fc)return'right';return'forward';}
 export function dailySeed(game,difficulty,date=new Date()){return `${game}:${date.toISOString().slice(0,10)}:${difficulty}`;}
 export function randomSeed(game,difficulty){const values=crypto.getRandomValues(new Uint32Array(3));return `${game}:${difficulty}:${Date.now().toString(36)}:${Array.from(values).join('-')}`;}
