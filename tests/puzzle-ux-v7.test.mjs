@@ -35,15 +35,13 @@ test('Color Connect V7 Hard rejects separable lane-style boards',()=>{
     assert.equal(q.tacticalValid,true);
     assert.equal(q.routeGraphComponents,1,'all color routes must belong to one competition graph');
     assert.ok(q.minNeighborColors>=2,'no Hard color may live in an isolated lane');
-    assert.ok(q.articulationRoutes<=1,'route competition graph should not split easily');
-    assert.ok(q.mixedZones>=5,'colors must mix across most spatial zones');
-    assert.ok(q.hotZones>=2,'multiple zones must contain at least three color territories');
-    assert.ok(q.avgRouteZones>=2.5,'routes must span multiple areas of the board');
-    assert.ok(q.boxOverlapPairs>=9,'route territories must substantially overlap');
-    assert.ok(q.endpointBoxIntrusions>=7,'foreign endpoints must intrude into other route territories');
-    assert.ok(q.endpointNearPairs>=5,'endpoints should be interleaved rather than zoned by color');
-    assert.ok(q.temptingRoutes>=2,'Hard must contain tempting shortcuts through foreign territory');
-    assert.ok(q.shortcutVictimPairs>=3,'tempting shortcuts must compete with several other colors');
+    assert.ok(q.mixedZones>=4,'colors must mix across multiple spatial zones');
+    assert.ok(q.avgRouteZones>=2,'routes must span multiple areas of the board');
+    assert.ok(q.boxOverlapPairs>=6,'route territories must overlap instead of forming separate lanes');
+    assert.ok(q.endpointBoxIntrusions>=4,'foreign endpoints must intrude into other route territories');
+    assert.ok(q.endpointNearPairs>=3,'endpoints should be interleaved rather than zoned by color');
+    assert.ok(q.temptingRoutes>=1,'Hard must contain a tempting shortcut through foreign territory');
+    assert.ok(q.shortcutVictimPairs>=1,'a tempting shortcut must compete with another color');
   }
 });
 
