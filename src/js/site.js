@@ -71,14 +71,25 @@ async function openLoginModal() {
   }catch(error){console.warn(error);message.textContent='Sign-in is temporarily unavailable. Please try again.';}
 }
 
+function setupGamesSearch(gamesMenu){
+  if(!gamesMenu)return;const links=$$('a[data-game-link]',gamesMenu);if(links.length<8)return;
+  const input=document.createElement('input');input.type='search';input.className='games-search';input.placeholder='Search games…';input.setAttribute('aria-label','Search games');
+  const empty=document.createElement('div');empty.className='games-search-empty';empty.textContent='No games found.';empty.hidden=true;
+  gamesMenu.prepend(input);gamesMenu.appendChild(empty);
+  input.addEventListener('input',()=>{const query=input.value.trim().toLowerCase();let visible=0;for(const link of links){const show=!query||link.textContent.toLowerCase().includes(query);link.hidden=!show;if(show)visible++;}empty.hidden=visible!==0;});
+  gamesMenu._search=input;
+}
+
 function setupNavigation(){
   const mobileToggle=$('#mobileMenuToggle'),mobileMenu=$('#mobileMenu'),gamesToggle=$('#gamesMenuToggle'),gamesMenu=$('#gamesMenu'),accountButton=$('#userButton'),accountMenu=$('#accountMenu');
+  setupGamesSearch(gamesMenu);
   const closeMenus=()=>{if(gamesMenu)gamesMenu.hidden=true;gamesToggle?.setAttribute('aria-expanded','false');if(accountMenu)accountMenu.hidden=true;accountButton?.setAttribute('aria-expanded','false');};
   mobileToggle?.addEventListener('click',()=>{const open=mobileToggle.getAttribute('aria-expanded')==='true';mobileToggle.setAttribute('aria-expanded',String(!open));mobileToggle.setAttribute('aria-label',open?'Open menu':'Close menu');if(mobileMenu)mobileMenu.hidden=open;closeMenus();});
-  gamesToggle?.addEventListener('click',event=>{event.stopPropagation();const open=gamesToggle.getAttribute('aria-expanded')==='true';closeMenus();gamesToggle.setAttribute('aria-expanded',String(!open));if(gamesMenu)gamesMenu.hidden=open;});
+  gamesToggle?.addEventListener('click',event=>{event.stopPropagation();const open=gamesToggle.getAttribute('aria-expanded')==='true';closeMenus();gamesToggle.setAttribute('aria-expanded',String(!open));if(gamesMenu)gamesMenu.hidden=open;if(!open&&gamesMenu?._search)requestAnimationFrame(()=>gamesMenu._search.focus());});
+  gamesMenu?.addEventListener('click',event=>event.stopPropagation());
   accountButton?.addEventListener('click',event=>{event.stopPropagation();const open=accountButton.getAttribute('aria-expanded')==='true';closeMenus();accountButton.setAttribute('aria-expanded',String(!open));if(accountMenu)accountMenu.hidden=open;});
   document.addEventListener('click',closeMenus);
-  document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;closeMenus();if(mobileMenu&&!mobileMenu.hidden){mobileMenu.hidden=true;mobileToggle?.setAttribute('aria-expanded','false');mobileToggle?.setAttribute('aria-label','Open menu');mobileToggle?.focus();}});
+  document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;const gamesWasOpen=gamesMenu&&!gamesMenu.hidden;closeMenus();if(gamesWasOpen)gamesToggle?.focus();if(mobileMenu&&!mobileMenu.hidden){mobileMenu.hidden=true;mobileToggle?.setAttribute('aria-expanded','false');mobileToggle?.setAttribute('aria-label','Open menu');mobileToggle?.focus();}});
   $$('#mobileMenu a').forEach(link=>link.addEventListener('click',()=>{if(mobileMenu)mobileMenu.hidden=true;mobileToggle?.setAttribute('aria-expanded','false');mobileToggle?.setAttribute('aria-label','Open menu');}));
 }
 
