@@ -25,8 +25,8 @@ function blockedCandidateQuality(candidate,size,blockedCount){
 }
 export function selectScatteredOpenPath(size,targetCount,seed='',maxCandidates=28){
   const total=size*size,target=clamp(Math.round(targetCount),2,total);if(target===total)return randomizedOpenPath(size,target,seed);
-  const blockedCount=total-target,maxCluster=Math.max(2,Math.ceil(blockedCount*.60));let best=null;
-  for(let i=0;i<maxCandidates;i++){
+  const blockedCount=total-target,maxCluster=Math.max(2,Math.ceil(blockedCount*.60)),candidateBudget=Math.max(64,maxCandidates);let best=null;
+  for(let i=0;i<candidateBudget;i++){
     const path=randomizedOpenPath(size,target,`${seed}:layout:${i}`),open=new Set(path),blocked=[];for(let index=0;index<total;index++)if(!open.has(index))blocked.push(index);
     const stats=blockedLayoutStats(blocked,size),candidate={path,blocked,stats},score=blockedCandidateQuality(candidate,size,blockedCount);candidate.score=score;
     if(!best||score>best.score)best=candidate;
