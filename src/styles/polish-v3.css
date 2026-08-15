@@ -1,0 +1,36 @@
+/* Snapoki gameplay + site polish V3 */
+.games-dropdown{width:238px!important;padding:7px!important}
+.games-dropdown a{min-height:42px!important;padding:8px 10px!important;gap:14px!important}
+.games-dropdown a span{font-size:14px;font-weight:720;letter-spacing:-.01em}
+.games-dropdown a small{font-size:9px!important;letter-spacing:.09em!important}
+.nav-menu-button{min-width:max-content}
+
+/* Keep Daily visually connected to the game instead of creating a dead zone. */
+.daily-section{margin-top:18px!important;padding-top:18px!important;padding-bottom:44px!important}
+
+/* Number Path contradictions are feedback, not auto-correction. */
+.number-cell.checkpoint-conflict{border-color:rgba(255,107,124,.74)!important;box-shadow:inset 0 0 0 1px rgba(255,107,124,.18),0 0 16px rgba(255,107,124,.08)!important}
+.number-cell.checkpoint-conflict span{border-color:rgba(255,107,124,.88)!important;background:rgba(89,28,42,.54)!important;box-shadow:0 0 15px rgba(255,107,124,.12)!important}
+
+/* Loop Practice is order-free: one quiet ghost solution, no numbered sequence. */
+.loop-hit.solution-edge{stroke:rgba(40,201,245,.32)!important;stroke-width:2.15!important;stroke-dasharray:2.6 2.1;stroke-linecap:round;filter:none!important}
+.loop-hit.active.solution-edge{stroke:#7b6aff!important;stroke-dasharray:none}
+.loop-hit.practice-wrong{stroke:rgba(255,107,124,.78)!important;stroke-width:2.35!important;stroke-linecap:round;filter:drop-shadow(0 0 1px rgba(255,107,124,.35))}
+.board-panel.practice-mode .loop-clue-chip.satisfied{fill:#11182a!important;stroke:#5e6984!important;filter:none!important}
+.board-panel.practice-mode .loop-clue.satisfied{fill:#aeb8cc!important}
+.board-panel.practice-mode .loop-clue-chip:not(.conflict){filter:none!important}
+.board-panel.practice-mode .loop-clue-chip.clue-0,.board-panel.practice-mode .loop-clue-chip.clue-1,.board-panel.practice-mode .loop-clue-chip.clue-2,.board-panel.practice-mode .loop-clue-chip.clue-3{fill:#11182a!important;stroke:#536078!important}
+.board-panel.practice-mode .loop-clue.clue-0,.board-panel.practice-mode .loop-clue.clue-1,.board-panel.practice-mode .loop-clue.clue-2,.board-panel.practice-mode .loop-clue.clue-3{fill:#aeb8cc!important}
+.board-panel.practice-mode .loop-clue-chip.conflict{fill:rgba(255,107,124,.15)!important;stroke:#ff6b7c!important;filter:drop-shadow(0 0 1px rgba(255,107,124,.35))!important}
+.board-panel.practice-mode .loop-clue.conflict{fill:#ff9eaa!important}
+
+/* Lights Out Practice: highlighted cells are a set, not an ordered list. */
+.light-cell.solution-press{outline:2px solid rgba(40,201,245,.92)!important;outline-offset:-4px;box-shadow:inset 0 0 0 1px rgba(40,201,245,.12)}
+.light-cell.on.solution-press{box-shadow:0 0 18px rgba(255,190,70,.24),inset 0 0 0 2px rgba(40,201,245,.5)!important}
+
+.footer-contact{color:#b9c8ff!important;font-weight:680}
+.footer-contact:hover{color:#fff!important}
+.content-page .contact-callout{margin-top:42px}
+.content-page .contact-callout a{color:#9eb5ff;text-decoration:underline;text-underline-offset:3px}
+
+@media(max-width:780px){.daily-section{margin-top:12px!important;padding-top:14px!important}.games-dropdown{width:min(238px,calc(100vw - 28px))!important}}
