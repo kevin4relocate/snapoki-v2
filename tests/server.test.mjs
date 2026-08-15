@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {rankingPoints,validDifficulty,validGame,validMode} from '../functions/_lib/games.js';
 import {verifyAndScoreResult,expectedDailySeed} from '../functions/_lib/scoring.js';
+import {regularFarmMultiplier,adjustedRegularPoints,anomalyAssessment,crossedMilestone,chooseSmartNext,DAILY_COMPLETE_BONUS} from '../functions/_lib/ranking-policy.js';
 import {generateMaze,solveMaze} from '../src/js/games/maze.js';
 import {generateNumberPath} from '../src/js/games/number-path.js';
 import {generateColorConnect} from '../src/js/games/color-connect.js';
@@ -35,3 +36,11 @@ test('server rejects Lights Out presses that do not solve the generated board',(
 test('Daily Challenge proof must use today exact deterministic seed',()=>{const seed=expectedDailySeed('number-path','medium'),good=verifyAndScoreResult({game:'number-path',difficulty:'medium',mode:'daily',time_ms:25000,hints_used:0,metadata:numberProof('medium',seed)}),oldSeed='number-path:2000-01-01:medium',bad=verifyAndScoreResult({game:'number-path',difficulty:'medium',mode:'daily',time_ms:25000,hints_used:0,metadata:numberProof('medium',oldSeed)});assert.equal(good.ok,true,good.reason);assert.equal(bad.ok,false);assert.equal(bad.reason,'INVALID_SEED');});
 
 test('difficulty-aware timing gives harder Maze more time before score decay',()=>{const easySeed='maze:easy:timing',hardSeed='maze:hard:timing',easy=verifyAndScoreResult({game:'maze',difficulty:'easy',mode:'normal',time_ms:60000,hints_used:0,metadata:mazeProof('easy',easySeed)}),hard=verifyAndScoreResult({game:'maze',difficulty:'hard',mode:'normal',time_ms:60000,hints_used:0,metadata:mazeProof('hard',hardSeed)});assert.equal(easy.ok,true,easy.reason);assert.equal(hard.ok,true,hard.reason);assert.ok(hard.score>easy.score);});
+
+test('regular farming diminishes softly and Hard retains more value',()=>{assert.equal(regularFarmMultiplier('easy',0),1);assert.equal(regularFarmMultiplier('easy',6),.60);assert.equal(regularFarmMultiplier('hard',6),.92);assert.ok(adjustedRegularPoints(150,'hard',6)>adjustedRegularPoints(150,'easy',6));});
+
+test('fair-play anomaly detection flags impossible speed without banning normal fast play',()=>{const suspicious=anomalyAssessment({game:'maze',difficulty:'hard',timeMs:900,score:4990,recentHourlyFinishes:2}),normal=anomalyAssessment({game:'maze',difficulty:'hard',timeMs:12000,score:4700,recentHourlyFinishes:10});assert.equal(suspicious.suspicious,true);assert.ok(suspicious.reasons.includes('impossible_speed'));assert.equal(normal.suspicious,false);});
+
+test('ranking milestones detect upward threshold crossings',()=>{assert.equal(crossedMilestone(31,24),25);assert.equal(crossedMilestone(11,10),10);assert.equal(crossedMilestone(2,1),1);assert.equal(crossedMilestone(20,18),null);});
+
+test('smart next prioritizes unfinished Daily then a reachable ranking target',()=>{const daily=chooseSmartNext({mode:'daily',difficulty:'easy',dailyCompleted:['easy'],mastery:{},currentScore:4000});assert.equal(daily.type,'daily');assert.equal(daily.difficulty,'medium');const target=chooseSmartNext({mode:'normal',difficulty:'hard',dailyCompleted:[],mastery:{easy:{complete:true},medium:{complete:true},hard:{complete:true}},nextTarget:{points_to_pass:84},rankAfter:12,bestScore:4800,currentScore:4700});assert.match(target.label,/84 pts/);assert.equal(DAILY_COMPLETE_BONUS,250);});
