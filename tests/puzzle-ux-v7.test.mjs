@@ -26,7 +26,7 @@ test('Number Path Solution V2 uses one continuous ghost route instead of step ba
   assert.match(src,/solutionStep\(delta=0\)/,'ordered step navigation remains available');
 });
 
-test('Color Connect V8 Hard is solver-verified instead of only visually complex',()=>{
+test('Color Connect V8 Hard separates solver validity from weighted difficulty',()=>{
   for(const seed of ['v8-a','v8-b','quality-a']){
     const puzzle=generateColorConnect('hard',seed),q=colorConnectComplexity(puzzle),s=q.solver;
     assertCoverage(puzzle);
@@ -34,21 +34,23 @@ test('Color Connect V8 Hard is solver-verified instead of only visually complex'
     assert.equal(puzzle.size,12);
     assert.equal(puzzle.segments.length,10);
     assert.equal(puzzle.blocked.length,36);
-    assert.equal(q.tacticalValid,true);
+    assert.equal(q.tacticalValid,true,'validity gate must pass');
     assert.equal(q.routeGraphComponents,1,'Hard routes must still form one competition graph');
-    assert.equal(s.uniqueModel,true,'solver candidate model should have one full-cover solution');
-    assert.ok(s.decisions>=9,'Hard needs many solver decisions');
-    assert.ok(s.backtracks>=10,'Hard must force real backtracking');
-    assert.ok(s.deadEnds>=8,'Hard must expose dead-end route choices');
-    assert.ok(s.greedyTraps>=8,'short-looking routes should repeatedly fail');
-    assert.ok(s.temptingRoutes>=2,'Hard should contain multiple tempting shortcuts');
-    assert.ok(s.shortcutVictimPairs>=2,'greedy shortcuts must steal foreign route territory');
+    assert.ok(s.solutions>=1,'solver must find a full-cover solution');
+    assert.equal(s.aborted,false,'solver validity may never rely on an aborted search');
+    assert.equal(s.uniqueModel,true,'Hard candidate model remains unique');
+    assert.equal(typeof q.difficultyScore,'number');
+    assert.ok(q.difficultyScore>0&&q.difficultyScore<=100,'weighted difficulty must stay on the calibrated 0-100 scale');
+    for(const key of ['backtracks','greedyTraps','deadEnds','decisions','temptingRoutes','shortcutVictims','synergy'])assert.equal(typeof q.difficultyBreakdown[key],'number');
   }
 });
 
-test('Color Connect V8 uses explicit two-stage solver-first generation and stays deterministic',()=>{
-  const src=read('src/js/games/color-connect-v8.js');
-  for(const token of ['buildVariants','evaluateSolverModel','weightedGridPath','solverGate','greedyTraps','backtracks','deadEnds','uniqueModel','cheapGate','shortlist'])assert.match(src,new RegExp(token));
+test('Color Connect V8 uses weighted selection without per-metric Hard rejection and stays deterministic',()=>{
+  const src=read('src/js/games/color-connect-v8.js'),score=read('src/js/games/color-connect-v8-difficulty.js');
+  for(const token of ['buildVariants','evaluateSolverModel','weightedGridPath','solverGate','colorConnectDifficultyScore','difficultyScore','cheapGate','shortlist'])assert.match(src,new RegExp(token));
+  for(const token of ['cappedPoints','greedyTraps','backtracks','deadEnds','decisions','temptingRoutes','shortcutVictimPairs','synergy'])assert.match(score,new RegExp(token));
+  const gate=src.slice(src.indexOf('function solverGate'),src.indexOf('export function colorConnectComplexity'));
+  assert.doesNotMatch(gate,/greedyTraps\s*>?=|backtracks\s*>?=|deadEnds\s*>?=|decisions\s*>?=|temptingRoutes\s*>?=|shortcutVictimPairs\s*>?=/,'difficulty proxies must not be binary validity conditions');
   const a=generateColorConnect('hard','v8-deterministic'),b=generateColorConnect('hard','v8-deterministic');
   assert.deepEqual(a,b);
 });
