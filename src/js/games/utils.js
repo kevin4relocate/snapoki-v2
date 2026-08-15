@@ -15,4 +15,6 @@ export function directionLabel(from,to,cols){const [fr,fc]=rcOf(from,cols),[tr,t
 export function dailySeed(game,difficulty,date=new Date()){return `${game}:${date.toISOString().slice(0,10)}:${difficulty}`;}
 export function randomSeed(game,difficulty){const values=crypto.getRandomValues(new Uint32Array(3));return `${game}:${difficulty}:${Date.now().toString(36)}:${Array.from(values).join('-')}`;}
 export function formatTime(ms){const seconds=Math.max(0,Math.floor(ms/1000)),minutes=Math.floor(seconds/60);return `${String(minutes).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
-export function scoreFromPerformance({timeMs=0,actionPenalty=0,mistakePenalty=0,hintPenalty=0}){return clamp(Math.round(5000-timeMs/40-actionPenalty-mistakePenalty-hintPenalty),250,5000);}
+const SCORE_TIME_DIVISORS={maze:{easy:45,medium:80,hard:120},'number-path':{easy:50,medium:90,hard:140},'color-connect':{easy:55,medium:95,hard:150},'lights-out':{easy:50,medium:85,hard:125},'loop-puzzle':{easy:65,medium:110,hard:170}};
+export function scoreTimeDivisor(game,difficulty){return SCORE_TIME_DIVISORS[game]?.[difficulty]||40;}
+export function scoreFromPerformance({timeMs=0,timeDivisor=40,actionPenalty=0,mistakePenalty=0,hintPenalty=0}){return clamp(Math.round(5000-timeMs/timeDivisor-actionPenalty-mistakePenalty-hintPenalty),250,5000);}
