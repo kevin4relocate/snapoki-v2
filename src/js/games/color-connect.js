@@ -37,10 +37,10 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete})
   }
   function indexAt(clientX,clientY){const rect=grid.getBoundingClientRect(),x=clientX-rect.left,y=clientY-rect.top;if(x<0||y<0||x>=rect.width||y>=rect.height)return-1;const c=Math.min(puzzle.size-1,Math.floor(x/rect.width*puzzle.size)),r=Math.min(puzzle.size-1,Math.floor(y/rect.height*puzzle.size));return r*puzzle.size+c;}
   function colorAtStart(index){const ep=endpoint.get(index);if(ep!=null)return ep;const owners=ownerMap(),color=owners.get(index);if(color==null)return null;const path=paths.get(color)||[];return index===path.at(-1)||index===path[0]?color:null;}
-  function startDragIfNeeded(nextIndex){if(!drag||drag.started)return;if(nextIndex===drag.start)return;if(!areAdjacent(drag.start,nextIndex,puzzle.size))return;beginPath(drag.color,drag.start,true);drag.started=true;addCell(nextIndex);}
-  function dragThrough(clientX,clientY){if(!drag||!lastPointer)return;const[sx,sy]=lastPointer,dx=clientX-sx,dy=clientY-sy,rect=grid.getBoundingClientRect(),cellSize=rect.width/puzzle.size,steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/Math.max(5,cellSize*.25)));for(let i=1;i<=steps;i++){const idx=indexAt(sx+dx*i/steps,sy+dy*i/steps);if(idx<0||blocked.has(idx))continue;if(!drag.started)startDragIfNeeded(idx);else addCell(idx);}lastPointer=[clientX,clientY];}
+  function startDragIfNeeded(nextIndex){if(!drag||drag.started||nextIndex===drag.start||!areAdjacent(drag.start,nextIndex,puzzle.size))return;beginPath(drag.color,drag.start,true);drag.started=true;addCell(nextIndex);}
+  function dragThrough(clientX,clientY){if(!drag||!lastPointer)return;const[sx,sy]=lastPointer,dx=clientX-sx,dy=clientY-sy,rect=grid.getBoundingClientRect(),cellSize=rect.width/puzzle.size,steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/Math.max(4,cellSize*.18)));for(let i=1;i<=steps;i++){const idx=indexAt(sx+dx*i/steps,sy+dy*i/steps);if(idx<0||blocked.has(idx))continue;if(!drag.started)startDragIfNeeded(idx);else addCell(idx);}lastPointer=[clientX,clientY];}
   grid.addEventListener('pointerdown',e=>{const idx=indexAt(e.clientX,e.clientY),color=colorAtStart(idx);if(idx<0||color==null||blocked.has(idx))return;drag={start:idx,color,started:false};lastPointer=[e.clientX,e.clientY];grid.setPointerCapture?.(e.pointerId);e.preventDefault();});
-  grid.addEventListener('pointermove',e=>{if(drag)dragThrough(e.clientX,e.clientY);});
+  grid.addEventListener('pointermove',e=>{if(!drag)return;const events=e.getCoalescedEvents?.()||[e];for(const point of events)dragThrough(point.clientX,point.clientY);e.preventDefault();});
   const stop=()=>{if(drag?.started)checkComplete();drag=null;lastPointer=null;activeColor=null;};grid.addEventListener('pointerup',stop);grid.addEventListener('pointercancel',stop);
 
   onMetrics({paths:0,redraws:0,hints:0});onStatus(`Drag from one colored endpoint to its match and cover all ${puzzle.openCount} open cells. Finished connections stay in place.`);render();
@@ -51,6 +51,6 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete})
     solution(){solutionVisible=true;hintedCells=new Set();render();onStatus('Practice guide on: drag each color along its translucent line. Your completed connections remain brighter and stay in place.');},
     hideSolution(){solutionVisible=false;hintedCells=new Set();render();onStatus('Solution hidden. Continue practicing, or Reset Puzzle to restore ranking eligibility.');},
     previewScore(timeMs,hints=0){return scoreFromPerformance({timeMs,timeDivisor,actionPenalty:redraws*80,hintPenalty:hints*190});},
-    getResult(timeMs,hints=0){return{score:scoreFromPerformance({timeMs,timeDivisor,actionPenalty:redraws*80,hintPenalty:hints*190}),metadata:{redraws,paths:connectedCount(),open_cells:puzzle.openCount,blocked_cells:puzzle.blocked.length,size:puzzle.size}};},destroy(){}
+    getResult(timeMs,hints=0){const routes=[...paths.entries()].map(([color,path])=>({color,path:[...path]}));return{score:scoreFromPerformance({timeMs,timeDivisor,actionPenalty:redraws*80,hintPenalty:hints*190}),metadata:{redraws,paths:connectedCount(),open_cells:puzzle.openCount,blocked_cells:puzzle.blocked.length,size:puzzle.size,routes}};},destroy(){}
   };
 }
