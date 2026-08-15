@@ -3,7 +3,7 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS ranked_attempts (
   run_id TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL,
-  game TEXT NOT NULL CHECK (game IN ('maze','number-path','color-connect','lights-out','loop-puzzle')),
+  game TEXT NOT NULL,
   difficulty TEXT NOT NULL CHECK (difficulty IN ('easy','medium','hard')),
   mode TEXT NOT NULL CHECK (mode IN ('normal','daily')),
   seed TEXT NOT NULL,
