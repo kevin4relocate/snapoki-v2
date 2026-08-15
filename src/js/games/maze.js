@@ -3,9 +3,9 @@ import {rngFromSeed,shuffle,orthogonalNeighbors,rcOf,indexOf,scoreFromPerformanc
 const N=1,E=2,S=4,W=8;
 const OPPOSITE={[N]:S,[E]:W,[S]:N,[W]:E};
 const LEVEL={
-  easy:{size:11,candidates:22,randomActive:.02,rank:.08},
-  medium:{size:13,candidates:90,randomActive:.32,rank:.78},
-  hard:{size:15,candidates:240,randomActive:.72,rank:1}
+  easy:{size:16,candidates:22,randomActive:.02,rank:.08},
+  medium:{size:24,candidates:90,randomActive:.32,rank:.78},
+  hard:{size:32,candidates:240,randomActive:.72,rank:1}
 };
 function directionBetween(a,b,cols){const[ar,ac]=rcOf(a,cols),[br,bc]=rcOf(b,cols);if(br===ar-1&&bc===ac)return N;if(br===ar&&bc===ac+1)return E;if(br===ar+1&&bc===ac)return S;if(br===ar&&bc===ac-1)return W;return 0;}
 function generateCandidate(size,seed,randomActive=.02){const total=size*size,walls=new Uint8Array(total).fill(N|E|S|W),visited=new Uint8Array(total),rng=rngFromSeed(seed),active=[0];visited[0]=1;while(active.length){const chooseRandom=rng()<randomActive,index=chooseRandom?Math.floor(rng()*active.length):active.length-1,current=active[index],candidates=shuffle(orthogonalNeighbors(current,size,size).filter(n=>!visited[n]),rng);if(!candidates.length){active.splice(index,1);continue;}const next=candidates[0],dir=directionBetween(current,next,size);walls[current]&=~dir;walls[next]&=~OPPOSITE[dir];visited[next]=1;active.push(next);}return{size,walls:Array.from(walls),start:0,end:total-1,seed};}
