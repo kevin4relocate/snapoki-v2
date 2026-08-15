@@ -8,24 +8,24 @@ import {COLOR_CONNECT_REVIEW_SAMPLES,COLOR_CONNECT_REVIEW_BANDS,DEFAULT_COLOR_CO
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
-test('Color Connect calibration review exposes exactly the independent holdout sample set',()=>{
+test('Color Connect calibration review exposes exactly the production 11-color sample set',()=>{
   assert.equal(COLOR_CONNECT_REVIEW_SAMPLES.length,12);
-  assert.deepEqual(COLOR_CONNECT_REVIEW_BANDS,['75–80','80–85','85–90','90+']);
+  assert.deepEqual(COLOR_CONNECT_REVIEW_BANDS,['80–87','87–91','91–94','94+']);
   for(const band of COLOR_CONNECT_REVIEW_BANDS)assert.equal(COLOR_CONNECT_REVIEW_SAMPLES.filter(sample=>sample.band===band).length,3);
   for(const sample of COLOR_CONNECT_REVIEW_SAMPLES){
-    assert.match(sample.seed,/^color-v8-holdout-h1:hard:\d{4}$/);
-    assert.ok(sample.score>=75);
+    assert.match(sample.seed,/^color-v8-11-prod:h1:\d{3}$/);
+    assert.ok(sample.score>=80);
     assert.ok(Number.isFinite(sample.backtracks)&&Number.isFinite(sample.greedyTraps));
   }
 });
 
-test('review query only resolves approved samples and has a stable boundary default',()=>{
+test('review query only resolves approved 11-color samples and has a stable boundary default',()=>{
   const off=resolveColorConnectReview(new URLSearchParams('review=0'));
   assert.equal(off,null);
   const fallback=resolveColorConnectReview(new URLSearchParams('review=1&reviewSeed=not-approved'));
   assert.equal(fallback.seed,DEFAULT_COLOR_CONNECT_REVIEW_SEED);
-  assert.equal(fallback.score,82.4);
-  const chosen=COLOR_CONNECT_REVIEW_SAMPLES.find(sample=>sample.score===87.5);
+  assert.equal(fallback.score,85.5);
+  const chosen=COLOR_CONNECT_REVIEW_SAMPLES.find(sample=>sample.score===94.3);
   const resolved=resolveColorConnectReview(new URLSearchParams(`review=1&reviewSeed=${encodeURIComponent(chosen.seed)}`));
   assert.deepEqual(resolved,chosen);
   assert.match(colorConnectReviewUrl(chosen),/^\/color-connect\/\?review=1&reviewSeed=/);
