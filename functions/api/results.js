@@ -1,122 +1,22 @@
-import {error, json, methodNotAllowed, readJson} from '../_lib/http.js';
+import {error,json,methodNotAllowed,readJson} from '../_lib/http.js';
 import {requireSession} from '../_lib/auth.js';
-import {rankingPoints, validDifficulty, validGame, validMode} from '../_lib/games.js';
+import {rankingPoints,validDifficulty,validGame,validMode,difficultyMultiplier} from '../_lib/games.js';
 import {verifyAndScoreResult} from '../_lib/scoring.js';
-import {DAILY_COMPLETE_BONUS,adjustedRegularPoints,regularFarmMultiplier,anomalyAssessment,crossedMilestone,chooseSmartNext} from '../_lib/ranking-policy.js';
+import {DAILY_COMPLETE_BONUS,anomalyAssessment,crossedMilestone,chooseSmartNext,FRESH_PUZZLE_DAYS} from '../_lib/ranking-policy.js';
 
-async function rankSnapshot(env,userId,game){
-  const row=await env.DB.prepare(`
-    WITH totals AS (
-      SELECT user_id,COUNT(*) AS games,MAX(score) AS best,SUM(ranking_points) AS ranking_points
-      FROM results
-      WHERE game=? AND solution_used=0 AND ranking_points>0
-      GROUP BY user_id
-    ), ranked AS (
-      SELECT t.user_id,u.display_name,u.avatar_url,t.games,t.best,t.ranking_points,
-             ROW_NUMBER() OVER (ORDER BY t.ranking_points DESC,t.games DESC,t.best DESC,t.user_id ASC) AS position
-      FROM totals t JOIN users u ON u.id=t.user_id
-    ), me AS (SELECT * FROM ranked WHERE user_id=?)
-    SELECT me.position,me.ranking_points,me.best,me.games,
-           above.user_id AS above_user_id,above.display_name AS above_name,above.avatar_url AS above_avatar,
-           above.ranking_points AS above_points
-    FROM me LEFT JOIN ranked above ON above.position=me.position-1
-  `).bind(game,userId).first();
-  if(!row)return null;
-  const mine=Number(row.ranking_points||0),above=row.above_user_id?Number(row.above_points||0):null;
-  return{position:Number(row.position),ranking_points:mine,best:Number(row.best||0),games:Number(row.games||0),next_target:row.above_user_id?{user_id:Number(row.above_user_id),display_name:row.above_name||'Player',avatar_url:row.above_avatar||null,ranking_points:above,points_to_pass:Math.max(1,above-mine+1)}:null};
-}
-
-async function progressSnapshot(env,userId,game,playedDate){
-  const [dailyRows,masteryRows]=await Promise.all([
-    env.DB.prepare(`SELECT DISTINCT difficulty FROM results WHERE user_id=? AND game=? AND mode='daily' AND solution_used=0 AND ranking_points>0 AND played_date=?`).bind(userId,game,playedDate).all(),
-    env.DB.prepare(`SELECT difficulty,COUNT(*) AS games,COALESCE(MAX(score),0) AS best FROM results WHERE user_id=? AND game=? AND solution_used=0 AND ranking_points>0 GROUP BY difficulty`).bind(userId,game).all()
-  ]);
-  const mastery={easy:{games:0,best:0,complete:false},medium:{games:0,best:0,complete:false},hard:{games:0,best:0,complete:false}};
-  for(const row of masteryRows.results||[])if(mastery[row.difficulty])mastery[row.difficulty]={games:Number(row.games||0),best:Number(row.best||0),complete:Number(row.games||0)>0};
-  return{daily_completed:(dailyRows.results||[]).map(row=>row.difficulty),mastery};
-}
-
-async function awardDailyCompletionBonus(env,{userId,game,playedDate,resultId}){
-  const state=await env.DB.prepare(`
-    WITH firsts AS (
-      SELECT difficulty,MIN(id) AS first_id
-      FROM results
-      WHERE user_id=? AND game=? AND mode='daily' AND solution_used=0 AND ranking_points>0 AND played_date=?
-      GROUP BY difficulty
-    )
-    SELECT COUNT(*) AS completed,MAX(first_id) AS completion_id FROM firsts
-  `).bind(userId,game,playedDate).first();
-  if(Number(state?.completed)!==3||Number(state?.completion_id)!==Number(resultId))return 0;
-  await env.DB.prepare('UPDATE results SET ranking_points=ranking_points+? WHERE id=?').bind(DAILY_COMPLETE_BONUS,resultId).run();
-  return DAILY_COMPLETE_BONUS;
-}
-
-async function rewardContext(env,{userId,game,difficulty,mode,playedDate}){
-  const [sameDifficulty,recent]=await Promise.all([
-    env.DB.prepare(`SELECT COUNT(*) AS count FROM results WHERE user_id=? AND game=? AND difficulty=? AND mode=? AND played_date=? AND solution_used=0 AND ranking_points>0`).bind(userId,game,difficulty,mode,playedDate).first(),
-    env.DB.prepare(`SELECT COUNT(*) AS count FROM results WHERE user_id=? AND created_at>=datetime('now','-1 hour') AND solution_used=0 AND ranking_points>0`).bind(userId).first()
-  ]);
-  return{priorSame:Number(sameDifficulty?.count||0),recentHourly:Number(recent?.count||0)};
-}
-
-export async function onRequest({request, env}) {
-  if (request.method !== 'POST') return methodNotAllowed();
-  const origin=request.headers.get('origin');
-  if (request.headers.get('sec-fetch-site') === 'cross-site' || (origin && origin !== new URL(request.url).origin)) return error('Cross-site result submission is not allowed.', 403, 'CROSS_SITE_BLOCKED');
-
-  const session = await requireSession(request, env);
-  if (!session) return error('Sign in to save ranked results.', 401, 'AUTH_REQUIRED');
-  const body = await readJson(request);
-  if (!body) return error('Invalid JSON body.', 400, 'INVALID_BODY');
-
-  const runId = typeof body.run_id === 'string' ? body.run_id.trim() : '';
-  if (runId.length < 20 || runId.length > 180) return error('Invalid run id.', 400, 'INVALID_RUN_ID');
-  if (!validGame(body.game)) return error('Invalid game.', 400, 'INVALID_GAME');
-  if (!validDifficulty(body.difficulty)) return error('Invalid difficulty.', 400, 'INVALID_DIFFICULTY');
-  if (!validMode(body.mode)) return error('Invalid mode.', 400, 'INVALID_MODE');
-  if (body.solution_used) return json({eligible:false, ranking_points:0, reason:'practice'});
-
-  try {
-    const existing = await env.DB.prepare('SELECT id,user_id,score,ranking_points FROM results WHERE run_id=? LIMIT 1').bind(runId).first();
-    if(existing){
-      if(Number(existing.user_id)!==Number(session.user.id))return error('Run id is already in use.',409,'RUN_ID_CONFLICT');
-      const snapshot=await rankSnapshot(env,session.user.id,body.game),playedDate=new Date().toISOString().slice(0,10),progress=await progressSnapshot(env,session.user.id,body.game,playedDate);
-      return json({eligible:true,duplicate:true,id:existing.id,score:existing.score,ranking_points:existing.ranking_points,rank_after:snapshot?.position||null,best_score:snapshot?.best||Number(existing.score),next_target:snapshot?.next_target||null,...progress});
-    }
-
-    const attempt=await env.DB.prepare(`SELECT run_id,user_id,game,difficulty,mode,seed,started_at,expires_at,consumed_at FROM ranked_attempts WHERE run_id=? AND user_id=? LIMIT 1`).bind(runId,session.user.id).first();
-    if(!attempt)return error('This ranked attempt was not issued to this account.',409,'ATTEMPT_NOT_FOUND');
-    if(attempt.consumed_at)return error('This ranked attempt has already been used.',409,'ATTEMPT_CONSUMED');
-    if(Date.parse(attempt.expires_at)<=Date.now())return error('This ranked attempt has expired.',410,'ATTEMPT_EXPIRED');
-    if(attempt.game!==body.game||attempt.difficulty!==body.difficulty||attempt.mode!==body.mode)return error('Ranked attempt details do not match.',409,'ATTEMPT_MISMATCH');
-    if(!body.metadata||body.metadata.seed!==attempt.seed)return error('Puzzle seed does not match this ranked attempt.',409,'ATTEMPT_SEED_MISMATCH');
-
-    const before=await rankSnapshot(env,session.user.id,body.game),previousBest=Number(before?.best||0),playedDate=new Date().toISOString().slice(0,10);
-    const serverTimeMs=Math.max(1000,Date.now()-Date.parse(attempt.started_at));
-    const verified=verifyAndScoreResult({game:body.game,difficulty:body.difficulty,mode:body.mode,time_ms:serverTimeMs,hints_used:body.hints_used,metadata:body.metadata});
-    if(!verified.ok)return error('This result could not be verified as a valid ranked finish.',422,verified.reason||'RESULT_NOT_VERIFIED');
-
-    const score=verified.score,timeMs=verified.timeMs,hints=verified.hints,basePoints=rankingPoints({difficulty:body.difficulty,mode:body.mode,score,hints});
-    const context=await rewardContext(env,{userId:session.user.id,game:body.game,difficulty:body.difficulty,mode:body.mode,playedDate});
-    const anomaly=anomalyAssessment({game:body.game,difficulty:body.difficulty,timeMs,score,recentHourlyFinishes:context.recentHourly});
-    const repeatDaily=body.mode==='daily'&&context.priorSame>0;
-    const farmMultiplier=body.mode==='normal'?regularFarmMultiplier(body.difficulty,context.priorSame):1;
-    let points=body.mode==='normal'?adjustedRegularPoints(basePoints,body.difficulty,context.priorSame):repeatDaily?0:basePoints;
-    if(anomaly.suspicious)points=0;
-
-    const policy={repeat_daily:repeatDaily,farm_multiplier:farmMultiplier,anomaly_risk:anomaly.risk,anomaly_reasons:anomaly.reasons,ranking_excluded:anomaly.suspicious};
-    const metadata=JSON.stringify({...verified.metadata,seed:attempt.seed,ranking_policy:policy}).slice(0,8000),consumedAt=new Date().toISOString();
-    const insert=env.DB.prepare(`INSERT INTO results (run_id,user_id,game,difficulty,mode,score,ranking_points,time_ms,hints_used,solution_used,played_date,metadata_json) VALUES (?,?,?,?,?,?,?,?,?,0,?,?)`).bind(runId,session.user.id,body.game,body.difficulty,body.mode,score,points,timeMs,hints,playedDate,metadata);
-    const consume=env.DB.prepare(`UPDATE ranked_attempts SET consumed_at=? WHERE run_id=? AND user_id=? AND consumed_at IS NULL`).bind(consumedAt,runId,session.user.id);
-    const [saved]=await env.DB.batch([insert,consume]),resultId=Number(saved?.meta?.last_row_id||0);
-
-    const dailyBonus=body.mode==='daily'&&resultId&&points>0&&!anomaly.suspicious?await awardDailyCompletionBonus(env,{userId:session.user.id,game:body.game,playedDate,resultId}):0;
-    points+=dailyBonus;
-    const after=await rankSnapshot(env,session.user.id,body.game),bestScore=Number(after?.best||score),progress=await progressSnapshot(env,session.user.id,body.game,playedDate),milestone=crossedMilestone(before?.position,after?.position);
-    const smartNext=chooseSmartNext({mode:body.mode,difficulty:body.difficulty,dailyCompleted:progress.daily_completed,mastery:progress.mastery,nextTarget:after?.next_target||null,bestScore,currentScore:score,rankAfter:after?.position||null});
-    return json({eligible:!anomaly.suspicious,duplicate:false,id:resultId||null,score,ranking_points:points,base_ranking_points:basePoints,daily_complete_bonus:dailyBonus,verified:true,time_ms:timeMs,previous_best:previousBest,best_score:bestScore,new_personal_best:points>0&&score>previousBest,rank_before:before?.position||null,rank_after:after?.position||null,rank_change:before?.position&&after?.position?Number(before.position)-Number(after.position):0,next_target:after?.next_target||null,milestone,smart_next:smartNext,repeat_daily:repeatDaily,farm_multiplier:farmMultiplier,ranking_excluded:anomaly.suspicious,anomaly_risk:anomaly.risk,...progress});
-  } catch (exception) {
-    console.error('Result save failed', exception);
-    return error('Ranked result could not be saved right now.', 500, 'RESULT_SAVE_FAILED');
-  }
+async function rankSnapshot(env,userId,game){const row=await env.DB.prepare(`WITH totals AS (SELECT user_id,COUNT(*) AS games,MAX(score) AS best,SUM(ranking_points) AS ranking_points FROM results WHERE game=? AND solution_used=0 AND ranking_points>0 GROUP BY user_id), ranked AS (SELECT t.user_id,u.display_name,u.avatar_url,t.games,t.best,t.ranking_points,ROW_NUMBER() OVER (ORDER BY t.ranking_points DESC,t.games DESC,t.best DESC,t.user_id ASC) AS position FROM totals t JOIN users u ON u.id=t.user_id), me AS (SELECT * FROM ranked WHERE user_id=?) SELECT me.position,me.ranking_points,me.best,me.games,above.user_id AS above_user_id,above.display_name AS above_name,above.avatar_url AS above_avatar,above.ranking_points AS above_points FROM me LEFT JOIN ranked above ON above.position=me.position-1`).bind(game,userId).first();if(!row)return null;const mine=Number(row.ranking_points||0),above=row.above_user_id?Number(row.above_points||0):null;return{position:Number(row.position),ranking_points:mine,best:Number(row.best||0),games:Number(row.games||0),next_target:row.above_user_id?{user_id:Number(row.above_user_id),display_name:row.above_name||'Player',avatar_url:row.above_avatar||null,ranking_points:above,points_to_pass:Math.max(1,above-mine+1)}:null};}
+async function progressSnapshot(env,userId,game,playedDate){const[dailyRows,masteryRows]=await Promise.all([env.DB.prepare(`SELECT DISTINCT difficulty FROM results WHERE user_id=? AND game=? AND mode='daily' AND solution_used=0 AND ranking_points>0 AND played_date=?`).bind(userId,game,playedDate).all(),env.DB.prepare(`SELECT difficulty,COUNT(*) AS games,COALESCE(MAX(score),0) AS best FROM results WHERE user_id=? AND game=? AND solution_used=0 AND ranking_points>0 GROUP BY difficulty`).bind(userId,game).all()]);const mastery={easy:{games:0,best:0,complete:false},medium:{games:0,best:0,complete:false},hard:{games:0,best:0,complete:false}};for(const row of masteryRows.results||[])if(mastery[row.difficulty])mastery[row.difficulty]={games:Number(row.games||0),best:Number(row.best||0),complete:Number(row.games||0)>0};return{daily_completed:(dailyRows.results||[]).map(row=>row.difficulty),mastery};}
+async function awardDailyCompletionBonus(env,{userId,game,playedDate,resultId}){const state=await env.DB.prepare(`WITH firsts AS (SELECT difficulty,MIN(id) AS first_id FROM results WHERE user_id=? AND game=? AND mode='daily' AND solution_used=0 AND ranking_points>0 AND played_date=? GROUP BY difficulty) SELECT COUNT(*) AS completed,MAX(first_id) AS completion_id FROM firsts`).bind(userId,game,playedDate).first();if(Number(state?.completed)!==3||Number(state?.completion_id)!==Number(resultId))return 0;await env.DB.prepare('UPDATE results SET ranking_points=ranking_points+? WHERE id=?').bind(DAILY_COMPLETE_BONUS,resultId).run();return DAILY_COMPLETE_BONUS;}
+async function rewardContext(env,{userId,game,difficulty,mode,playedDate,seed}){const queries=[env.DB.prepare(`SELECT COUNT(*) AS count FROM results WHERE user_id=? AND game=? AND difficulty=? AND mode=? AND played_date=? AND solution_used=0 AND ranking_points>0`).bind(userId,game,difficulty,mode,playedDate),env.DB.prepare(`SELECT COUNT(*) AS count FROM results WHERE user_id=? AND created_at>=datetime('now','-1 hour') AND solution_used=0 AND ranking_points>0`).bind(userId)];if(mode==='normal')queries.push(env.DB.prepare(`SELECT COUNT(*) AS count FROM results r JOIN ranked_attempts a ON a.run_id=r.run_id WHERE r.user_id=? AND a.game=? AND a.difficulty=? AND a.mode='normal' AND a.seed=? AND r.solution_used=0 AND r.ranking_points>0 AND datetime(r.created_at)>=datetime('now',?)`).bind(userId,game,difficulty,seed,`-${FRESH_PUZZLE_DAYS} days`));const rows=await Promise.all(queries.map(q=>q.first()));return{priorSame:Number(rows[0]?.count||0),recentHourly:Number(rows[1]?.count||0),recentSeedRanked:Number(rows[2]?.count||0)>0};}
+export async function onRequest({request,env}){
+  if(request.method!=='POST')return methodNotAllowed();const origin=request.headers.get('origin');if(request.headers.get('sec-fetch-site')==='cross-site'||(origin&&origin!==new URL(request.url).origin))return error('Cross-site result submission is not allowed.',403,'CROSS_SITE_BLOCKED');const session=await requireSession(request,env);if(!session)return error('Sign in to save ranked results.',401,'AUTH_REQUIRED');const body=await readJson(request);if(!body)return error('Invalid JSON body.',400,'INVALID_BODY');const runId=typeof body.run_id==='string'?body.run_id.trim():'';if(runId.length<20||runId.length>180)return error('Invalid run id.',400,'INVALID_RUN_ID');if(!validGame(body.game))return error('Invalid game.',400,'INVALID_GAME');if(!validDifficulty(body.difficulty))return error('Invalid difficulty.',400,'INVALID_DIFFICULTY');if(!validMode(body.mode))return error('Invalid mode.',400,'INVALID_MODE');if(body.solution_used)return json({eligible:false,ranking_points:0,reason:'practice'});
+  try{
+    const existing=await env.DB.prepare('SELECT id,user_id,score,ranking_points,solution_used FROM results WHERE run_id=? LIMIT 1').bind(runId).first();if(existing){if(Number(existing.user_id)!==Number(session.user.id))return error('Run id is already in use.',409,'RUN_ID_CONFLICT');if(Number(existing.solution_used)===1)return json({eligible:false,duplicate:true,ranking_points:0,reason:'practice'});const snapshot=await rankSnapshot(env,session.user.id,body.game),playedDate=new Date().toISOString().slice(0,10),progress=await progressSnapshot(env,session.user.id,body.game,playedDate);return json({eligible:Number(existing.ranking_points)>0,duplicate:true,id:existing.id,score:existing.score,ranking_points:existing.ranking_points,rank_after:snapshot?.position||null,best_score:snapshot?.best||Number(existing.score),next_target:snapshot?.next_target||null,...progress});}
+    const attempt=await env.DB.prepare(`SELECT run_id,user_id,game,difficulty,mode,seed,started_at,expires_at,consumed_at FROM ranked_attempts WHERE run_id=? AND user_id=? LIMIT 1`).bind(runId,session.user.id).first();if(!attempt)return error('This ranked attempt was not issued to this account.',409,'ATTEMPT_NOT_FOUND');if(attempt.consumed_at)return error('This ranked attempt has already been used.',409,'ATTEMPT_CONSUMED');if(Date.parse(attempt.expires_at)<=Date.now())return error('This ranked attempt has expired.',410,'ATTEMPT_EXPIRED');if(attempt.game!==body.game||attempt.difficulty!==body.difficulty||attempt.mode!==body.mode)return error('Ranked attempt details do not match.',409,'ATTEMPT_MISMATCH');if(!body.metadata||body.metadata.seed!==attempt.seed)return error('Puzzle seed does not match this ranked attempt.',409,'ATTEMPT_SEED_MISMATCH');
+    const before=await rankSnapshot(env,session.user.id,body.game),previousBest=Number(before?.best||0),playedDate=new Date().toISOString().slice(0,10),serverTimeMs=Math.max(1000,Date.now()-Date.parse(attempt.started_at)),verified=verifyAndScoreResult({game:body.game,difficulty:body.difficulty,mode:body.mode,time_ms:serverTimeMs,hints_used:body.hints_used,metadata:body.metadata});if(!verified.ok)return error('This result could not be verified as a valid ranked finish.',422,verified.reason||'RESULT_NOT_VERIFIED');
+    const score=verified.score,timeMs=verified.timeMs,hints=verified.hints,basePoints=rankingPoints({difficulty:body.difficulty,mode:body.mode,score,hints}),context=await rewardContext(env,{userId:session.user.id,game:body.game,difficulty:body.difficulty,mode:body.mode,playedDate,seed:attempt.seed}),anomaly=anomalyAssessment({game:body.game,difficulty:body.difficulty,timeMs,score,recentHourlyFinishes:context.recentHourly}),repeatDaily=body.mode==='daily'&&context.priorSame>0,replayRegular=body.mode==='normal'&&context.recentSeedRanked;let points=repeatDaily||replayRegular?0:basePoints;if(anomaly.suspicious)points=0;
+    const policy={repeat_daily:repeatDaily,replay_regular:replayRegular,reward_multiplier:difficultyMultiplier(body.difficulty),anomaly_risk:anomaly.risk,anomaly_reasons:anomaly.reasons,ranking_excluded:anomaly.suspicious},metadata=JSON.stringify({...verified.metadata,seed:attempt.seed,ranking_policy:policy}).slice(0,8000),consumedAt=new Date().toISOString(),insert=env.DB.prepare(`INSERT INTO results (run_id,user_id,game,difficulty,mode,score,ranking_points,time_ms,hints_used,solution_used,played_date,metadata_json) VALUES (?,?,?,?,?,?,?,?,?,0,?,?)`).bind(runId,session.user.id,body.game,body.difficulty,body.mode,score,points,timeMs,hints,playedDate,metadata),consume=env.DB.prepare(`UPDATE ranked_attempts SET consumed_at=? WHERE run_id=? AND user_id=? AND consumed_at IS NULL`).bind(consumedAt,runId,session.user.id),[saved]=await env.DB.batch([insert,consume]),resultId=Number(saved?.meta?.last_row_id||0);
+    const dailyBonus=body.mode==='daily'&&resultId&&points>0&&!anomaly.suspicious?await awardDailyCompletionBonus(env,{userId:session.user.id,game:body.game,playedDate,resultId}):0;points+=dailyBonus;const after=await rankSnapshot(env,session.user.id,body.game),bestScore=Number(after?.best||score),progress=await progressSnapshot(env,session.user.id,body.game,playedDate),milestone=crossedMilestone(before?.position,after?.position),smartNext=chooseSmartNext({mode:body.mode,difficulty:body.difficulty,dailyCompleted:progress.daily_completed,mastery:progress.mastery,nextTarget:after?.next_target||null,bestScore,currentScore:score,rankAfter:after?.position||null});
+    return json({eligible:points>0&&!anomaly.suspicious,duplicate:false,id:resultId||null,score,ranking_points:points,base_ranking_points:basePoints,reward_multiplier:difficultyMultiplier(body.difficulty),daily_complete_bonus:dailyBonus,verified:true,time_ms:timeMs,previous_best:previousBest,best_score:bestScore,new_personal_best:points>0&&score>previousBest,rank_before:before?.position||null,rank_after:after?.position||null,rank_change:before?.position&&after?.position?Number(before.position)-Number(after.position):0,next_target:after?.next_target||null,milestone,smart_next:smartNext,repeat_daily:repeatDaily,replay_regular:replayRegular,ranking_excluded:anomaly.suspicious,anomaly_risk:anomaly.risk,...progress});
+  }catch(exception){console.error('Result save failed',exception);return error('Ranked result could not be saved right now.',500,'RESULT_SAVE_FAILED');}
 }

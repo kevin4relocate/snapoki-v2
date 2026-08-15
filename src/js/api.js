@@ -1,35 +1,5 @@
-export class ApiError extends Error {
-  constructor(message, status = 0, code = '') {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.code = code;
-  }
-}
-
-export async function api(path, options = {}) {
-  const response = await fetch(path, {
-    credentials: 'same-origin',
-    cache: 'no-store',
-    ...options,
-    headers: {
-      ...(options.body ? {'content-type': 'application/json'} : {}),
-      ...(options.headers || {})
-    }
-  });
-  const type = response.headers.get('content-type') || '';
-  const data = type.includes('application/json') ? await response.json().catch(() => ({})) : {};
-  if (!response.ok) {
-    throw new ApiError(data.error || 'Something went wrong. Please try again.', response.status, data.code || '');
-  }
-  return data;
-}
-
-export function post(path, body = {}) {
-  return api(path, {method: 'POST', body: JSON.stringify(body)});
-}
-
-export function makeRunId(game) {
-  const random = crypto.getRandomValues(new Uint32Array(4));
-  return `${game}-${Date.now().toString(36)}-${Array.from(random, n => n.toString(36)).join('')}`;
-}
+if(typeof document!=='undefined'&&!document.querySelector('link[data-snapoki-platform-v2]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/assets/styles/platform-v2.css';link.dataset.snapokiPlatformV2='1';document.head.appendChild(link);}
+export class ApiError extends Error {constructor(message,status=0,code=''){super(message);this.name='ApiError';this.status=status;this.code=code;}}
+export async function api(path,options={}){const response=await fetch(path,{credentials:'same-origin',cache:'no-store',...options,headers:{...(options.body?{'content-type':'application/json'}:{}),...(options.headers||{})}}),type=response.headers.get('content-type')||'',data=type.includes('application/json')?await response.json().catch(()=>({})):{};if(!response.ok)throw new ApiError(data.error||'Something went wrong. Please try again.',response.status,data.code||'');return data;}
+export function post(path,body={}){return api(path,{method:'POST',body:JSON.stringify(body)});}export function makeRunId(game){const random=crypto.getRandomValues(new Uint32Array(4));return `${game}-${Date.now().toString(36)}-${Array.from(random,n=>n.toString(36)).join('')}`;}
+const ATTEMPT_PREFIX='snapoki:ranked-attempt:v2:',attemptInflight=new Map();export function attemptCacheKey(game,difficulty='easy',mode='normal'){return `${ATTEMPT_PREFIX}${game}:${difficulty}:${mode}`;}export function cacheRankedAttempt(game,difficulty,mode,attempt){if(!attempt?.run_id||!attempt?.seed||attempt.ranked===false)return attempt;try{sessionStorage.setItem(attemptCacheKey(game,difficulty,mode),JSON.stringify(attempt));}catch{}return attempt;}export function peekRankedAttempt(game,difficulty='easy',mode='normal'){try{const raw=sessionStorage.getItem(attemptCacheKey(game,difficulty,mode));if(!raw)return null;const data=JSON.parse(raw),expiry=Date.parse(data?.expires_at||'');if(!data?.run_id||!data?.seed||!Number.isFinite(expiry)||expiry-Date.now()<8000){sessionStorage.removeItem(attemptCacheKey(game,difficulty,mode));return null;}return data;}catch{return null;}}export function consumeRankedAttempt(game,difficulty='easy',mode='normal'){const data=peekRankedAttempt(game,difficulty,mode);if(!data)return null;try{sessionStorage.removeItem(attemptCacheKey(game,difficulty,mode));}catch{}return data;}export async function prefetchRankedAttempt(game,difficulty='easy',mode='normal'){const cached=peekRankedAttempt(game,difficulty,mode);if(cached)return cached;const key=attemptCacheKey(game,difficulty,mode);if(attemptInflight.has(key))return attemptInflight.get(key);const promise=post('/api/runs/start',{game,difficulty,mode}).then(data=>cacheRankedAttempt(game,difficulty,mode,data)).finally(()=>attemptInflight.delete(key));attemptInflight.set(key,promise);return promise;}
