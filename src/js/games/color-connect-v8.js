@@ -16,11 +16,11 @@ import {colorConnectDifficultyScore,colorConnectSolverInvariant} from './color-c
 const LEVEL={
   easy:{size:6,colors:4,blockedRuns:[],candidates:12,maxCandidates:16,pathFlips:44,weaveAttempts:14,minRoute:5,splitAttempts:1,shortlist:3,variants:6,variantSlack:4,nodeLimit:700,solutionLimit:2},
   medium:{size:9,colors:7,blockedRuns:[4,3,3,2,2,1,1],candidates:14,maxCandidates:24,pathFlips:84,weaveAttempts:25,minRoute:5,splitAttempts:6,shortlist:4,variants:9,variantSlack:7,nodeLimit:2200,solutionLimit:2},
-  hard:{size:12,colors:10,blockedRuns:[7,5,5,4,4,3,3,2,2,1],candidates:16,maxCandidates:30,pathFlips:128,weaveAttempts:38,minRoute:6,splitAttempts:8,shortlist:5,variants:12,variantSlack:11,nodeLimit:5200,solutionLimit:2}
+  hard:{size:12,colors:11,blockedRuns:[7,5,5,4,4,3,3,2,2,1],candidates:16,maxCandidates:40,pathFlips:128,weaveAttempts:38,minRoute:6,splitAttempts:8,shortlist:6,variants:12,variantSlack:11,nodeLimit:8000,solutionLimit:2}
 };
 
-const COLORS=['#ff5d8f','#52d273','#5ca8ff','#ffb347','#b879ff','#39d0d8','#ff7c54','#e7e25a','#8b9cff','#f0a3ff'];
-const NAMES=['pink','green','blue','orange','purple','cyan','coral','yellow','indigo','orchid'];
+const COLORS=['#ff5d8f','#52d273','#5ca8ff','#ffb347','#b879ff','#39d0d8','#ff7c54','#e7e25a','#8b9cff','#f0a3ff','#f7f7f2'];
+const NAMES=['pink','green','blue','orange','purple','cyan','coral','yellow','indigo','orchid','ivory'];
 
 function clusterStats(blocked,size){
   const set=new Set(blocked),seen=new Set(),sizes=[];
@@ -188,7 +188,7 @@ function interactionStats(segments,size,blocked){
 function cheapGate(difficulty,q){
   if(difficulty==='easy')return q.straightRoutes<=1&&q.avgTurns>=1.6;
   if(difficulty==='medium')return q.routeGraphComponents===1&&q.mixedZones>=5&&q.avgRouteZones>=2.4&&q.avgTurns>=2.5&&q.straightRoutes<=1&&q.blocks.quadrants>=3&&q.blocks.rowSpread>=6&&q.blocks.colSpread>=6&&q.blocks.largestCluster<=9;
-  return q.routeGraphComponents===1&&q.mixedZones>=7&&q.hotZones>=4&&q.avgRouteZones>=2.7&&q.avgTurns>=3&&q.straightRoutes<=1&&q.competitiveRoutes>=8&&q.boxOverlapPairs>=7&&q.endpointNearPairs>=10&&q.blocks.quadrants===4&&q.blocks.rowSpread>=9&&q.blocks.colSpread>=9&&q.blocks.largestCluster<=12;
+  return q.routeGraphComponents===1&&q.mixedZones>=7&&q.hotZones>=3&&q.avgRouteZones>=2.4&&q.straightRoutes<=1&&q.competitiveRoutes>=8&&q.blocks.quadrants===4&&q.blocks.rowSpread>=9&&q.blocks.colSpread>=9&&q.blocks.largestCluster<=12;
 }
 
 function cheapScore(q,weaves){
