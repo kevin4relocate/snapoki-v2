@@ -1,24 +1,170 @@
-import {deterministicHamiltonianPath,blockedLayoutStats,openRegionStats,rngFromSeed,shuffle,areAdjacent,directionLabel,scoreFromPerformance,scoreTimeDivisor,orthogonalNeighbors} from './utils.js';
+import {deterministicHamiltonianPath,blockedLayoutStats,openRegionStats,rngFromSeed,areAdjacent,directionLabel,scoreFromPerformance,scoreTimeDivisor,orthogonalNeighbors} from './utils.js';
 
 const LEVEL={
   easy:{size:6,blockedCount:0,clueCount:8,candidates:16,flips:18},
-  medium:{size:8,blockedCount:14,clueCount:7,candidates:28,flips:20},
-  hard:{size:10,blockedCount:34,clueCount:6,candidates:40,flips:28}
+  medium:{size:8,blockedCount:14,clueCount:7,candidates:64,flips:0},
+  hard:{size:10,blockedCount:34,clueCount:6,candidates:72,flips:0}
 };
-function blockClusterStats(blocked,size){const set=new Set(blocked),seen=new Set(),sizes=[];for(const index of set){if(seen.has(index))continue;let count=0,queue=[index];seen.add(index);while(queue.length){const current=queue.shift();count++;for(const next of orthogonalNeighbors(current,size,size))if(set.has(next)&&!seen.has(next)){seen.add(next);queue.push(next);}}sizes.push(count);}sizes.sort((a,b)=>b-a);return{clusterCount:sizes.length,clusterSizes:sizes,majorClusters:sizes.filter(value=>value>=3).length};}
-function pathShape(path,size){let longestStraight=0,straight=0,last='';for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],ar=Math.floor(a/size),ac=a%size,br=Math.floor(b/size),bc=b%size,dir=br<ar?'u':br>ar?'d':bc<ac?'l':'r';straight=last===dir?straight+1:1;longestStraight=Math.max(longestStraight,straight);last=dir;}return{longestStraight};}
-function transformIndex(index,size,mode){const r=Math.floor(index/size),c=index%size;let nr=r,nc=c;if(mode===1){nr=c;nc=size-1-r;}else if(mode===2){nr=size-1-r;nc=size-1-c;}else if(mode===3){nr=size-1-c;nc=r;}else if(mode===4){nr=r;nc=size-1-c;}else if(mode===5){nr=size-1-r;nc=c;}else if(mode===6){nr=c;nc=r;}else if(mode===7){nr=size-1-c;nc=size-1-r;}return nr*size+nc;}
-function randomizeHamiltonianPath(base,size,seed,flips){const rng=rngFromSeed(`${seed}:route-flips`),path=[...base];for(let round=0;round<flips;round++){const options=[];for(let i=0;i<path.length-3;i++){for(let j=i+2;j<path.length-1;j++){if(areAdjacent(path[i],path[j])&&areAdjacent(path[i+1],path[j+1]))options.push([i,j]);}}if(!options.length)break;const[i,j]=options[Math.floor(rng()*options.length)],middle=path.slice(i+1,j+1).reverse();path.splice(i+1,middle.length,...middle);}return path;}
-function segmentOptions(size){const out=[];for(let r=0;r<size;r+=2)out.push({side:'right',rows:[r,r+1]});for(let r=3;r<size-2;r+=2)out.push({side:'left',rows:[r,r+1]});return out.filter(item=>item.rows[1]<size);}
-function applySegment(left,right,segment,depth){for(const row of segment.rows)(segment.side==='left'?left:right)[row]=depth;}
-function tacticalCuts(size,blockedCount,difficulty,seed,index){const rng=rngFromSeed(`${seed}:cuts:${index}`),left=Array(size).fill(0),right=Array(size).fill(0);left[0]=1;left[size-1]=1;const units=(blockedCount-2)/2,activeCount=difficulty==='hard'?5:3,minDepth=2,maxDepth=difficulty==='hard'?4:2,options=segmentOptions(size);for(let attempt=0;attempt<32;attempt++){left.fill(0);right.fill(0);left[0]=1;left[size-1]=1;const picked=shuffle(options,rng).slice(0,activeCount);if(!picked.some(x=>x.side==='left')||!picked.some(x=>x.side==='right'))continue;const depths=Array(activeCount).fill(minDepth);let remaining=units-minDepth*activeCount;while(remaining>0){const available=depths.map((depth,i)=>depth<maxDepth?i:-1).filter(i=>i>=0);if(!available.length)break;const pick=available[Math.floor(rng()*available.length)];depths[pick]++;remaining--;}if(remaining>0)continue;picked.forEach((segment,i)=>applySegment(left,right,segment,depths[i]));if(left.some((value,row)=>value+right[row]>size-4))continue;const path=[],blocked=[];for(let row=0;row<size;row++){const cols=[];for(let col=left[row];col<size-right[row];col++)cols.push(col);if(row%2)cols.reverse();for(const col of cols)path.push(row*size+col);for(let col=0;col<left[row];col++)blocked.push(row*size+col);for(let col=size-right[row];col<size;col++)blocked.push(row*size+col);}if(blocked.length!==blockedCount)continue;if(path.some((node,i)=>i>0&&!areAdjacent(path[i-1],node,size)))continue;const mode=Math.floor(rng()*8);return{path:path.map(node=>transformIndex(node,size,mode)),blocked:blocked.map(node=>transformIndex(node,size,mode))};}return null;}
-function fallbackTactical(size,blockedCount,difficulty,seed){const left=Array(size).fill(0),right=Array(size).fill(0);left[0]=1;left[size-1]=1;if(difficulty==='medium'){right[0]=right[1]=2;left[3]=left[4]=2;right[6]=right[7]=2;}else{right[0]=right[1]=4;left[3]=left[4]=3;right[4]=right[5]=3;left[5]=left[6]=3;right[8]=right[9]=3;}const path=[],blocked=[];for(let row=0;row<size;row++){const cols=[];for(let col=left[row];col<size-right[row];col++)cols.push(col);if(row%2)cols.reverse();for(const col of cols)path.push(row*size+col);for(let col=0;col<left[row];col++)blocked.push(row*size+col);for(let col=size-right[row];col<size;col++)blocked.push(row*size+col);}const mode=Math.floor(rngFromSeed(`${seed}:fallback`)()*8);return{path:path.map(node=>transformIndex(node,size,mode)),blocked:blocked.map(node=>transformIndex(node,size,mode))};}
-function layoutGate(blocks,clusters,blockedCount,difficulty){if(!blockedCount)return true;if(difficulty==='medium')return blocks.largestCluster<=Math.max(6,Math.ceil(blockedCount*.50))&&blocks.quadrants>=3&&blocks.rowSpread>=4&&blocks.colSpread>=4&&blocks.isolated>=2&&clusters.clusterCount>=5&&clusters.majorClusters>=2;return blocks.largestCluster<=Math.max(12,Math.ceil(blockedCount*.45))&&blocks.quadrants>=4&&blocks.rowSpread>=6&&blocks.colSpread>=6&&blocks.isolated>=2&&clusters.clusterCount>=5&&clusters.majorClusters>=3;}
-function assessCandidate(cfg,solution,blocked,difficulty){const blocks=blockedLayoutStats(blocked,cfg.size),clusters=blockClusterStats(blocked,cfg.size),graph=openRegionStats(solution,cfg.size,solution),shape=pathShape(solution,cfg.size),layoutValid=layoutGate(blocks,clusters,blocked.length,difficulty),score=graph.ambiguousSteps*20+graph.branchCells*9+graph.chokepoints*12+graph.turns*5+blocks.quadrants*26+(blocks.rowSpread+blocks.colSpread)*7+blocks.isolated*95+clusters.clusterCount*48+clusters.majorClusters*75-blocks.largestCluster*26-blocks.adjacentPairs*3-shape.longestStraight*18-(layoutValid?0:12000);return{solution,blocked,openCount:solution.length,quality:{...graph,...shape,blocks,clusters,layoutValid,score}};}
-function candidateFor(cfg,seed,index,difficulty){if(difficulty==='easy'){const base=deterministicHamiltonianPath(cfg.size,`${seed}:easy:${index}`),solution=randomizeHamiltonianPath(base,cfg.size,`${seed}:easy:${index}`,cfg.flips);return assessCandidate(cfg,solution,[],difficulty);}const layout=tacticalCuts(cfg.size,cfg.blockedCount,difficulty,seed,index)||fallbackTactical(cfg.size,cfg.blockedCount,difficulty,`${seed}:${index}`),solution=randomizeHamiltonianPath(layout.path,cfg.size,`${seed}:candidate:${index}`,cfg.flips);return assessCandidate(cfg,solution,layout.blocked,difficulty);}
-function chooseClues(solution,count,seed){const rng=rngFromSeed(`${seed}:clues:v4`),last=solution.length-1,positions=[0];for(let i=1;i<count-1;i++){const ideal=Math.round(i*last/(count-1)),window=Math.max(1,Math.floor(last/(count-1)*.30)),min=positions.at(-1)+2,max=Math.max(min,Math.min(last-(count-1-i)*2,ideal+window)),low=Math.min(max,Math.max(min,ideal-window)),pos=Math.max(min,Math.min(max,low+Math.floor(rng()*(max-low+1))));positions.push(pos);}positions.push(last);return positions.map(position=>({index:solution[position],label:position+1,position}));}
+
+function blockClusterStats(blocked,size){
+  const set=new Set(blocked),seen=new Set(),sizes=[];
+  for(const index of set){
+    if(seen.has(index))continue;
+    let count=0,queue=[index];seen.add(index);
+    while(queue.length){
+      const current=queue.shift();count++;
+      for(const next of orthogonalNeighbors(current,size,size))if(set.has(next)&&!seen.has(next)){seen.add(next);queue.push(next);}
+    }
+    sizes.push(count);
+  }
+  sizes.sort((a,b)=>b-a);
+  return{
+    clusterCount:sizes.length,
+    clusterSizes:sizes,
+    majorClusters:sizes.filter(value=>value>=3).length,
+    tacticalGroups:sizes.filter(value=>value>=2&&value<=6).length,
+    singles:sizes.filter(value=>value===1).length,
+    dominoes:sizes.filter(value=>value===2).length
+  };
+}
+
+function directionCode(a,b,size){
+  const ar=Math.floor(a/size),ac=a%size,br=Math.floor(b/size),bc=b%size;
+  return br<ar?'u':br>ar?'d':bc<ac?'l':'r';
+}
+
+function pathShape(path,size){
+  let longestStraight=0,straight=0,last='',runs=[];
+  for(let i=1;i<path.length;i++){
+    const dir=directionCode(path[i-1],path[i],size);
+    if(last===dir)straight++;
+    else{if(straight)runs.push(straight);straight=1;last=dir;}
+    longestStraight=Math.max(longestStraight,straight);
+  }
+  if(straight)runs.push(straight);
+  return{
+    longestStraight,
+    straightRuns:runs.length,
+    shortRuns:runs.filter(value=>value<=2).length,
+    avgStraight:runs.length?runs.reduce((a,b)=>a+b,0)/runs.length:0
+  };
+}
+
+function randomizeHamiltonianPath(base,size,seed,flips){
+  const rng=rngFromSeed(`${seed}:route-flips`),path=[...base];
+  for(let round=0;round<flips;round++){
+    const options=[];
+    for(let i=0;i<path.length-3;i++)for(let j=i+2;j<path.length-1;j++)if(areAdjacent(path[i],path[j],size)&&areAdjacent(path[i+1],path[j+1],size))options.push([i,j]);
+    if(!options.length)break;
+    const[i,j]=options[Math.floor(rng()*options.length)],middle=path.slice(i+1,j+1).reverse();
+    path.splice(i+1,middle.length,...middle);
+  }
+  return path;
+}
+
+function greedyTacticalRoute(size,targetCount,seed,difficulty){
+  const total=size*size,attempts=difficulty==='hard'?18:14;
+  let best=[];
+  for(let attempt=0;attempt<attempts;attempt++){
+    const rng=rngFromSeed(`${seed}:walk:${attempt}`),start=Math.floor(rng()*total),path=[start],used=new Set(path);
+    let lastDir='',straightRun=0;
+    while(path.length<targetCount){
+      const current=path.at(-1),available=orthogonalNeighbors(current,size,size).filter(next=>!used.has(next));
+      if(!available.length)break;
+      const ranked=available.map(next=>{
+        const onward=orthogonalNeighbors(next,size,size).filter(node=>!used.has(node)&&node!==current).length,
+          dir=directionCode(current,next,size),turn=Boolean(lastDir&&dir!==lastDir),futureRun=dir===lastDir?straightRun+1:1,
+          sideTouches=orthogonalNeighbors(next,size,size).filter(node=>used.has(node)&&node!==current).length,
+          [row,col]=[Math.floor(next/size),next%size],edge=row===0||col===0||row===size-1||col===size-1,
+          turnWeight=difficulty==='hard'?10:8,runPenalty=difficulty==='hard'?5.5:4.2,
+          score=onward*6+(turn?turnWeight:0)+sideTouches*1.55-(Math.max(0,futureRun-2)*runPenalty)-(edge?0.35:0)+rng()*2.8;
+        return{next,dir,futureRun,onward,score};
+      }).sort((a,b)=>b.score-a.score);
+      let chosen=ranked[0];
+      if(path.length+1<targetCount&&chosen.onward===0){const alternate=ranked.find(item=>item.onward>0);if(alternate)chosen=alternate;}
+      path.push(chosen.next);used.add(chosen.next);lastDir=chosen.dir;straightRun=chosen.futureRun;
+    }
+    if(path.length>best.length)best=path;
+    if(path.length===targetCount)return path;
+  }
+  if(best.length>=targetCount)return best.slice(0,targetCount);
+  return deterministicHamiltonianPath(size,`${seed}:emergency`).slice(0,targetCount);
+}
+
+function blockerTurnPressure(solution,blocked,size){
+  const blockSet=new Set(blocked);let turnsNearBlocks=0;
+  for(let i=1;i<solution.length-1;i++){
+    if(directionCode(solution[i-1],solution[i],size)===directionCode(solution[i],solution[i+1],size))continue;
+    if(orthogonalNeighbors(solution[i],size,size).some(next=>blockSet.has(next)))turnsNearBlocks++;
+  }
+  return turnsNearBlocks;
+}
+
+function layoutGate(blocks,clusters,blockedCount,difficulty){
+  if(!blockedCount)return true;
+  if(difficulty==='medium')return blocks.largestCluster<=Math.max(6,Math.ceil(blockedCount*.50))&&blocks.quadrants>=3&&blocks.rowSpread>=4&&blocks.colSpread>=4&&blocks.isolated>=3&&clusters.clusterCount>=6&&clusters.majorClusters>=2&&clusters.tacticalGroups>=2;
+  return blocks.largestCluster<=Math.max(12,Math.ceil(blockedCount*.45))&&blocks.quadrants>=4&&blocks.rowSpread>=6&&blocks.colSpread>=6&&blocks.isolated>=4&&clusters.clusterCount>=8&&clusters.majorClusters>=3&&clusters.tacticalGroups>=3;
+}
+
+function routeGate(graph,shape,blockerTurns,difficulty){
+  if(difficulty==='easy')return graph.turns>=8&&shape.longestStraight<=5;
+  if(difficulty==='medium')return graph.turns>=22&&shape.longestStraight<=6&&blockerTurns>=17&&graph.ambiguousSteps>=10;
+  return graph.turns>=36&&shape.longestStraight<=6&&blockerTurns>=30&&graph.ambiguousSteps>=11;
+}
+
+function assessCandidate(cfg,solution,blocked,difficulty){
+  const blocks=blockedLayoutStats(blocked,cfg.size),clusters=blockClusterStats(blocked,cfg.size),graph=openRegionStats(solution,cfg.size,solution),shape=pathShape(solution,cfg.size),blockerTurns=blockerTurnPressure(solution,blocked,cfg.size),layoutValid=layoutGate(blocks,clusters,blocked.length,difficulty),routeValid=routeGate(graph,shape,blockerTurns,difficulty),tacticalValid=layoutValid&&routeValid;
+  const score=graph.ambiguousSteps*24+graph.branchCells*9+graph.chokepoints*14+graph.turns*13+blockerTurns*22+shape.shortRuns*6+blocks.quadrants*30+(blocks.rowSpread+blocks.colSpread)*8+Math.min(blocks.isolated,8)*26+clusters.clusterCount*34+clusters.majorClusters*62+clusters.tacticalGroups*48-blocks.largestCluster*19-blocks.adjacentPairs*2-shape.longestStraight*78-shape.avgStraight*18-(tacticalValid?0:18000);
+  return{solution,blocked,openCount:solution.length,quality:{...graph,...shape,blocks,clusters,blockerTurns,layoutValid,routeValid,tacticalValid,score}};
+}
+
+function candidateFor(cfg,seed,index,difficulty){
+  if(difficulty==='easy'){
+    const base=deterministicHamiltonianPath(cfg.size,`${seed}:easy:${index}`),solution=randomizeHamiltonianPath(base,cfg.size,`${seed}:easy:${index}`,cfg.flips);
+    return assessCandidate(cfg,solution,[],difficulty);
+  }
+  const openCount=cfg.size*cfg.size-cfg.blockedCount,solution=greedyTacticalRoute(cfg.size,openCount,`${seed}:candidate:${index}`,difficulty),open=new Set(solution),blocked=[];
+  for(let node=0;node<cfg.size*cfg.size;node++)if(!open.has(node))blocked.push(node);
+  return assessCandidate(cfg,solution,blocked,difficulty);
+}
+
+function checkpointPressure(solution,position,size,open){
+  let localTurns=0;
+  for(let i=Math.max(1,position-2);i<=Math.min(solution.length-2,position+2);i++)if(directionCode(solution[i-1],solution[i],size)!==directionCode(solution[i],solution[i+1],size))localTurns++;
+  const cell=solution[position],degree=orthogonalNeighbors(cell,size,size).filter(next=>open.has(next)).length;
+  return localTurns*7+Math.max(0,degree-2)*8;
+}
+
+function chooseClues(solution,count,seed,size){
+  const rng=rngFromSeed(`${seed}:clues:v5`),last=solution.length-1,positions=[0],open=new Set(solution);
+  for(let i=1;i<count-1;i++){
+    const ideal=Math.round(i*last/(count-1)),window=Math.max(2,Math.floor(last/(count-1)*.38)),min=positions.at(-1)+2,max=Math.max(min,Math.min(last-(count-1-i)*2,ideal+window)),low=Math.min(max,Math.max(min,ideal-window));
+    let best=low,bestScore=-Infinity;
+    for(let pos=low;pos<=max;pos++){
+      const score=checkpointPressure(solution,pos,size,open)-Math.abs(pos-ideal)*.35+rng()*2;
+      if(score>bestScore){bestScore=score;best=pos;}
+    }
+    positions.push(best);
+  }
+  positions.push(last);
+  return positions.map(position=>({index:solution[position],label:position+1,position}));
+}
+
 export function numberPathComplexity(puzzle){return puzzle.quality||openRegionStats(puzzle.solution,puzzle.size,puzzle.solution);}
-export function generateNumberPath(difficulty='easy',seed='number-path'){const cfg=LEVEL[difficulty]||LEVEL.easy,candidates=[];for(let i=0;i<cfg.candidates;i++){const candidate=candidateFor(cfg,seed,i,difficulty);if(difficulty==='easy'||candidate.quality.layoutValid)candidates.push(candidate);}if(!candidates.length){const layout=fallbackTactical(cfg.size,cfg.blockedCount,difficulty,seed),candidate=assessCandidate(cfg,randomizeHamiltonianPath(layout.path,cfg.size,`${seed}:fallback-route`,cfg.flips),layout.blocked,difficulty);candidates.push(candidate);}candidates.sort((a,b)=>b.quality.score-a.quality.score);const chosen=candidates[0],clues=chooseClues(chosen.solution,cfg.clueCount,seed);return{size:cfg.size,solution:chosen.solution,clues,blocked:chosen.blocked,openCount:chosen.openCount,quality:chosen.quality,seed,difficulty};}
+
+export function generateNumberPath(difficulty='easy',seed='number-path'){
+  const cfg=LEVEL[difficulty]||LEVEL.easy,candidates=[];let bestFallback=null;
+  const primary=cfg.candidates,max=difficulty==='easy'?primary:primary*4;
+  for(let i=0;i<max;i++){
+    const candidate=candidateFor(cfg,seed,i,difficulty);
+    if(!bestFallback||candidate.quality.score>bestFallback.quality.score)bestFallback=candidate;
+    if(difficulty==='easy'||candidate.quality.tacticalValid)candidates.push(candidate);
+    if(i+1>=primary&&(difficulty==='easy'||candidates.length>=Math.max(4,Math.floor(primary*.08))))break;
+  }
+  const pool=candidates.length?candidates:[bestFallback],chosen=pool.sort((a,b)=>b.quality.score-a.quality.score)[0],clues=chooseClues(chosen.solution,cfg.clueCount,seed,cfg.size);
+  return{size:cfg.size,solution:chosen.solution,clues,blocked:chosen.blocked,openCount:chosen.openCount,quality:chosen.quality,seed,difficulty};
+}
+
 function badgeStyle(badge,{current=false,hint=false}={}){Object.assign(badge.style,{position:'absolute',right:hint?'auto':'5px',left:hint?'5px':'auto',top:hint?'auto':'5px',bottom:hint?'5px':'auto',minWidth:'21px',height:'21px',padding:'0 5px',borderRadius:'999px',display:'grid',placeItems:'center',fontSize:'9px',fontWeight:'900',lineHeight:'1',color:current?'#07111a':'#e8fbff',background:current?'#d8f8ff':hint?'rgba(55,217,154,.88)':'rgba(8,18,30,.90)',border:`1px solid ${hint?'rgba(55,217,154,.95)':'rgba(40,201,245,.75)'}`,boxShadow:current?'0 0 16px rgba(40,201,245,.38)':'0 2px 10px rgba(0,0,0,.28)',zIndex:'4',pointerEvents:'none'});}
 
 export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,onPracticeComplete=()=>{}}){
