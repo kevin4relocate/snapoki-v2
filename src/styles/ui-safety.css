@@ -1,5 +1,25 @@
-/* Shared UI safety for long numeric values and compact right-rail cards. */
-.right-panel .ranking-row{grid-template-columns:28px 26px minmax(0,1fr) minmax(0,78px)}
+/* Shared UI safety for long public names, numeric values and compact right-rail cards. */
+#userName{
+  display:block;
+  min-width:0;
+  max-width:12ch;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.user-button{min-width:0}
+
+.right-panel .ranking-row{
+  grid-template-columns:28px 26px minmax(0,1fr) minmax(0,78px);
+  min-width:0;
+  overflow:hidden;
+}
+.right-panel .ranking-player{
+  min-width:0;
+  overflow:hidden;
+}
+.right-panel .ranking-player b,
+.right-panel .ranking-player small,
 .right-panel .ranking-row>strong,
 .right-panel .ranking-target,
 .profile-stats b,
@@ -10,13 +30,20 @@
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+}
+.right-panel .ranking-row>strong{
+  width:100%;
+  text-align:right;
   font-variant-numeric:tabular-nums;
 }
-.right-panel .ranking-row>strong{text-align:right}
+.right-panel .ranking-target,
+.profile-stats b,
+.mastery-level b{font-variant-numeric:tabular-nums}
 .profile-stats>div,.mastery-level{min-width:0;overflow:hidden}
 .profile-stats b{width:100%}
 .mastery-level span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 @media(max-width:620px){
+  #userName{max-width:10ch}
   .right-panel .ranking-row{grid-template-columns:28px 26px minmax(0,1fr) minmax(0,70px)}
 }
