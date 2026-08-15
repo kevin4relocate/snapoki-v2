@@ -26,29 +26,29 @@ test('Number Path Solution V2 uses one continuous ghost route instead of step ba
   assert.match(src,/solutionStep\(delta=0\)/,'ordered step navigation remains available');
 });
 
-test('Color Connect V7 Hard rejects separable lane-style boards',()=>{
-  for(const seed of ['v7-a','v7-b','v7-c','v7-d']){
-    const puzzle=generateColorConnect('hard',seed),q=colorConnectComplexity(puzzle);
+test('Color Connect V8 Hard is solver-verified instead of only visually complex',()=>{
+  for(const seed of ['v8-a','v8-b','quality-a']){
+    const puzzle=generateColorConnect('hard',seed),q=colorConnectComplexity(puzzle),s=q.solver;
     assertCoverage(puzzle);
-    assert.equal(puzzle.size,10);
-    assert.equal(puzzle.blocked.length,28);
+    assert.equal(puzzle.version,8);
+    assert.equal(puzzle.size,12);
+    assert.equal(puzzle.segments.length,10);
+    assert.equal(puzzle.blocked.length,36);
     assert.equal(q.tacticalValid,true);
-    assert.equal(q.routeGraphComponents,1,'all color routes must belong to one competition graph');
-    assert.ok(q.minNeighborColors>=1,'no Hard color may live in a completely isolated lane');
-    assert.ok(q.mixedZones>=7,'colors must mix across most spatial zones');
-    assert.ok(q.hotZones>=4,'multiple zones must contain at least three color territories');
-    assert.ok(q.avgRouteZones>=2.5,'routes must span multiple areas of the board');
-    assert.ok(q.boxOverlapPairs>=5,'route territories must overlap instead of forming separate lanes');
-    assert.ok(q.endpointBoxIntrusions>=4,'foreign endpoints must intrude into other route territories');
-    assert.ok(q.endpointNearPairs>=10,'endpoints should be strongly interleaved rather than zoned by color');
-    assert.ok(q.temptingRoutes>=1,'shortlist scoring should select a tempting shortcut');
-    assert.ok(q.shortcutVictimPairs>=1,'that shortcut must consume another color territory');
+    assert.equal(q.routeGraphComponents,1,'Hard routes must still form one competition graph');
+    assert.equal(s.uniqueModel,true,'solver candidate model should have one full-cover solution');
+    assert.ok(s.decisions>=9,'Hard needs many solver decisions');
+    assert.ok(s.backtracks>=10,'Hard must force real backtracking');
+    assert.ok(s.deadEnds>=8,'Hard must expose dead-end route choices');
+    assert.ok(s.greedyTraps>=8,'short-looking routes should repeatedly fail');
+    assert.ok(s.temptingRoutes>=2,'Hard should contain multiple tempting shortcuts');
+    assert.ok(s.shortcutVictimPairs>=2,'greedy shortcuts must steal foreign route territory');
   }
 });
 
-test('Color Connect V7 topology scoring is explicit deterministic and two-stage',()=>{
-  const src=read('src/js/games/color-connect.js');
-  for(const token of ['topologyProxy','spatialMixStats','shortcutPressure','routeGraphComponents','temptingRoutes','shortcutVictimPairs','includeShortcuts','shortlist','shortcutFinalists'])assert.match(src,new RegExp(token));
-  const a=generateColorConnect('hard','v7-deterministic'),b=generateColorConnect('hard','v7-deterministic');
+test('Color Connect V8 uses explicit two-stage solver-first generation and stays deterministic',()=>{
+  const src=read('src/js/games/color-connect-v8.js');
+  for(const token of ['buildVariants','evaluateSolverModel','weightedGridPath','solverGate','greedyTraps','backtracks','deadEnds','uniqueModel','cheapGate','shortlist'])assert.match(src,new RegExp(token));
+  const a=generateColorConnect('hard','v8-deterministic'),b=generateColorConnect('hard','v8-deterministic');
   assert.deepEqual(a,b);
 });
