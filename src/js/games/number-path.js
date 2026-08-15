@@ -11,7 +11,7 @@ function badgeStyle(badge,{current=false,hint=false}={}){Object.assign(badge.sty
 
 export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,onPracticeComplete=()=>{}}){
   const puzzle=generateNumberPath(difficulty,seed),clueMap=new Map(puzzle.clues.map(c=>[c.index,c.label])),openSet=new Set(puzzle.solution),solutionStep=new Map(puzzle.solution.map((idx,i)=>[idx,i+1])),timeDivisor=scoreTimeDivisor('number-path',difficulty);
-  let path=[puzzle.solution[0]],mistakes=0,dragging=false,lastPointer=null,hintGuide=[],solutionVisible=false,practice=false,complete=false;
+  let path=[puzzle.solution[0]],mistakes=0,dragging=false,lastPointer=null,hintGuide=[],solutionVisible=false,practice=false,complete=false,hintUses=0,solutionCursor=1;
   host.innerHTML=`<div class="number-grid" style="--grid-size:${puzzle.size}" aria-label="Number Path board"></div>`;const grid=host.querySelector('.number-grid');
   for(let index=0;index<puzzle.size*puzzle.size;index++){
     const b=document.createElement('button');b.type='button';b.className='number-cell';b.dataset.index=String(index);
@@ -23,10 +23,10 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
   function prefixLength(){let i=0;while(i<path.length&&puzzle.solution[i]===path[i])i++;return i;}
   function pulseCell(index){const cell=grid.querySelector(`[data-index="${index}"]`);cell?.animate?.([{transform:'scale(.91)',filter:'brightness(1.45)'},{transform:'scale(1)',filter:'brightness(1)'}],{duration:220,easing:'ease-out'});}
   function render(){
-    const pathSet=new Set(path),prefix=prefixLength(),nextStep=complete?0:Math.min(puzzle.solution.length,prefix+1),hintMap=new Map(hintGuide.map((idx,i)=>[idx,i+1]));
+    const pathSet=new Set(path),prefix=prefixLength(),nextStep=complete?0:Math.min(puzzle.solution.length,prefix+1),focusStep=solutionVisible?solutionCursor:nextStep,hintMap=new Map(hintGuide.map((idx,i)=>[idx,i+1]));
     grid.querySelectorAll('.number-cell').forEach(cell=>{
       const idx=Number(cell.dataset.index),step=solutionStep.get(idx),hintOrder=hintMap.get(idx);cell.classList.toggle('in-path',pathSet.has(idx));cell.classList.toggle('path-head',path.at(-1)===idx&&!complete);cell.classList.toggle('hinted',hintOrder!=null);cell.querySelectorAll('.solution-step-badge,.hint-step-badge').forEach(el=>el.remove());
-      if(solutionVisible&&openSet.has(idx)){const badge=document.createElement('span');badge.className='solution-step-badge';badge.textContent=String(step);badgeStyle(badge,{current:step===nextStep});cell.appendChild(badge);}
+      if(solutionVisible&&openSet.has(idx)){const badge=document.createElement('span');badge.className='solution-step-badge';badge.textContent=String(step);badgeStyle(badge,{current:step===focusStep});cell.appendChild(badge);}
       if(!solutionVisible&&hintOrder!=null){const badge=document.createElement('span');badge.className='hint-step-badge';badge.textContent=String(hintOrder);badgeStyle(badge,{current:hintOrder===1,hint:true});cell.appendChild(badge);}
     });
     onMetrics({cells:path.length,mistakes});
@@ -37,7 +37,7 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
     const existing=path.indexOf(index);if(existing>=0){if(existing===path.length-2){path.pop();hintGuide=[];render();return true;}return false;}
     if(solutionVisible){const prefix=prefixLength();if(prefix<path.length){const expected=puzzle.solution[prefix];pulseCell(expected);onStatus(`Practice guide: backtrack to the correct route. Step ${prefix+1} is still next.`);return false;}const expected=puzzle.solution[path.length];if(index!==expected){pulseCell(expected);onStatus(`Practice guide: step ${path.length+1} is next. Follow the green numbered badge.`);return false;}}
     const clue=clueMap.get(index),expected=nextExpectedLabel();if(clue&&clue!==expected){mistakes++;onMetrics({mistakes});onStatus(`Checkpoint ${clue} is too early. Reach checkpoint ${expected} first.`);return false;}
-    path.push(index);hintGuide=[];render();pulseCell(index);
+    path.push(index);hintGuide=[];if(solutionVisible)solutionCursor=Math.min(puzzle.solution.length,path.length+1);render();pulseCell(index);
     if(path.length===puzzle.openCount){const finalLabel=puzzle.clues.at(-1).label;if(clueMap.get(index)===finalLabel)finish();else{mistakes++;onMetrics({mistakes});onStatus('All open cells are filled, but the final checkpoint must be last.');}}
     else onStatus(solutionVisible?`Practice: step ${prefixLength()+1} is next.`:`Filled ${path.length} of ${puzzle.openCount} open cells.`);return true;
   }
@@ -51,10 +51,11 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
   onMetrics({cells:1,mistakes:0,hints:0});onStatus(`Start at 1. Hold and drag through all ${puzzle.openCount} open cells; patterned cells are blocked.`);render();
   return{
     supportsUndo:true,
-    undo(){if(complete||path.length<=1)return;path.pop();hintGuide=[];render();onStatus(solutionVisible?`Practice: step ${prefixLength()+1} is next.`:'Backtracked one cell.');},
-    reset(){path=[puzzle.solution[0]];mistakes=0;hintGuide=[];solutionVisible=false;practice=false;complete=false;render();onStatus('Path reset. Start again at 1.');},
-    hint(){if(complete||solutionVisible)return false;const prefix=prefixLength();if(prefix<path.length){hintGuide=[path.at(-2)??path[0]];onStatus('Your route has diverged. Backtrack toward the highlighted cell.');}else if(path.length<puzzle.solution.length){hintGuide=puzzle.solution.slice(path.length,path.length+3);let from=path.at(-1);const dirs=[];for(const idx of hintGuide){dirs.push(directionLabel(from,idx,puzzle.size));from=idx;}onStatus(`Hint: follow the next ${hintGuide.length} guide step${hintGuide.length>1?'s':''} — ${dirs.join(' → ')}.`);}else return false;render();setTimeout(()=>{if(!complete){hintGuide=[];render();}},4200);return true;},
-    solution(){if(complete)return;practice=true;solutionVisible=true;hintGuide=[];render();const prefix=prefixLength();onStatus(prefix<path.length?`Practice guide on. Your path diverged at step ${prefix+1}; backtrack until the green badge is reachable.`:`Practice guide on: follow the numbered cells in order. Step ${path.length+1} is highlighted in green.`);},
+    undo(){if(complete||path.length<=1)return;path.pop();hintGuide=[];if(solutionVisible)solutionCursor=Math.min(puzzle.solution.length,path.length+1);render();onStatus(solutionVisible?`Practice: step ${prefixLength()+1} is next.`:'Backtracked one cell.');},
+    reset(){path=[puzzle.solution[0]];mistakes=0;hintGuide=[];solutionVisible=false;practice=false;complete=false;hintUses=0;solutionCursor=1;render();onStatus('Path reset. Start again at 1.');},
+    hint(){if(complete||solutionVisible)return false;hintUses++;const prefix=prefixLength(),reveal=Math.min(3,hintUses);if(prefix<path.length){hintGuide=[path.at(-2)??path[0]];onStatus(`Hint ${hintUses}: your route has diverged. Backtrack toward the highlighted cell.`);}else if(path.length<puzzle.solution.length){hintGuide=puzzle.solution.slice(path.length,path.length+reveal);let from=path.at(-1);const dirs=[];for(const idx of hintGuide){dirs.push(directionLabel(from,idx,puzzle.size));from=idx;}onStatus(hintUses===1?`Hint 1: the highlighted cell is your next safe move (${dirs[0]}).`:`Hint ${hintUses}: follow ${hintGuide.length} steps — ${dirs.join(' → ')}.`);}else return false;render();setTimeout(()=>{if(!complete){hintGuide=[];render();}},4200);return true;},
+    solution(){if(complete)return;practice=true;solutionVisible=true;hintGuide=[];solutionCursor=Math.min(puzzle.solution.length,Math.max(1,prefixLength()+1));render();onStatus(`Practice guide on: follow the numbered cells. Step ${solutionCursor} is focused; use Previous/Next to inspect the route.`);},
+    solutionStep(delta=0){if(!solutionVisible||complete)return null;solutionCursor=Math.max(1,Math.min(puzzle.solution.length,solutionCursor+delta));render();onStatus(`Practice guide: step ${solutionCursor} of ${puzzle.solution.length}.`);return{current:solutionCursor,total:puzzle.solution.length,label:`Step ${solutionCursor}`};},
     hideSolution(){if(complete)return;solutionVisible=false;hintGuide=[];render();onStatus('Solution hidden. This attempt remains practice-only.');},
     previewScore(timeMs,hints=0){return scoreFromPerformance({timeMs,timeDivisor,mistakePenalty:mistakes*180,hintPenalty:hints*190});},
     getResult(timeMs,hints=0){return{score:scoreFromPerformance({timeMs,timeDivisor,mistakePenalty:mistakes*180,hintPenalty:hints*190}),metadata:{cells:path.length,open_cells:puzzle.openCount,blocked_cells:puzzle.blocked.length,mistakes,size:puzzle.size,path:[...path]}};},destroy(){}
