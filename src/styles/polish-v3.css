@@ -12,17 +12,20 @@
 .number-cell.checkpoint-conflict{border-color:rgba(255,107,124,.74)!important;box-shadow:inset 0 0 0 1px rgba(255,107,124,.18),0 0 16px rgba(255,107,124,.08)!important}
 .number-cell.checkpoint-conflict span{border-color:rgba(255,107,124,.88)!important;background:rgba(89,28,42,.54)!important;box-shadow:0 0 15px rgba(255,107,124,.12)!important}
 
-/* Loop Practice is order-free: one quiet ghost solution, no numbered sequence. */
-.loop-hit.solution-edge{stroke:rgba(40,201,245,.32)!important;stroke-width:2.15!important;stroke-dasharray:2.6 2.1;stroke-linecap:round;filter:none!important}
-.loop-hit.active.solution-edge{stroke:#7b6aff!important;stroke-dasharray:none}
+/* Loop Puzzle V2: order-free solution, quiet clues, action-direct hints. */
+.loop-hit.solution-edge{stroke:rgba(40,201,245,.28)!important;stroke-width:1.95!important;stroke-dasharray:2.6 2.2;stroke-linecap:round;filter:none!important}
+.loop-hit.active.solution-edge{stroke:#7b6aff!important;stroke-width:2.3!important;stroke-dasharray:none}
 .loop-hit.practice-wrong{stroke:rgba(255,107,124,.78)!important;stroke-width:2.35!important;stroke-linecap:round;filter:drop-shadow(0 0 1px rgba(255,107,124,.35))}
-.board-panel.practice-mode .loop-clue-chip.satisfied{fill:#11182a!important;stroke:#5e6984!important;filter:none!important}
-.board-panel.practice-mode .loop-clue.satisfied{fill:#aeb8cc!important}
-.board-panel.practice-mode .loop-clue-chip:not(.conflict){filter:none!important}
-.board-panel.practice-mode .loop-clue-chip.clue-0,.board-panel.practice-mode .loop-clue-chip.clue-1,.board-panel.practice-mode .loop-clue-chip.clue-2,.board-panel.practice-mode .loop-clue-chip.clue-3{fill:#11182a!important;stroke:#536078!important}
-.board-panel.practice-mode .loop-clue.clue-0,.board-panel.practice-mode .loop-clue.clue-1,.board-panel.practice-mode .loop-clue.clue-2,.board-panel.practice-mode .loop-clue.clue-3{fill:#aeb8cc!important}
-.board-panel.practice-mode .loop-clue-chip.conflict{fill:rgba(255,107,124,.15)!important;stroke:#ff6b7c!important;filter:drop-shadow(0 0 1px rgba(255,107,124,.35))!important}
-.board-panel.practice-mode .loop-clue.conflict{fill:#ff9eaa!important}
+.loop-clue{fill:#b8c1d3!important;font-size:4.35px!important;font-weight:720!important;paint-order:normal!important;stroke:none!important;letter-spacing:0!important;opacity:.94;transition:fill .16s ease,opacity .16s ease,filter .16s ease}
+.loop-clue.clue-0{fill:#7f899e!important;opacity:.72}
+.loop-clue.clue-1,.loop-clue.clue-2,.loop-clue.clue-3{fill:#b8c1d3!important}
+.loop-clue.satisfied{fill:#747f94!important;opacity:.46!important;filter:none!important}
+.loop-clue.conflict{fill:#ff8797!important;opacity:1!important;font-weight:880!important;filter:drop-shadow(0 0 1.25px rgba(255,107,124,.42))}
+.loop-hit.hinted{stroke:#58d8ff!important;stroke-width:2.35!important;stroke-dasharray:2.4 1.75;stroke-linecap:round;filter:drop-shadow(0 0 1.6px rgba(88,216,255,.48));animation:loopHintEdgePulse .82s ease-in-out infinite alternate}
+.loop-hit.hint-remove{stroke:#ff6b7c!important;stroke-width:2.7!important;stroke-dasharray:2.3 1.65;stroke-linecap:round;filter:drop-shadow(0 0 1.6px rgba(255,107,124,.46));animation:loopHintEdgePulse .82s ease-in-out infinite alternate}
+.loop-hint-marker{font-size:5.3px;font-weight:950;fill:#67ddff;paint-order:stroke;stroke:#0a0f1b;stroke-width:1.55;pointer-events:none;filter:drop-shadow(0 0 1.3px rgba(88,216,255,.42))}
+.loop-hint-marker.remove{fill:#ff7d8e;filter:drop-shadow(0 0 1.3px rgba(255,107,124,.42))}
+@keyframes loopHintEdgePulse{from{opacity:.58}to{opacity:1}}
 
 /* Lights Out Practice: highlighted cells are a set, not an ordered list. */
 .light-cell.solution-press{outline:2px solid rgba(40,201,245,.92)!important;outline-offset:-4px;box-shadow:inset 0 0 0 1px rgba(40,201,245,.12)}
