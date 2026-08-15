@@ -17,7 +17,7 @@ export async function onRequestGet({request, env}) {
                MAX(score) AS best,
                SUM(ranking_points) AS ranking_points
         FROM results
-        WHERE game = ? AND solution_used = 0
+        WHERE game = ? AND solution_used = 0 AND ranking_points > 0
         GROUP BY user_id
       ), ranked AS (
         SELECT t.user_id, u.display_name, u.avatar_url, t.games, t.best, t.ranking_points,
@@ -41,7 +41,7 @@ export async function onRequestGet({request, env}) {
       const top = await env.DB.prepare(`
         WITH totals AS (
           SELECT user_id, COUNT(*) AS games, MAX(score) AS best, SUM(ranking_points) AS ranking_points
-          FROM results WHERE game = ? AND solution_used = 0 GROUP BY user_id
+          FROM results WHERE game = ? AND solution_used = 0 AND ranking_points > 0 GROUP BY user_id
         ), ranked AS (
           SELECT t.user_id, u.display_name, u.avatar_url, t.games, t.best, t.ranking_points,
                  ROW_NUMBER() OVER (ORDER BY t.ranking_points DESC, t.games DESC, t.best DESC, t.user_id ASC) AS position
