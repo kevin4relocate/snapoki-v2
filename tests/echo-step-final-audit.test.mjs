@@ -48,7 +48,7 @@ test('Echo Step failure banner sits above the rule bar and uses plain-language c
   const boardIndex=built.indexOf('<div class="echo-board-shell"><div class="echo-grid"');
   assert.ok(bannerIndex>=0&&ruleIndex>bannerIndex&&boardIndex>ruleIndex,'failure banner should appear above rules and board');
   assert.doesNotMatch(built,/Timeline failed/);
-  assert.match(built,/Try a different route\./);
+  assert.match(built,/Try another path in this puzzle\./);
   assert.match(built,/Echo hit a cyan wall\./);
   assert.match(built,/Echo hit a dark wall\./);
   assert.match(built,/data-echo-reset>Retry/);
@@ -80,13 +80,14 @@ test('Echo Step NEXT danger preview only marks fixed Echo hazards before the nex
   assert.doesNotMatch(built,/danger=[^;]*target===state\.player/);
 });
 
-test('Echo Step staged help copy matches the marker-free striped-cell UI',()=>{
+test('Echo Step staged help copy matches the goal-first striped-cell UI',()=>{
   const page=fs.readFileSync('dist/echo-step/index.html','utf8');
   const guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8');
   assert.doesNotMatch(page,/marked Y|marked E|Purple phase walls|Cyan phase walls/);
-  assert.match(page,/Purple striped cells stop YOU/);
-  assert.match(page,/A blocked YOU move is rejected/);
-  assert.match(page,/Guide teaches the solution one step at a time/);
+  assert.match(page,/<strong>Goal:<\/strong>/);
+  assert.match(page,/Purple stops YOU only\. Cyan stops Echo only\. Dark stops both\./);
+  assert.match(page,/If YOU cannot enter a cell, choose another direction/);
+  assert.match(page,/Guide teaches one step at a time/);
   assert.doesNotMatch(guide,/Purple Y wall|Cyan E wall|E-markers/);
   assert.match(guide,/Purple:<\/strong> YOU cannot enter; Echo can pass through/);
   assert.match(guide,/Echo is different: it blindly replays/);
