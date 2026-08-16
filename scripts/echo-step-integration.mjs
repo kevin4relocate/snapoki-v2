@@ -11,28 +11,37 @@ async function patch(rel,mutate){
   html=mutate(html);
   await fs.writeFile(file,html);
 }
+async function walk(dir){
+  const out=[];
+  for(const entry of await fs.readdir(dir,{withFileTypes:true})){
+    const full=path.join(dir,entry.name);
+    if(entry.isDirectory())out.push(...await walk(full));
+    else out.push(full);
+  }
+  return out;
+}
+
+const ECHO_GAME_LINK=/<a\b[^>]*href="\/echo-step\/"[^>]*>[\s\S]*?<\/a>/g;
+const ECHO_GUIDE_LINK=/<a\b[^>]*href="\/blog\/how-to-play-echo-step\/"[^>]*>[\s\S]*?<\/a>/g;
+const LIGHTS_OVERFLOW='<a data-game-link="lights-out" href="/lights-out/"><span>Lights Out</span><small>Logic</small></a>';
+const LIGHTS_DIRECT='<a class="desktop-game-link" data-game-link="lights-out" href="/lights-out/">Lights Out</a>';
+
+function hideEchoNavigation(html){
+  html=html.replace(ECHO_GAME_LINK,'').replace(ECHO_GUIDE_LINK,'');
+  if(html.includes('class="site-header"')){
+    html=html.replace(LIGHTS_OVERFLOW,'');
+    if(!html.includes(LIGHTS_DIRECT))html=html.replace('<div class="games-menu-wrap">',`${LIGHTS_DIRECT}<div class="games-menu-wrap">`);
+  }
+  return html;
+}
+
+for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
+  const html=await fs.readFile(file,'utf8');
+  await fs.writeFile(file,hideEchoNavigation(html));
+}
 
 await patch('echo-step/index.html',html=>{
   if(!html.includes('/assets/styles/echo-step.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/echo-step.css"></head>');
-  return html;
-});
-
-await patch('index.html',html=>html
-  .replace('Play Maze, Number Path, Color Connect, Lights Out and Loop Puzzle online for free','Play Echo Step, Maze, Number Path, Color Connect, Lights Out and Loop Puzzle online for free')
-  .replace('Five puzzles.<br>','Six puzzles.<br>')
-  .replace('Five ways to think differently','Six ways to think differently')
-  .replace('href="/maze/">Play a Game</a>','href="/echo-step/">Play a Game</a>')
-  .replace('Yes. All five puzzle games are playable for free in a modern browser.','Yes. All six puzzle games are playable for free in a modern browser.')
-);
-
-await patch('about/index.html',html=>html
-  .replace('Five distinct puzzle systems','Six distinct puzzle systems')
-  .replace('Maze, Number Path, Color Connect, Lights Out and Loop Puzzle each test','Echo Step, Maze, Number Path, Color Connect, Lights Out and Loop Puzzle each test')
-);
-
-await patch('how-to-play/index.html',html=>{
-  html=html.replace('Learn the rules and controls for Maze, Number Path, Color Connect, Lights Out and Loop Puzzle','Learn the rules and controls for Echo Step, Maze, Number Path, Color Connect, Lights Out and Loop Puzzle');
-  if(!html.includes('<h2>Echo Step</h2>'))html=html.replace('<h2>Maze</h2>','<h2>Echo Step</h2><p>Move the purple Player toward the purple goal. Every accepted direction enters a short queue and the cyan Echo repeats that same move after its delay. If the Echo later runs into a blocked cell or the Player, the timeline breaks. When the Player reaches home, movement stops and the Echo automatically catches up. You win only when the Echo reaches the cyan goal with no moves left pending.</p><h2>Maze</h2>');
   return html;
 });
 
