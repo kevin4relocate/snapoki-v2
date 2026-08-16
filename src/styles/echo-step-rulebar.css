@@ -1,67 +1,27 @@
-/* Echo Step goal-first rules: three fixed rows, always visible without horizontal scrolling. */
-.echo-compact-bar{width:min(100%,560px);min-height:86px!important;display:grid;grid-template-columns:auto auto auto;grid-template-areas:"you arrow echo" "goal goal goal" "rules rules rules";align-items:center;justify-content:center;column-gap:7px;row-gap:5px;white-space:nowrap;color:var(--muted);overflow:visible}
+/* Echo Step two-row HUD: identity + goal on row one, wall rules on row two. */
+.echo-compact-bar{width:min(100%,560px);min-height:56px!important;display:grid;grid-template-columns:auto auto auto minmax(0,1fr);grid-template-areas:"you arrow echo goal" "rules rules rules rules";align-items:center;justify-content:center;column-gap:6px;row-gap:4px;padding:1px 0;white-space:nowrap;color:var(--muted);overflow:visible}
 .echo-compact-you{grid-area:you;justify-self:end;flex:0 0 auto}.echo-copy-mark{grid-area:arrow}.echo-compact-echo{grid-area:echo;justify-self:start;flex:0 0 auto}.echo-rule-separator{display:none!important}
-.echo-goal-strip{grid-area:goal;width:100%;min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;font-size:9px;font-weight:850;letter-spacing:.015em}
-.echo-goal-strip>b{font-size:7px;letter-spacing:.11em;color:var(--muted-2)}
-.echo-goal-strip>span{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:900;line-height:1}
-.echo-goal-strip .echo-goal-you{border:1px solid rgba(145,127,255,.34);background:rgba(145,127,255,.10);color:#ded8ff}
-.echo-goal-strip .echo-goal-echo{border:1px solid rgba(93,225,255,.30);background:rgba(93,225,255,.07);color:#c4f3ff}
-.echo-goal-strip .echo-goal-divider{padding:0;border:0;background:none;color:rgba(143,155,184,.38);font-weight:700}
-.echo-goal-strip>em{font-size:7px;font-style:normal;font-weight:950;letter-spacing:.08em;color:#9ee9c9}
-.echo-rule-strip{grid-area:rules;width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:5px;min-width:0}
-.echo-rule-strip>span{min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:5px 6px;border:1px solid rgba(113,132,181,.19);border-radius:999px;background:rgba(13,20,36,.38)}
-.echo-rule-strip>span b{font-size:9px;line-height:1;color:#eef3ff}
-.echo-rule-strip>span small{display:inline-flex;align-items:center;gap:4px;font-size:8px;line-height:1;font-weight:850;white-space:nowrap}
-.echo-rule-strip>span small strong{color:#ffb8c4;font-weight:900}.echo-rule-strip>span small em{color:#9ee9c9;font-style:normal;font-weight:900}
-.wall-swatch{width:12px!important;height:12px!important;border-radius:4px!important;flex:0 0 12px}
+.echo-goal-strip{grid-area:goal;width:auto;min-width:0;justify-self:end;display:flex;align-items:center;justify-content:flex-end;gap:4px;font-size:9px;font-weight:850;letter-spacing:.015em}
+.echo-goal-strip>b{display:none}.echo-goal-strip>span{display:inline-flex;align-items:center;justify-content:center;padding:3px 6px;border-radius:999px;font-size:8px;font-weight:900;line-height:1}
+.echo-goal-strip .echo-goal-you{border:1px solid rgba(145,127,255,.34);background:rgba(145,127,255,.10);color:#ded8ff}.echo-goal-strip .echo-goal-echo{border:1px solid rgba(93,225,255,.30);background:rgba(93,225,255,.07);color:#c4f3ff}.echo-goal-strip .echo-goal-divider{padding:0;border:0;background:none;color:rgba(143,155,184,.38);font-weight:700}.echo-goal-strip>em{font-size:6.5px;font-style:normal;font-weight:950;letter-spacing:.08em;color:#9ee9c9}
+.echo-rule-strip{grid-area:rules;width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:4px;min-width:0}.echo-rule-strip>span{min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:4px 5px;border:1px solid rgba(113,132,181,.19);border-radius:999px;background:rgba(13,20,36,.38)}.echo-rule-strip>span b{font-size:8px;line-height:1;color:#eef3ff}.echo-rule-strip>span small{display:inline-flex;align-items:center;gap:4px;font-size:7px;line-height:1;font-weight:850;white-space:nowrap}.echo-rule-strip>span small strong{color:#ffb8c4;font-weight:900}.echo-rule-strip>span small em{color:#9ee9c9;font-style:normal;font-weight:900}.wall-swatch{width:12px!important;height:12px!important;border-radius:4px!important;flex:0 0 12px}
 
-/* Easy teaches the two goals without blocking play. The cue disappears after the first accepted move. */
-.echo-cell.goal-onboarding-player,.echo-cell.goal-onboarding-echo{z-index:3}
-.echo-cell.goal-onboarding-player .echo-goal-mark{animation:echo-goal-pulse-you 1.05s ease-out 1}
-.echo-cell.goal-onboarding-echo .echo-goal-mark{animation:echo-goal-pulse-echo 1.05s ease-out 1}
-.echo-goal-cue{position:absolute;z-index:12;left:50%;top:4px;transform:translateX(-50%);display:grid;place-items:center;min-width:max-content;height:16px;padding:0 5px;border-radius:999px;font-size:6.5px;font-weight:950;line-height:1;letter-spacing:.025em;pointer-events:none;box-shadow:0 5px 13px rgba(0,0,0,.22)}
-.echo-goal-cue-you{border:1px solid rgba(188,178,255,.62);background:rgba(58,46,116,.94);color:#f0edff}
-.echo-goal-cue-echo{border:1px solid rgba(93,225,255,.52);background:rgba(8,54,69,.94);color:#cdf6ff}
+/* Easy teaches the two goals without blocking play. */
+.echo-cell.goal-onboarding-player,.echo-cell.goal-onboarding-echo{z-index:3}.echo-cell.goal-onboarding-player .echo-goal-mark{animation:echo-goal-pulse-you 1.05s ease-out 1}.echo-cell.goal-onboarding-echo .echo-goal-mark{animation:echo-goal-pulse-echo 1.05s ease-out 1}
+.echo-goal-cue{position:absolute;z-index:12;left:50%;top:4px;transform:translateX(-50%);display:grid;place-items:center;min-width:max-content;height:16px;padding:0 5px;border-radius:999px;font-size:6.5px;font-weight:950;line-height:1;letter-spacing:.025em;pointer-events:none;box-shadow:0 5px 13px rgba(0,0,0,.22)}.echo-goal-cue-you{border:1px solid rgba(188,178,255,.62);background:rgba(58,46,116,.94);color:#f0edff}.echo-goal-cue-echo{border:1px solid rgba(93,225,255,.52);background:rgba(8,54,69,.94);color:#cdf6ff}
 @keyframes echo-goal-pulse-you{0%{filter:brightness(1);transform:scale(.92)}45%{filter:brightness(1.4);transform:scale(1.12)}100%{filter:brightness(1);transform:scale(1)}}
 @keyframes echo-goal-pulse-echo{0%{filter:brightness(1);transform:scale(.92)}45%{filter:brightness(1.35);transform:scale(1.12)}100%{filter:brightness(1);transform:scale(1)}}
 
-/* Phase cells should read as rules, not overpower the playable path. */
-.echo-cell.barrier-player{filter:saturate(.82);background-color:rgba(42,34,82,.78)}
-.echo-cell.barrier-echo{filter:saturate(.78);background-color:rgba(16,48,62,.72)}
-.echo-cell.shared-blocked{filter:saturate(.72)}
-.echo-cell.has-player,.echo-cell.has-echo,.echo-cell.player-goal,.echo-cell.echo-goal{filter:none}
+/* Actor-specific cells should read as rules without overpowering the route. */
+.echo-cell.barrier-player{filter:saturate(.82);background-color:rgba(42,34,82,.78)}.echo-cell.barrier-echo{filter:saturate(.78);background-color:rgba(16,48,62,.72)}.echo-cell.shared-blocked{filter:saturate(.72)}.echo-cell.has-player,.echo-cell.has-echo,.echo-cell.player-goal,.echo-cell.echo-goal{filter:none}
 
-.echo-state-banner.is-notice{border-color:rgba(123,145,198,.34);background:rgba(13,20,36,.95)}
-.echo-state-banner.is-notice.is-blocked{border-color:rgba(255,184,102,.44);background:rgba(37,28,20,.95)}
-.echo-state-banner.is-notice.is-blocked strong{color:#ffd7a4}
-.echo-cell.echo-blocked-attempt{animation:echo-blocked-attempt .28s ease-out}
+/* Immediate feedback for rejected YOU moves. */
+.echo-state-banner.is-notice{border-color:rgba(123,145,198,.34);background:rgba(13,20,36,.95)}.echo-state-banner.is-notice.is-blocked{border-color:rgba(255,184,102,.44);background:rgba(37,28,20,.95)}.echo-state-banner.is-notice.is-blocked strong{color:#ffd7a4}.echo-cell.echo-blocked-attempt{animation:echo-blocked-attempt .28s ease-out}
 @keyframes echo-blocked-attempt{0%{box-shadow:inset 0 0 0 3px rgba(255,177,96,.85),0 0 18px rgba(255,151,73,.28)}100%{box-shadow:inset 0 0 0 1px rgba(255,177,96,0),0 0 0 rgba(255,151,73,0)}}
 
-/* Terminal state: the board is intentionally quiet while Retry remains the clear action. */
-.echo-stage:has(.echo-state-banner.is-failed) .echo-grid{filter:saturate(.82) brightness(.94)}
-.echo-stage:has(.echo-state-banner.is-failed) .echo-agent-player,.echo-stage:has(.echo-state-banner.is-failed) .echo-agent-ghost{filter:none}
+/* Terminal state keeps the board quiet while Retry stays clear. */
+.echo-stage:has(.echo-state-banner.is-failed) .echo-grid{filter:saturate(.82) brightness(.94)}.echo-stage:has(.echo-state-banner.is-failed) .echo-agent-player,.echo-stage:has(.echo-state-banner.is-failed) .echo-agent-ghost{filter:none}
 
-/* Echo-specific How to Play: goal first, then movement, walls and finish rules. */
-.how-to .echo-help-goal{display:block;padding:8px 9px;border:1px solid rgba(145,127,255,.24);border-radius:9px;background:linear-gradient(135deg,rgba(145,127,255,.08),rgba(93,225,255,.035));color:#dfe5f5}
-.how-to .echo-help-you{color:#cfc7ff}.how-to .echo-help-echo{color:#bfefff}.how-to .echo-help-goal>strong:last-child{color:#9ee9c9}
-.how-to p{line-height:1.48}.how-to p>strong:first-child{color:#9cb4ff}
-
-@media(max-width:640px){
-  .echo-compact-bar{width:100%;min-height:82px!important;column-gap:5px;row-gap:4px;overflow:visible;padding:1px 0 3px}
-  .echo-compact-you b,.echo-compact-echo b{font-size:10px!important}.echo-compact-echo small{font-size:8px!important}.echo-copy-mark{font-size:10px!important}
-  .echo-goal-strip{gap:4px}.echo-goal-strip>b{font-size:6px}.echo-goal-strip>span{font-size:7.5px;padding:4px 6px}.echo-goal-strip>em{font-size:6px}
-  .echo-rule-strip{gap:3px}.echo-rule-strip>span{gap:2px;padding:4px 3px}.echo-rule-strip>span b{font-size:7.5px}.echo-rule-strip>span small,.echo-rule-strip>span small strong,.echo-rule-strip>span small em{font-size:6.5px;gap:2px}.wall-swatch{width:9px!important;height:9px!important;flex-basis:9px}
-  .echo-goal-cue{height:14px;font-size:5.5px;padding-inline:4px}
-}
-
-@media(max-width:390px){
-  .echo-goal-strip{gap:3px}.echo-goal-strip>span{font-size:7px;padding-inline:5px}.echo-goal-strip>em{font-size:5.5px}
-  .echo-rule-strip>span{padding-inline:2px}.echo-rule-strip>span b{font-size:7px}.echo-rule-strip>span small,.echo-rule-strip>span small strong,.echo-rule-strip>span small em{font-size:6px}.wall-swatch{width:8px!important;height:8px!important;flex-basis:8px}
-}
-
+@media(max-width:640px){.echo-compact-bar{width:100%;min-height:54px!important;grid-template-columns:auto auto auto minmax(0,1fr);column-gap:4px;row-gap:3px;padding:1px 0 3px}.echo-compact-you b,.echo-compact-echo b{font-size:10px!important}.echo-compact-echo small{font-size:7px!important}.echo-copy-mark{font-size:10px!important}.echo-goal-strip{gap:2px}.echo-goal-strip>span{font-size:6.8px;padding:3px 4px}.echo-goal-strip>em{font-size:5.5px}.echo-rule-strip{gap:2px}.echo-rule-strip>span{gap:2px;padding:3px 2px}.echo-rule-strip>span b{font-size:6.8px}.echo-rule-strip>span small,.echo-rule-strip>span small strong,.echo-rule-strip>span small em{font-size:5.8px;gap:2px}.wall-swatch{width:8px!important;height:8px!important;flex-basis:8px}.echo-goal-cue{height:14px;font-size:5.5px;padding-inline:4px}}
+@media(max-width:390px){.echo-goal-strip>span{font-size:6.5px;padding-inline:3px}.echo-goal-strip>em{font-size:5px}.echo-rule-strip>span b{font-size:6.5px}.echo-rule-strip>span small,.echo-rule-strip>span small strong,.echo-rule-strip>span small em{font-size:5.5px}}
 @media(prefers-reduced-motion:reduce){.echo-cell.echo-blocked-attempt{animation:none;box-shadow:inset 0 0 0 2px rgba(255,177,96,.55)}.echo-cell.goal-onboarding-player .echo-goal-mark,.echo-cell.goal-onboarding-echo .echo-goal-mark{animation:none}}
-
-/* V3.8 compact two-row HUD: keep goal, delay and wall rules visible without stealing board height. */
-.echo-compact-bar{min-height:56px!important;grid-template-columns:auto auto auto minmax(0,1fr);grid-template-areas:"you arrow echo goal" "rules rules rules rules";column-gap:6px;row-gap:4px;padding:1px 0}
-.echo-compact-you{justify-self:end}.echo-compact-echo{justify-self:start}.echo-goal-strip{width:auto;justify-self:end;justify-content:flex-end;gap:4px}.echo-goal-strip>b{display:none}.echo-goal-strip>span{padding:3px 6px;font-size:8px}.echo-goal-strip>em{font-size:6.5px}.echo-rule-strip{gap:4px}.echo-rule-strip>span{padding:4px 5px}.echo-rule-strip>span b{font-size:8px}.echo-rule-strip>span small{font-size:7px}
-@media(max-width:640px){.echo-compact-bar{min-height:54px!important;grid-template-columns:auto auto auto minmax(0,1fr);column-gap:4px;row-gap:3px}.echo-compact-echo small{font-size:7px!important}.echo-goal-strip{gap:2px}.echo-goal-strip>span{font-size:6.8px;padding:3px 4px}.echo-goal-strip>em{font-size:5.5px}.echo-rule-strip{gap:2px}.echo-rule-strip>span{padding:3px 2px}.echo-rule-strip>span b{font-size:6.8px}.echo-rule-strip>span small,.echo-rule-strip>span small strong,.echo-rule-strip>span small em{font-size:5.8px}.wall-swatch{width:8px!important;height:8px!important;flex-basis:8px}}
