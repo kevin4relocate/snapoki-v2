@@ -22,8 +22,8 @@ function updatePrivacy(html){if(html.includes('<h2>Analytics</h2>'))return html;
 
 for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
   let html=await fs.readFile(file,'utf8');
-  const isAdmin=file===path.join(dist,'admin','index.html')||file.startsWith(path.join(dist,'admin')+path.sep);
-  if(!isAdmin){html=addAnalytics(html);html=addSocial(html);html=addSocialMeta(html);}
+  const isPrivateUtility=html.includes('data-private-utility="true"');
+  if(!isPrivateUtility){html=addAnalytics(html);html=addSocial(html);html=addSocialMeta(html);}
   if(file===path.join(dist,'index.html')){html=html.replace(/<section class="section faq">[\s\S]*?<\/section>/,faq);html=updateOrganization(html);}
   if(file===path.join(dist,'privacy','index.html'))html=updatePrivacy(html);
   await fs.writeFile(file,html);
