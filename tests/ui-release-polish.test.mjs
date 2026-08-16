@@ -24,16 +24,15 @@ test('blog hub uses the full shared shell and gives its editorial summary a wide
   assert.match(css,/\.article-cta \.button\{flex:0 0 auto;white-space:nowrap\}/);
 });
 
-test('reference guide pages are centered while approved static pages keep their existing layout',()=>{
+test('all static and reference content pages share the same centered reading width',()=>{
   const css=read('src/styles/launch.css');
   assert.match(css,/--reference-max:980px/);
-  assert.match(css,/\.reference-page \.content-hero,\.reference-page article\{width:100%;max-width:var\(--reference-max\);margin-left:auto;margin-right:auto\}/);
-  for(const route of ['how-to-play','daily-challenges','rankings-guide']){
+  assert.match(css,/\.content-shell \.content-page \.content-hero,\.content-shell \.content-page article\{width:100%;max-width:var\(--reference-max\);margin-left:auto;margin-right:auto\}/);
+  for(const route of ['about','help','privacy','terms','how-to-play','daily-challenges','rankings-guide']){
     const html=read(`dist/${route}/index.html`);
-    assert.match(html,/class="content-page reference-page"/);
+    assert.match(html,/<body class="content-shell"/);
     assert.ok(html.indexOf('/assets/styles/content.css')<html.indexOf('/assets/styles/launch.css'),`${route}: content.css must load before launch.css`);
   }
-  for(const route of ['about','help','privacy','terms'])assert.doesNotMatch(read(`dist/${route}/index.html`),/class="content-page reference-page"/);
 });
 
 test('More Games visually contains only game names',()=>{
