@@ -37,10 +37,10 @@ async function writeCurrent(env, pack, posted = {}) {
   return await readCurrent(env);
 }
 
-function responseText(data) {
-  for (const item of data?.output || []) {
-    for (const part of item?.content || []) {
-      if (part?.type === 'output_text' && typeof part.text === 'string') return part.text;
+function geminiText(data) {
+  for (const candidate of data?.candidates || []) {
+    for (const part of candidate?.content?.parts || []) {
+      if (typeof part?.text === 'string' && part.text.trim()) return part.text;
     }
   }
   return '';
@@ -61,9 +61,9 @@ function xCopy(text, url) {
 
 async function generatePack(env, date, variant) {
   const base=buildDailyContent(date,variant);
-  if (!env.OPENAI_API_KEY) return {...base,generator:'template'};
+  if (!env.GEMINI_API_KEY) return {...base,generator:'template'};
 
-  const model=env.OPENAI_MODEL || 'gpt-5.6-luna';
+  const model=env.GEMINI_MODEL || 'gemini-2.5-flash';
   const prompt=`You write daily social copy for Snapoki, a free browser puzzle website.
 
 Use ONLY the facts below. Do not invent player counts, completion rates, scientific brain claims, scores, records, or puzzle-specific facts that were not supplied. Keep the tone smart, playful and concise, not corporate and not clickbait. Each platform should feel native rather than being the same paragraph copied three times.
@@ -85,41 +85,37 @@ Requirements:
 - Do not claim the generated board has properties beyond the supplied game insight.`;
 
   try {
-    const response=await fetch('https://api.openai.com/v1/responses',{
+    const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
       method:'POST',
       headers:{
-        'authorization':`Bearer ${env.OPENAI_API_KEY}`,
+        'x-goog-api-key':env.GEMINI_API_KEY,
         'content-type':'application/json'
       },
       body:JSON.stringify({
-        model,
-        input:prompt,
-        max_output_tokens:1800,
-        text:{
-          format:{
-            type:'json_schema',
-            name:'snapoki_social_pack',
-            strict:true,
-            schema:{
-              type:'object',
-              additionalProperties:false,
-              properties:{
-                headline:{type:'string'},
-                insight:{type:'string'},
-                linkedIn:{type:'string'},
-                x:{type:'string'},
-                instagram:{type:'string'}
-              },
-              required:['headline','insight','linkedIn','x','instagram']
-            }
+        contents:[{role:'user',parts:[{text:prompt}]}],
+        generationConfig:{
+          temperature:0.8,
+          maxOutputTokens:1800,
+          thinkingConfig:{thinkingBudget:0},
+          responseMimeType:'application/json',
+          responseSchema:{
+            type:'OBJECT',
+            properties:{
+              headline:{type:'STRING'},
+              insight:{type:'STRING'},
+              linkedIn:{type:'STRING'},
+              x:{type:'STRING'},
+              instagram:{type:'STRING'}
+            },
+            required:['headline','insight','linkedIn','x','instagram']
           }
         }
       })
     });
-    if (!response.ok) throw new Error(`OpenAI ${response.status}: ${(await response.text()).slice(0,500)}`);
+    if (!response.ok) throw new Error(`Gemini ${response.status}: ${(await response.text()).slice(0,500)}`);
     const data=await response.json();
-    const text=responseText(data);
-    if (!text) throw new Error('OpenAI returned no output text.');
+    const text=geminiText(data);
+    if (!text) throw new Error('Gemini returned no output text.');
     const ai=JSON.parse(text);
     const headline=String(ai.headline||base.headline).trim().slice(0,120);
     const instagram=includeUrl(ai.instagram,base.url,6000);
@@ -132,11 +128,11 @@ Requirements:
       x:xCopy(ai.x,base.url),
       instagram:withTags.slice(0,6000),
       image:{...base.image,title:headline},
-      generator:'openai',
+      generator:'gemini',
       model
     };
   } catch (exception) {
-    console.error('AI social generation failed; using template fallback.',exception);
+    console.error('Gemini social generation failed; using template fallback.',exception);
     return {...base,generator:'template-fallback'};
   }
 }
