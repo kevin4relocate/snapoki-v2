@@ -24,7 +24,22 @@
 .echo-stage:has(.echo-state-banner.is-failed) .echo-grid{filter:saturate(.82) brightness(.94)}
 .echo-stage:has(.echo-state-banner.is-failed) .echo-agent-player,.echo-stage:has(.echo-state-banner.is-failed) .echo-agent-ghost{filter:none}
 
-@media(max-width:760px){
+/* Desktop/tablet: all three rules must be visible at once. No horizontal scrolling. */
+@media(min-width:641px){
+  .echo-compact-bar{gap:5px;overflow:visible!important;padding-inline:0}
+  .echo-compact-you b,.echo-compact-echo b{font-size:11px!important}
+  .echo-compact-echo small{font-size:9px!important}
+  .echo-copy-mark{font-size:11px!important}
+  .echo-rule-separator{height:16px;margin:0 1px}
+  .echo-rule-strip{gap:3px;flex:0 1 auto}
+  .echo-rule-strip>span{gap:3px;padding:4px 5px}
+  .echo-rule-strip>span b{font-size:8px}
+  .echo-rule-strip>span small,.echo-rule-strip>span small strong,.echo-rule-strip>span small em{font-size:7px;gap:3px}
+  .wall-swatch{width:10px!important;height:10px!important;flex-basis:10px}
+}
+
+/* Narrow phones may swipe the single rule row rather than wrapping and pushing the board down. */
+@media(max-width:640px){
   .echo-compact-bar{width:100%;justify-content:flex-start;gap:5px;overflow-x:auto;padding:1px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .echo-compact-bar::-webkit-scrollbar{display:none}
   .echo-compact-you b,.echo-compact-echo b{font-size:10px!important}.echo-compact-echo small{font-size:8px!important}.echo-copy-mark{font-size:10px!important}
