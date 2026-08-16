@@ -1,5 +1,5 @@
 import {requireAdmin} from '../../_lib/admin.js';
-import {json,readJson,error,methodNotAllowed} from '../../_lib/http.js';
+import {json,readJson,error} from '../../_lib/http.js';
 import {buildDailyContent,contentDate} from '../../_lib/social-content.js';
 
 async function ensureTable(env) {
@@ -99,8 +99,4 @@ export async function onRequestDelete({request,env}) {
     await env.DB.prepare('DELETE FROM admin_social_content WHERE id=1 AND content_date=?').bind(contentDate()).run();
   }
   return json({ok:true});
-}
-
-export async function onRequest(context) {
-  return methodNotAllowed();
 }
