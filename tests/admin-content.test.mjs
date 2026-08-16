@@ -55,17 +55,21 @@ test('Gemini generation stays server-side and falls back when no key is configur
   assert.doesNotMatch(client,/generativelanguage\.googleapis\.com/);
 });
 
-test('social images are image-first, use real game generators, and export both platform sizes',async()=>{
+test('social image is one square image-first card with a short hook and subtle watermark',async()=>{
   const page=await fs.readFile('public/snapdesk-74kq/index.html','utf8');
   const client=await fs.readFile('src/js/admin-content.js','utf8');
   const renderer=await fs.readFile('src/js/social-game-board.js','utf8');
-  assert.match(page,/id="downloadPortraitBtn"/);
-  assert.match(page,/id="downloadLandscapeBtn"/);
-  assert.match(page,/Real Hard board · solution hidden/);
-  assert.match(client,/canvas\.width=1080;canvas\.height=1350/);
-  assert.match(client,/canvas\.width=1200;canvas\.height=675/);
-  assert.match(client,/boardSize=930/,'portrait card should devote most of its canvas to the game board');
-  assert.doesNotMatch(client,/WHY IT IS INTERESTING/);
+  assert.match(page,/id="downloadSquareBtn"/);
+  assert.match(page,/1080 × 1080 · use on every social platform/);
+  assert.match(page,/width="1080" height="1080"/);
+  assert.doesNotMatch(page,/downloadPortraitBtn|downloadLandscapeBtn|1080×1350|1200×675/);
+  assert.match(client,/canvas\.width=1080;canvas\.height=1080/);
+  assert.match(client,/const boardSize=900/,'square card should devote most of its canvas to the game board');
+  assert.match(client,/function imageHook/);
+  assert.match(client,/first\.length>=8&&first\.length<=42/,'image headline should stay short');
+  assert.match(client,/globalAlpha=\.34/);
+  assert.match(client,/fillText\('snapoki\.com'/);
+  assert.doesNotMatch(client,/drawPortrait|drawLandscape|WHY IT IS INTERESTING|NO SOLUTION SHOWN|NO HINTS/);
   for(const name of ['generateMaze','generateNumberPath','generateColorConnect','generateLightsOut','generateLoopPuzzle'])assert.match(renderer,new RegExp(name));
   assert.match(renderer,/generator\('hard'/);
   assert.doesNotMatch(renderer,/solveMaze|solution-edge|color-solution-line/,'social renderer should show unsolved boards only');
