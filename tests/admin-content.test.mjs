@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
 import {buildDailyContent,contentDate} from '../functions/_lib/social-content.js';
 
 test('daily social content is deterministic per date and variant',()=>{
@@ -52,4 +53,22 @@ test('Gemini generation stays server-side and falls back when no key is configur
   assert.doesNotMatch(api,/OPENAI_API_KEY|api\.openai\.com|gpt-5\.6-luna/);
   assert.doesNotMatch(client,/GEMINI_API_KEY/);
   assert.doesNotMatch(client,/generativelanguage\.googleapis\.com/);
+});
+
+test('social images are image-first, use real game generators, and export both platform sizes',async()=>{
+  const page=await fs.readFile('public/snapdesk-74kq/index.html','utf8');
+  const client=await fs.readFile('src/js/admin-content.js','utf8');
+  const renderer=await fs.readFile('src/js/social-game-board.js','utf8');
+  assert.match(page,/id="downloadPortraitBtn"/);
+  assert.match(page,/id="downloadLandscapeBtn"/);
+  assert.match(page,/Real Hard board · solution hidden/);
+  assert.match(client,/canvas\.width=1080;canvas\.height=1350/);
+  assert.match(client,/canvas\.width=1200;canvas\.height=675/);
+  assert.match(client,/boardSize=930/,'portrait card should devote most of its canvas to the game board');
+  assert.doesNotMatch(client,/WHY IT IS INTERESTING/);
+  for(const name of ['generateMaze','generateNumberPath','generateColorConnect','generateLightsOut','generateLoopPuzzle'])assert.match(renderer,new RegExp(name));
+  assert.match(renderer,/generator\('hard'/);
+  assert.doesNotMatch(renderer,/solveMaze|solution-edge|color-solution-line/,'social renderer should show unsolved boards only');
+  execFileSync(process.execPath,['--check','src/js/admin-content.js'],{stdio:'pipe'});
+  execFileSync(process.execPath,['--check','src/js/social-game-board.js'],{stdio:'pipe'});
 });
