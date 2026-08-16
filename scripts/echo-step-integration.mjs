@@ -27,7 +27,6 @@ const ECHO_GUIDE_LINK=/<a\b[^>]*href="\/blog\/how-to-play-echo-step\/"[^>]*>[\s\
 const ECHO_HEADER_BLOCK=/\n\/echo-step\/\*\n\s+X-Robots-Tag: noindex, nofollow, noarchive\n?/g;
 const ECHO_GUIDE_HEADER_BLOCK=/\n\/blog\/how-to-play-echo-step\/\*\n\s+X-Robots-Tag: noindex, nofollow, noarchive\n?/g;
 function hideEchoNavigation(html){return html.replace(ECHO_GAME_LINK,'').replace(ECHO_GUIDE_LINK,'');}
-function hideEchoFromSitemap(xml){return xml.replace(/<url>[\s\S]*?<\/url>/g,block=>block.includes('/echo-step/')||block.includes('/blog/how-to-play-echo-step/')?'':block);}
 
 const echoSpotlight=`<section class="section daily-home" data-echo-step-spotlight><div class="daily-home-copy"><span class="eyebrow">New puzzle</span><h2>Your moves come back.</h2><p>Echo Step gives one command to two timelines. Move the solid purple YOU now, watch the cyan Echo replay your earlier inputs later, and plan around phase walls that affect each character differently.</p><a class="button button-primary" href="/echo-step/">Play Echo Step</a></div><div class="daily-home-levels"><div><span>01</span><b>YOU</b><small>Move now</small></div><div><span>02</span><b>ECHO</b><small>Repeats later</small></div><div><span>03</span><b>SYNC</b><small>Finish together</small></div></div></section>`;
 function publishEchoHomepage(html){
@@ -52,7 +51,6 @@ if(!ECHO_STEP_PUBLIC){
     const html=await fs.readFile(file,'utf8');
     await fs.writeFile(file,hideEchoNavigation(html));
   }
-  await patch('sitemap.xml',hideEchoFromSitemap);
 }else{
   await patch('index.html',publishEchoHomepage);
   await patch('_headers',headers=>headers.replace(ECHO_HEADER_BLOCK,'\n').replace(ECHO_GUIDE_HEADER_BLOCK,'\n'));
