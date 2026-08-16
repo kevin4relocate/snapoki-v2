@@ -28,6 +28,8 @@ const ECHO_HEADER_BLOCK=/\n\/echo-step\/\*\n\s+X-Robots-Tag: noindex, nofollow, 
 const ECHO_GUIDE_HEADER_BLOCK=/\n\/blog\/how-to-play-echo-step\/\*\n\s+X-Robots-Tag: noindex, nofollow, noarchive\n?/g;
 function hideEchoNavigation(html){return html.replace(ECHO_GAME_LINK,'').replace(ECHO_GUIDE_LINK,'');}
 
+const oldDescription='Control purple YOU while a delayed cyan Echo repeats your earlier moves. Purple phase walls block YOU only, cyan phase walls block Echo only, and dark walls block both — so the same command can be safe now but dangerous a few turns later.';
+const newDescription='Control purple YOU while cyan Echo repeats your earlier moves after a delay. Purple striped cells stop YOU, cyan striped cells stop Echo, and dark cells stop both — so a safe move now can become dangerous when Echo repeats it later.';
 const echoSpotlight=`<section class="section daily-home" data-echo-step-spotlight><div class="daily-home-copy"><span class="eyebrow">New puzzle</span><h2>Your moves come back.</h2><p>Echo Step gives one command to two timelines. Move purple YOU now, watch cyan Echo replay your earlier inputs later, and plan around striped cells that affect each character differently.</p><a class="button button-primary" href="/echo-step/">Play Echo Step</a></div><div class="daily-home-levels"><div><span>01</span><b>YOU</b><small>Move now</small></div><div><span>02</span><b>ECHO</b><small>Repeats later</small></div><div><span>03</span><b>SYNC</b><small>Finish together</small></div></div></section>`;
 function publishEchoHomepage(html){
   if(!html.includes('data-echo-step-spotlight'))html=html.replace('<section class="section daily-home">',`${echoSpotlight}<section class="section daily-home">`);
@@ -58,10 +60,12 @@ if(!ECHO_STEP_PUBLIC){
 
 await patch('echo-step/index.html',html=>{
   html=html
-    .replace('Control purple YOU while a delayed cyan Echo repeats your earlier moves. Purple phase walls block YOU only, cyan phase walls block Echo only, and dark walls block both — so the same command can be safe now but dangerous a few turns later.','Control purple YOU while cyan Echo repeats your earlier moves after a delay. Purple striped cells stop YOU, cyan striped cells stop Echo, and dark cells stop both — so a safe move now can become dangerous when Echo repeats it later.')
-    .replace('Purple phase walls marked Y block YOU only. Cyan phase walls marked E block Echo only. Dark walls block both, so you must plan the same command against two different obstacle maps.','Purple striped cells stop YOU but not Echo. Cyan striped cells stop Echo but not YOU. Dark cells stop both.')
-    .replace('You win only when YOU and Echo occupy their matching goals on the same turn. If Echo later replays a move into a cyan or dark wall, the timeline breaks. Hint and Solution reveal a valid synchronized route.','YOU win only when YOU and Echo occupy their matching goals on the same turn. A blocked YOU move is rejected; if Echo replays into a cyan or dark cell, leaves the board, or collides with YOU, the timeline fails. Hint forecasts three moves; Guide teaches the solution one step at a time.')
-    .replace('Hint and Solution reveal a valid synchronized route.','Hint forecasts a short safe route; Guide teaches the synchronized solution one step at a time.');
+    .replaceAll(oldDescription,newDescription)
+    .replaceAll('plan around asymmetric phase walls','plan around striped cells')
+    .replaceAll('Asymmetric phase walls','Striped cell rules')
+    .replaceAll('Purple phase walls marked Y block YOU only. Cyan phase walls marked E block Echo only. Dark walls block both, so you must plan the same command against two different obstacle maps.','Purple striped cells stop YOU but not Echo. Cyan striped cells stop Echo but not YOU. Dark cells stop both.')
+    .replaceAll('You win only when YOU and Echo occupy their matching goals on the same turn. If Echo later replays a move into a cyan or dark wall, the timeline breaks. Hint and Solution reveal a valid synchronized route.','YOU win only when YOU and Echo occupy their matching goals on the same turn. A blocked YOU move is rejected; if Echo replays into a cyan or dark cell, leaves the board, or collides with YOU, the timeline fails. Hint forecasts three moves; Guide teaches the solution one step at a time.')
+    .replaceAll('Hint and Solution reveal a valid synchronized route.','Hint forecasts a short safe route; Guide teaches the synchronized solution one step at a time.');
   if(!html.includes('/assets/styles/echo-step.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/echo-step.css"></head>');
   if(!html.includes('/assets/styles/echo-step-polish.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/echo-step-polish.css"></head>');
   if(!html.includes('/assets/styles/echo-step-rulebar.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/echo-step-rulebar.css"></head>');
