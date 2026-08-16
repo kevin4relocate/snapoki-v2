@@ -18,17 +18,22 @@ test('content date follows Vietnam local day',()=>{
   assert.equal(contentDate(new Date('2026-08-16T17:30:00Z')),'2026-08-17');
 });
 
-test('admin content storage is a singleton and the page exposes delete controls',async()=>{
+test('content desk storage is a singleton and predictable admin routes are gone',async()=>{
   const migration=await fs.readFile('migrations/0004_admin_social_content.sql','utf8');
-  const api=await fs.readFile('functions/api/admin/content.js','utf8');
-  const page=await fs.readFile('public/admin/index.html','utf8');
+  const api=await fs.readFile('functions/api/snapdesk-74kq/content.js','utf8');
+  const page=await fs.readFile('public/snapdesk-74kq/index.html','utf8');
+  const client=await fs.readFile('src/js/admin-content.js','utf8');
   assert.match(migration,/PRIMARY KEY CHECK \(id = 1\)/);
   assert.match(api,/ON CONFLICT\(id\) DO UPDATE/);
   assert.match(api,/DELETE FROM admin_social_content/);
   assert.match(page,/name="robots" content="noindex,nofollow,noarchive"/);
+  assert.match(page,/data-private-utility="true"/);
   assert.match(page,/id="deleteTodayBtn"/);
   assert.match(page,/id="deleteAllBtn"/);
   assert.match(page,/data-copy="linkedIn"/);
   assert.match(page,/data-copy="x"/);
   assert.match(page,/data-copy="instagram"/);
+  assert.match(client,/\/api\/snapdesk-74kq\/content/);
+  await assert.rejects(fs.access('public/admin/index.html'));
+  await assert.rejects(fs.access('functions/api/admin/content.js'));
 });
