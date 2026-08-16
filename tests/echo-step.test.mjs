@@ -61,7 +61,7 @@ test('Echo Step solution guide follows the delayed timeline and shows directiona
 
 test('Echo Step memory highlights the next replay move and goal waiting state',()=>{
   const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8');
-  assert.match(source,/nextReady=state\.pending\.length===puzzle\.delay/);assert.match(source,/'is-next'/);assert.match(source,/'goal-waiting'/);
+  assert.match(source,/function nextEchoPreview\(\)/);assert.match(source,/state\.pending\.length!==puzzle\.delay/);assert.match(source,/'is-next'/);assert.match(source,/'goal-waiting'/);assert.match(source,/'echo-next-target'/);
   assert.match(css,/\.echo-queue b\.is-next/);assert.match(css,/\.echo-cell\.player-goal\.goal-waiting/);assert.match(css,/\.echo-cell\.echo-goal\.goal-waiting/);
 });
 
