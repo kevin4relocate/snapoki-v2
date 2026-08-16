@@ -62,10 +62,15 @@ try{
   await fs.writeFile(gamePageAsset,js);
 }catch(error){if(error?.code!=='ENOENT')throw error;}
 
-/* Keep Arrow/WASD usable after clicking the board, while preventing movement when focus is on toolbar buttons. */
+/* Echo-specific runtime hardening after the source tree is copied to dist. */
 const echoUiAsset=path.join(dist,'assets','js','games','echo-step-ui-v32.js');
 try{
   let js=await fs.readFile(echoUiAsset,'utf8');
+  js=replaceRequired(js,"if(failed)return'<small>Retry to restart the timeline</small>';","if(failed)return'';",'single failure message');
+  js=replaceRequired(js,
+    "if(next.playerBlocked){const[title,message]=friendlyBlock(next.reason);if(attemptedTarget>=0)flashCell(attemptedTarget,'echo-blocked-attempt');if(solutionVisible){practiceMessage=message;render();}else showNotice(title,message,'blocked',1300);onStatus('');return false;}",
+    "if(next.playerBlocked){const[title,message]=friendlyBlock(next.reason);if(solutionVisible){practiceMessage=message;render();}else showNotice(title,message,'blocked',1300);if(attemptedTarget>=0)flashCell(attemptedTarget,'echo-blocked-attempt');onStatus('');return false;}",
+    'blocked-cell feedback order');
   js=replaceRequired(js,
     "/INPUT|TEXTAREA|SELECT|BUTTON/.test(event.target?.tagName||'')",
     "(/INPUT|TEXTAREA|SELECT/.test(event.target?.tagName||'')||(event.target?.tagName==='BUTTON'&&!event.target?.classList?.contains('echo-cell')))",
