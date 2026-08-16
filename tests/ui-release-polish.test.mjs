@@ -16,11 +16,24 @@ test('ranking multiplier labels stay compact and never inherit default em typogr
   assert.match(page,/className='daily-reward'/);
 });
 
-test('blog hub uses the full shared site shell while article prose remains readable',()=>{
+test('blog hub uses the full shared shell and gives its editorial summary a wider centered measure',()=>{
   const css=read('src/styles/launch.css');
-  assert.match(css,/\.blog-index \.breadcrumbs,\.blog-index \.content-hero,\.blog-index \.guide-grid,\.blog-index>article\{width:100%;max-width:var\(--site-shell-max\)/);
-  assert.match(css,/--reading-max:900px/);
+  assert.match(css,/--blog-summary-max:1080px/);
+  assert.match(css,/\.blog-index \.breadcrumbs,\.blog-index \.content-hero,\.blog-index \.guide-grid\{width:100%;max-width:var\(--site-shell-max\)/);
+  assert.match(css,/\.blog-index>article\{width:100%;max-width:var\(--blog-summary-max\);margin-left:auto;margin-right:auto\}/);
   assert.match(css,/\.article-cta \.button\{flex:0 0 auto;white-space:nowrap\}/);
+});
+
+test('reference guide pages are centered while approved static pages keep their existing layout',()=>{
+  const css=read('src/styles/launch.css');
+  assert.match(css,/--reference-max:980px/);
+  assert.match(css,/\.reference-page \.content-hero,\.reference-page article\{width:100%;max-width:var\(--reference-max\);margin-left:auto;margin-right:auto\}/);
+  for(const route of ['how-to-play','daily-challenges','rankings-guide']){
+    const html=read(`dist/${route}/index.html`);
+    assert.match(html,/class="content-page reference-page"/);
+    assert.ok(html.indexOf('/assets/styles/content.css')<html.indexOf('/assets/styles/launch.css'),`${route}: content.css must load before launch.css`);
+  }
+  for(const route of ['about','help','privacy','terms'])assert.doesNotMatch(read(`dist/${route}/index.html`),/class="content-page reference-page"/);
 });
 
 test('More Games visually contains only game names',()=>{
