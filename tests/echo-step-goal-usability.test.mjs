@@ -41,7 +41,7 @@ test('Echo Step How to Play is compact, goal-first and has no orphan numbering',
 test('Practice completion does not repeat the technical Synced status below the board',()=>{
   const js=fs.readFileSync('dist/assets/js/games/echo-step-ui-v32.js','utf8');
   assert.doesNotMatch(js,/✓ Synced/);
-  assert.match(js,/if\(complete\)return'';/);
+  assert.match(js,/if\(complete\|\|failed\)return'';/);
 });
 
 test('Retry copy says explicitly that the player stays on the same puzzle',()=>{
