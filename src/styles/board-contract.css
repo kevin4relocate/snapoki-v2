@@ -14,9 +14,7 @@
 .echo-board-shell{position:relative}
 .echo-board-shell>.echo-grid{width:100%;height:100%;max-width:none;aspect-ratio:auto;margin:0}
 .echo-compact-bar,.echo-timeline,.echo-sequence{width:min(100%,var(--board-square-max));max-width:100%;min-width:0;margin-inline:auto}
-.echo-compact-bar{overflow:visible;overflow-y:hidden;justify-content:center;scrollbar-width:none}
-.echo-compact-bar::-webkit-scrollbar{display:none}
-@media(max-width:640px){.echo-compact-bar{overflow-x:auto;justify-content:flex-start;-webkit-overflow-scrolling:touch}}
+.echo-compact-bar{overflow:visible;justify-content:center}
 
 /* State messages float over the chrome and match the board width exactly. */
 .echo-stage>.echo-state-banner{left:50%;right:auto;width:min(100%,var(--board-square-max));max-width:100%;transform:translateX(-50%)}
