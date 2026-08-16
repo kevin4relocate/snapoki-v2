@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {generateEchoStep,simulateEchoStep} from '../src/js/games/echo-step.js';
 
-test('Echo Step V3 keeps asymmetric phase barriers deterministic and solvable',()=>{
+test('Echo Step V3 keeps asymmetric barriers deterministic and solvable',()=>{
   for(const difficulty of ['easy','medium','hard'])for(let sample=0;sample<30;sample++){
     const seed=`echo-v3:${difficulty}:${sample}`;
     const a=generateEchoStep(difficulty,seed),b=generateEchoStep(difficulty,seed);
@@ -14,8 +14,8 @@ test('Echo Step V3 keeps asymmetric phase barriers deterministic and solvable',(
   }
 });
 
-test('Echo Step V3 previews the next Echo target and warns on danger',()=>{
-  const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8');
+test('Echo Step previews the next Echo target and warns on danger',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8');
   const css=fs.readFileSync('src/styles/echo-step.css','utf8');
   assert.match(source,/function nextEchoPreview\(\)/);
   assert.match(source,/state\.pending\.length!==puzzle\.delay/);
