@@ -16,7 +16,7 @@ import {colorConnectDifficultyScore,colorConnectSolverInvariant} from './color-c
 const LEVEL={
   easy:{size:6,colors:4,blockedRuns:[],candidates:12,maxCandidates:16,pathFlips:44,weaveAttempts:14,minRoute:5,splitAttempts:1,shortlist:3,variants:6,variantSlack:4,nodeLimit:700,solutionLimit:2},
   medium:{size:9,colors:7,blockedRuns:[4,3,3,2,2,1,1],candidates:14,maxCandidates:24,pathFlips:84,weaveAttempts:25,minRoute:5,splitAttempts:6,shortlist:4,variants:9,variantSlack:7,nodeLimit:2200,solutionLimit:2},
-  hard:{size:12,colors:11,blockedRuns:[7,5,5,4,4,3,3,2,2,1],candidates:16,maxCandidates:40,pathFlips:128,weaveAttempts:38,minRoute:6,splitAttempts:8,shortlist:6,variants:12,variantSlack:11,nodeLimit:8000,solutionLimit:2}
+  hard:{size:12,colors:11,blockedRuns:[7,5,5,4,4,3,3,2,2,1],candidates:18,maxCandidates:48,pathFlips:128,weaveAttempts:38,minRoute:6,splitAttempts:8,shortlist:6,variants:12,variantSlack:11,nodeLimit:8000,solutionLimit:2}
 };
 
 const COLORS=['#ff5d8f','#52d273','#5ca8ff','#ffb347','#b879ff','#39d0d8','#ff7c54','#e7e25a','#8b9cff','#f0a3ff','#f7f7f2'];
@@ -105,27 +105,32 @@ function weaveOptions(routes,size,minRoute){
   return options;
 }
 
-function routeLocalScore(route,size){
-  const turns=pathTurns(route,size),[aR,aC]=rcOf(route[0],size),[bR,bC]=rcOf(route.at(-1),size),manhattan=Math.abs(aR-bR)+Math.abs(aC-bC),detour=Math.max(0,route.length-1-manhattan),zones=new Set(route.map(index=>{const[r,c]=rcOf(index,size);return `${Math.min(2,Math.floor(r*3/size))}:${Math.min(2,Math.floor(c*3/size))}`;}));
-  return turns*18+detour*9+zones.size*24-(aR===bR||aC===bC?24:0);
+function endpointSpread(route,size){
+  const[aR,aC]=rcOf(route[0],size),[bR,bC]=rcOf(route.at(-1),size),rowGap=Math.abs(aR-bR),colGap=Math.abs(aC-bC),manhattan=rowGap+colGap,half=size/2,oppositeRows=(aR<half)!==(bR<half),oppositeCols=(aC<half)!==(bC<half),diagonalSpan=Math.min(rowGap,colGap);
+  return{rowGap,colGap,manhattan,diagonalSpan,crossBoard:oppositeRows&&oppositeCols&&diagonalSpan>=Math.floor(size*.42),far:manhattan>=Math.ceil(size*.75)};
 }
 
-function topologyProxy(routes,size){
+function routeLocalScore(route,size,difficulty='easy'){
+  const turns=pathTurns(route,size),[aR,aC]=rcOf(route[0],size),[bR,bC]=rcOf(route.at(-1),size),manhattan=Math.abs(aR-bR)+Math.abs(aC-bC),detour=Math.max(0,route.length-1-manhattan),zones=new Set(route.map(index=>{const[r,c]=rcOf(index,size);return `${Math.min(2,Math.floor(r*3/size))}:${Math.min(2,Math.floor(c*3/size))}`;})),spread=endpointSpread(route,size),endpointPressure=difficulty==='hard'?spread.manhattan*12+spread.diagonalSpan*18+(spread.crossBoard?110:0):0;
+  return turns*18+detour*9+zones.size*24-(aR===bR||aC===bC?24:0)+endpointPressure;
+}
+
+function topologyProxy(routes,size,difficulty='easy'){
   const owner=new Map(),zoneColors=Array.from({length:9},()=>new Set()),routeZones=Array.from({length:routes.length},()=>new Set()),neighbors=Array.from({length:routes.length},()=>new Set());
   routes.forEach((route,color)=>route.forEach(index=>{owner.set(index,color);const[r,c]=rcOf(index,size),zone=Math.min(2,Math.floor(r*3/size))*3+Math.min(2,Math.floor(c*3/size));zoneColors[zone].add(color);routeZones[color].add(zone);}));
   for(const[index,color]of owner)for(const next of orthogonalNeighbors(index,size,size)){const other=owner.get(next);if(other!=null&&other!==color){neighbors[color].add(other);neighbors[other].add(color);}}
   const mixed=zoneColors.filter(set=>set.size>=2).length,hot=zoneColors.filter(set=>set.size>=3).length,minNeighbors=Math.min(...neighbors.map(set=>set.size)),avgZones=routeZones.reduce((sum,set)=>sum+set.size,0)/routes.length;
-  return routes.reduce((sum,route)=>sum+routeLocalScore(route,size),0)+mixed*90+hot*120+minNeighbors*160+avgZones*90;
+  return routes.reduce((sum,route)=>sum+routeLocalScore(route,size,difficulty),0)+mixed*90+hot*120+minNeighbors*160+avgZones*90;
 }
 
-function weaveRoutes(input,size,seed,attempts,minRoute){
-  const rng=rngFromSeed(`${seed}:weave-v8`),routes=input.map(route=>[...route]);let weaves=0,currentScore=topologyProxy(routes,size);
+function weaveRoutes(input,size,seed,attempts,minRoute,difficulty='easy'){
+  const rng=rngFromSeed(`${seed}:weave-v8`),routes=input.map(route=>[...route]);let weaves=0,currentScore=topologyProxy(routes,size,difficulty);
   for(let round=0;round<attempts;round++){
     const options=weaveOptions(routes,size,minRoute);if(!options.length)break;
     const sample=shuffle(options,rng).slice(0,Math.min(14,options.length));let best=null;
     for(const option of sample){
       const next=routes.map(route=>route);next[option.a]=option.nextA;next[option.b]=option.nextB;
-      const score=topologyProxy(next,size)+rng()*6;
+      const score=topologyProxy(next,size,difficulty)+rng()*6;
       if(!best||score>best.score)best={...option,score};
     }
     if(!best)break;
@@ -161,7 +166,7 @@ function interactionStats(segments,size,blocked){
     for(let b=0;b<segments.length;b++)if(a!==b)for(const endpoint of[segments[b].start,segments[b].end]){const[r,c]=rcOf(endpoint,size);if(r>=box.minR&&r<=box.maxR&&c>=box.minC&&c<=box.maxC)endpointBoxIntrusions++;}
   }
   const componentCount=()=>{const seen=new Set();let components=0;for(let start=0;start<routeNeighbors.length;start++){if(seen.has(start))continue;components++;const queue=[start];seen.add(start);while(queue.length){const current=queue.shift();for(const next of routeNeighbors[current])if(!seen.has(next)){seen.add(next);queue.push(next);}}}return components;};
-  const routeTurns=segments.map(segment=>pathTurns(segment.path,size)),detours=segments.map(segment=>{const[aR,aC]=rcOf(segment.start,size),[bR,bC]=rcOf(segment.end,size);return Math.max(0,segment.path.length-1-(Math.abs(aR-bR)+Math.abs(aC-bC)));});
+  const routeTurns=segments.map(segment=>pathTurns(segment.path,size)),detours=segments.map(segment=>{const[aR,aC]=rcOf(segment.start,size),[bR,bC]=rcOf(segment.end,size);return Math.max(0,segment.path.length-1-(Math.abs(aR-bR)+Math.abs(aC-bC)));}),endpointSpreads=segments.map(segment=>endpointSpread(segment.path,size)),endpointDistances=endpointSpreads.map(item=>item.manhattan),endpointDiagonalSpans=endpointSpreads.map(item=>item.diagonalSpan);
   return{
     owner,
     routeGraphComponents:componentCount(),
@@ -174,6 +179,11 @@ function interactionStats(segments,size,blocked){
     endpointNearPairs,
     endpointBoxIntrusions,
     boxOverlapPairs,
+    crossBoardPairs:endpointSpreads.filter(item=>item.crossBoard).length,
+    farEndpointPairs:endpointSpreads.filter(item=>item.far).length,
+    avgEndpointDistance:endpointDistances.reduce((a,b)=>a+b,0)/endpointDistances.length,
+    maxEndpointDistance:Math.max(...endpointDistances),
+    avgEndpointDiagonalSpan:endpointDiagonalSpans.reduce((a,b)=>a+b,0)/endpointDiagonalSpans.length,
     turns:routeTurns.reduce((a,b)=>a+b,0),
     avgTurns:routeTurns.reduce((a,b)=>a+b,0)/segments.length,
     straightRoutes:routeTurns.filter(value=>value<=1).length,
@@ -185,20 +195,21 @@ function interactionStats(segments,size,blocked){
   };
 }
 
-function cheapGate(difficulty,q){
+function cheapGate(difficulty,q,size){
   if(difficulty==='easy')return q.straightRoutes<=1&&q.avgTurns>=1.6;
   if(difficulty==='medium')return q.routeGraphComponents===1&&q.mixedZones>=5&&q.avgRouteZones>=2.4&&q.avgTurns>=2.5&&q.straightRoutes<=1&&q.blocks.quadrants>=3&&q.blocks.rowSpread>=6&&q.blocks.colSpread>=6&&q.blocks.largestCluster<=9;
-  return q.routeGraphComponents===1&&q.mixedZones>=7&&q.hotZones>=3&&q.avgRouteZones>=2.4&&q.straightRoutes<=1&&q.competitiveRoutes>=8&&q.blocks.quadrants===4&&q.blocks.rowSpread>=9&&q.blocks.colSpread>=9&&q.blocks.largestCluster<=12;
+  return q.routeGraphComponents===1&&q.mixedZones>=7&&q.hotZones>=3&&q.avgRouteZones>=2.4&&q.straightRoutes<=1&&q.competitiveRoutes>=8&&q.blocks.quadrants===4&&q.blocks.rowSpread>=9&&q.blocks.colSpread>=9&&q.blocks.largestCluster<=12&&q.crossBoardPairs>=2&&q.farEndpointPairs>=4&&q.avgEndpointDistance>=size*.62;
 }
 
-function cheapScore(q,weaves){
-  return q.crossEdges*18+q.mixedZones*180+q.hotZones*220+q.avgRouteZones*180+q.endpointNearPairs*55+q.endpointBoxIntrusions*65+q.boxOverlapPairs*80+q.minNeighborColors*210+q.avgTurns*160+q.avgDetour*90+q.blocks.isolated*70+q.clusters.clusterCount*45+weaves*10-q.straightRoutes*500-q.blocks.largestCluster*35;
+function cheapScore(q,weaves,difficulty){
+  const endpointPressure=difficulty==='hard'?q.crossBoardPairs*600+q.farEndpointPairs*260+q.avgEndpointDistance*120+q.avgEndpointDiagonalSpan*140:0;
+  return q.crossEdges*18+q.mixedZones*180+q.hotZones*220+q.avgRouteZones*180+q.endpointNearPairs*55+q.endpointBoxIntrusions*65+q.boxOverlapPairs*80+q.minNeighborColors*210+q.avgTurns*160+q.avgDetour*90+q.blocks.isolated*70+q.clusters.clusterCount*45+weaves*10+endpointPressure-q.straightRoutes*500-q.blocks.largestCluster*35;
 }
 
 function candidateFor(cfg,seed,index,difficulty){
   const base=randomizeHamiltonianPath(cfg.size,`${seed}:candidate:${index}`,cfg.pathFlips),split=splitTacticalRuns(base,cfg,seed,index);if(!split)return null;
-  const woven=weaveRoutes(split.routes,cfg.size,`${seed}:${index}`,cfg.weaveAttempts,cfg.minRoute),segments=makeSegments(woven.routes,`${seed}:${index}`),quality=interactionStats(segments,cfg.size,split.blocked);
-  quality.cheapValid=cheapGate(difficulty,quality);quality.cheapScore=cheapScore(quality,woven.weaves);quality.weaves=woven.weaves;
+  const woven=weaveRoutes(split.routes,cfg.size,`${seed}:${index}`,cfg.weaveAttempts,cfg.minRoute,difficulty),segments=makeSegments(woven.routes,`${seed}:${index}`),quality=interactionStats(segments,cfg.size,split.blocked);
+  quality.cheapValid=cheapGate(difficulty,quality,cfg.size);quality.cheapScore=cheapScore(quality,woven.weaves,difficulty);quality.weaves=woven.weaves;
   return{segments,blocked:split.blocked,openCount:segments.reduce((sum,segment)=>sum+segment.path.length,0),quality,weaves:woven.weaves};
 }
 
