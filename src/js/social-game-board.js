@@ -1,3 +1,4 @@
+import {generateEchoStep} from './games/echo-step.js';
 import {generateMaze} from './games/maze.js';
 import {generateNumberPath} from './games/number-path.js';
 import {generateColorConnect} from './games/color-connect.js';
@@ -23,6 +24,7 @@ function generatePuzzle(payload){
   const key=payload.game?.key||'',seed=puzzleSeed(payload),cacheKey=`${key}:${seed}`;
   if(cache.has(cacheKey))return cache.get(cacheKey);
   const generators={
+    'echo-step':generateEchoStep,
     maze:generateMaze,
     'number-path':generateNumberPath,
     'color-connect':generateColorConnect,
@@ -43,6 +45,21 @@ function frame(ctx,{x,y,size}){
   rounded(ctx,x,y,size,size,Math.max(18,size*.035));
   ctx.fillStyle='#090f1d';ctx.fill();
   ctx.strokeStyle='rgba(127,145,202,.30)';ctx.lineWidth=Math.max(2,size*.004);ctx.stroke();
+  ctx.restore();
+}
+
+function drawEchoStep(ctx,puzzle,box){
+  const{x,y,size}=box,n=puzzle.size,pad=size*.055,board=size-pad*2,cell=board/n,ox=x+pad,oy=y+pad,blocked=new Set(puzzle.blocked);
+  frame(ctx,box);ctx.save();
+  for(let i=0;i<n*n;i++){
+    const r=Math.floor(i/n),c=i%n,cx=ox+c*cell,cy=oy+r*cell,gap=Math.max(1.4,cell*.05);
+    rounded(ctx,cx+gap,cy+gap,cell-gap*2,cell-gap*2,Math.max(3,cell*.12));ctx.fillStyle=blocked.has(i)?'#171d2a':'#0f182b';ctx.fill();ctx.strokeStyle=blocked.has(i)?'rgba(115,128,155,.20)':'rgba(75,95,136,.26)';ctx.lineWidth=1;ctx.stroke();
+    if(blocked.has(i)){ctx.fillStyle='rgba(128,141,170,.28)';rounded(ctx,cx+cell*.31,cy+cell*.31,cell*.38,cell*.38,cell*.08);ctx.fill();}
+  }
+  const center=index=>{const r=Math.floor(index/n),c=index%n;return[ox+(c+.5)*cell,oy+(r+.5)*cell];};
+  const goal=(index,color)=>{const[cx,cy]=center(index);ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=Math.max(2,cell*.055);ctx.setLineDash([Math.max(3,cell*.10),Math.max(3,cell*.08)]);ctx.arc(cx,cy,cell*.30,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);};
+  const agent=(index,color,ghost=false)=>{const[cx,cy]=center(index);ctx.save();ctx.globalAlpha=ghost?.88:1;ctx.shadowColor=color;ctx.shadowBlur=cell*.22;ctx.beginPath();ctx.fillStyle=color;ctx.arc(cx,cy,cell*.19,0,Math.PI*2);ctx.fill();ctx.restore();};
+  goal(puzzle.playerGoal,'#917fff');goal(puzzle.echoGoal,'#5de1ff');agent(puzzle.playerStart,'#917fff');agent(puzzle.echoStart,'#5de1ff',true);
   ctx.restore();
 }
 
@@ -105,7 +122,8 @@ function drawFallback(ctx,payload,box){
 export function drawGameBoard(ctx,payload,box){
   const puzzle=generatePuzzle(payload),key=payload.game?.key;
   if(!puzzle){drawFallback(ctx,payload,box);return{generated:false,difficulty:'hard'};}
-  if(key==='maze')drawMaze(ctx,puzzle,box);
+  if(key==='echo-step')drawEchoStep(ctx,puzzle,box);
+  else if(key==='maze')drawMaze(ctx,puzzle,box);
   else if(key==='number-path')drawNumberPath(ctx,puzzle,box);
   else if(key==='color-connect')drawColorConnect(ctx,puzzle,box);
   else if(key==='lights-out')drawLightsOut(ctx,puzzle,box);

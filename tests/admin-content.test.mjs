@@ -70,7 +70,7 @@ test('social image is one square image-first card with a short hook and subtle w
   assert.match(client,/globalAlpha=\.34/);
   assert.match(client,/fillText\('snapoki\.com'/);
   assert.doesNotMatch(client,/drawPortrait|drawLandscape|WHY IT IS INTERESTING|NO SOLUTION SHOWN|NO HINTS/);
-  for(const name of ['generateMaze','generateNumberPath','generateColorConnect','generateLightsOut','generateLoopPuzzle'])assert.match(renderer,new RegExp(name));
+  for(const name of ['generateEchoStep','generateMaze','generateNumberPath','generateColorConnect','generateLightsOut','generateLoopPuzzle'])assert.match(renderer,new RegExp(name));
   assert.match(renderer,/generator\('hard'/);
   assert.doesNotMatch(renderer,/solveMaze|solution-edge|color-solution-line/,'social renderer should show unsolved boards only');
   execFileSync(process.execPath,['--check','src/js/admin-content.js'],{stdio:'pipe'});
