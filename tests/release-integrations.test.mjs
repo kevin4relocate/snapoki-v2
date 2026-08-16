@@ -30,26 +30,30 @@ test('homepage FAQ uses the shared 1080px measure and covers launch questions',(
   assert.match(css,/\.home-page \.faq\{width:100%;max-width:calc\(var\(--content-max\) \+ \(var\(--site-shell-gutter\) \* 2\)\);margin-left:auto;margin-right:auto\}/);
 });
 
-test('public footers expose the requested LinkedIn and X social destinations',()=>{
+test('public footers expose LinkedIn, Instagram, X and Facebook PlaySnapoki destinations without a Sitemap link',()=>{
   for(const file of walk(dist).filter(f=>f.endsWith('.html')&&!isPrivateUtility(f))){
     const html=fs.readFileSync(file,'utf8'),rel=path.relative(dist,file);
     assert.match(html,/class="footer-social"/,`${rel}: social group`);
     assert.match(html,/https:\/\/www\.linkedin\.com\/company\/snapoki\//,`${rel}: LinkedIn`);
-    assert.match(html,/https:\/\/x\.com\/snapoki_x/,`${rel}: X`);
+    assert.match(html,/https:\/\/www\.instagram\.com\/playsnapoki\//,`${rel}: Instagram`);
+    assert.match(html,/https:\/\/x\.com\/playsnapoki/,`${rel}: X`);
+    assert.match(html,/https:\/\/www\.facebook\.com\/playsnapoki/,`${rel}: Facebook`);
+    assert.doesNotMatch(html,/href="\/sitemap\.xml">Sitemap<\/a>/,`${rel}: visible Sitemap footer link`);
   }
+  assert.ok(fs.existsSync('dist/sitemap.xml'),'technical sitemap must remain generated for search engines');
 });
 
-test('analytics disclosure and social identity metadata match launch configuration',()=>{
+test('analytics disclosure and social identity metadata match PlaySnapoki launch configuration',()=>{
   const privacy=read('dist/privacy/index.html');
   assert.match(privacy,/<h2>Analytics<\/h2>/);
   assert.match(privacy,/Snapoki uses Google Analytics/);
   assert.match(privacy,/Google Analytics may also use first-party cookies/);
   const home=read('dist/index.html');
-  assert.match(home,/name="twitter:site" content="@snapoki_x"/);
+  assert.match(home,/name="twitter:site" content="@playsnapoki"/);
   assert.match(home,/property="og:image:alt" content="Snapoki puzzle games"/);
   const blocks=[...home.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m=>JSON.parse(m[1]));
   const org=blocks.find(x=>x['@type']==='Organization');
   assert.ok(org,'homepage Organization schema');
-  assert.deepEqual(org.sameAs,['https://www.linkedin.com/company/snapoki/','https://x.com/snapoki_x']);
+  assert.deepEqual(org.sameAs,['https://www.linkedin.com/company/snapoki/','https://www.instagram.com/playsnapoki/','https://x.com/playsnapoki','https://www.facebook.com/playsnapoki']);
   assert.equal('email' in org,false,'Organization schema should not reintroduce contact email globally');
 });
