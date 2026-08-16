@@ -20,10 +20,11 @@ test('Echo Step messages use plain language and state-driven persistence',()=>{
 });
 
 test('Echo Step state messages overlay the rule row without moving the board',()=>{
-  const css=fs.readFileSync('dist/assets/styles/echo-step-rulebar.css','utf8');
-  assert.match(css,/V3\.7 state-driven plain-language overlays/);
+  const css=fs.readFileSync('dist/assets/styles/echo-step-polish.css','utf8');
+  const rulebar=fs.readFileSync('dist/assets/styles/echo-step-rulebar.css','utf8');
   assert.match(css,/\.echo-stage>\.echo-state-banner\{position:absolute/);
-  assert.match(css,/\.echo-compact-bar\{min-height:46px\}/);
+  assert.doesNotMatch(css,/\.echo-board-shell \.echo-state-banner/);
+  assert.match(rulebar,/min-height:56px!important/);
 });
 
 test('Echo Step launch help copy avoids internal timeline jargon',()=>{
