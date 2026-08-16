@@ -1,9 +1,13 @@
 /* Snapoki gameplay + site polish V3 */
-.games-dropdown{width:238px!important;padding:7px!important}
+.games-dropdown{width:210px!important;padding:7px!important}
 .games-dropdown a{min-height:42px!important;padding:8px 10px!important;gap:14px!important}
 .games-dropdown a span{font-size:14px;font-weight:720;letter-spacing:-.01em}
-.games-dropdown a small{font-size:9px!important;letter-spacing:.09em!important}
+.games-dropdown a small{display:none!important}
 .nav-menu-button{min-width:max-content}
+
+/* Ranking reward labels are secondary metadata, never headline-sized italic text. */
+.difficulty-reward{display:block;margin-top:4px;color:#aeb8cc;font-size:9px!important;line-height:1.2;font-style:normal;font-weight:800;letter-spacing:.045em;white-space:nowrap}
+.daily-reward{display:inline-block;margin-left:4px;color:#dbe3f5;font-size:9px!important;line-height:1;font-style:normal;font-weight:850;letter-spacing:.02em;white-space:nowrap;vertical-align:baseline}
 
 /* Keep Daily visually connected to the game instead of creating a dead zone. */
 .daily-section{margin-top:18px!important;padding-top:18px!important;padding-bottom:44px!important}
@@ -36,4 +40,4 @@
 .content-page .contact-callout{margin-top:42px}
 .content-page .contact-callout a{color:#9eb5ff;text-decoration:underline;text-underline-offset:3px}
 
-@media(max-width:780px){.daily-section{margin-top:12px!important;padding-top:14px!important}.games-dropdown{width:min(238px,calc(100vw - 28px))!important}}
+@media(max-width:780px){.daily-section{margin-top:12px!important;padding-top:14px!important}.games-dropdown{width:min(210px,calc(100vw - 28px))!important}}
