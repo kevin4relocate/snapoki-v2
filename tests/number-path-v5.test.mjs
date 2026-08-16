@@ -13,6 +13,21 @@ function verifyRoute(puzzle){
   for(const clue of puzzle.clues)assert.equal(puzzle.solution[clue.label-1],clue.index);
 }
 
+test('Number Path V5.1 Easy stays approachable but rejects straight sweep routes',()=>{
+  const boards=seeds.map(seed=>generateNumberPath('easy',seed));
+  for(const puzzle of boards){
+    verifyRoute(puzzle);
+    const q=numberPathComplexity(puzzle);
+    assert.equal(puzzle.size,6);
+    assert.equal(puzzle.blocked.length,0);
+    assert.equal(q.routeValid,true);
+    assert.ok(q.turns>=14,'Easy should include enough bends to avoid simple column sweeps');
+    assert.ok(q.longestStraight<=4,'Easy should not contain full-height straight highways');
+    assert.ok(q.shortRuns>=8,'Easy should contain several short direction changes');
+    assert.ok(q.avgStraight<=2.8,'Easy should remain visibly winding without becoming Medium');
+  }
+});
+
 test('Number Path V5 Medium uses scattered blocker shapes to force frequent detours',()=>{
   const boards=seeds.map(seed=>generateNumberPath('medium',seed));
   for(const puzzle of boards){
