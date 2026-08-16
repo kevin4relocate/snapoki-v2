@@ -17,16 +17,14 @@ async function htmlFiles(dir){
   }
   return out;
 }
-
+function replaceRequired(text,from,to,label){
+  if(!text.includes(from))throw new Error(`UI safety patch target missing: ${label}`);
+  return text.replace(from,to);
+}
 function ensureContentStyleOrder(html){
   if(!html.includes('class="content-page'))return html;
-  if(!html.includes(contentLink)){
-    return html.includes(launchLink)?html.replace(launchLink,contentLink+launchLink):html.replace('</head>',contentLink+'</head>');
-  }
-  if(html.includes(launchLink)&&html.indexOf(contentLink)>html.indexOf(launchLink)){
-    html=html.replace(contentLink,'');
-    html=html.replace(launchLink,contentLink+launchLink);
-  }
+  if(!html.includes(contentLink))return html.includes(launchLink)?html.replace(launchLink,contentLink+launchLink):html.replace('</head>',contentLink+'</head>');
+  if(html.includes(launchLink)&&html.indexOf(contentLink)>html.indexOf(launchLink)){html=html.replace(contentLink,'');html=html.replace(launchLink,contentLink+launchLink);}
   return html;
 }
 
@@ -44,35 +42,33 @@ const gamePageAsset=path.join(dist,'assets','js','game-page.js');
 try{
   let js=await fs.readFile(gamePageAsset,'utf8');
   js=js.replaceAll(' · EXPERT','');
-
-  js=js.replace(
+  js=replaceRequired(js,
     "const state={difficulty:game.levels[0][0],mode:'normal',seed:'',runId:'',ranked:false,unrankedReason:'',startedAt:0,timer:null,engine:null,engineFactory:null,loading:false,completed:false",
-    "const state={difficulty:game.levels[0][0],mode:'normal',seed:'',runId:'',ranked:false,unrankedReason:'',startedAt:0,timer:null,engine:null,engineFactory:null,engineLocked:false,loading:false,completed:false"
-  );
-  js=js.replace(
+    "const state={difficulty:game.levels[0][0],mode:'normal',seed:'',runId:'',ranked:false,unrankedReason:'',startedAt:0,timer:null,engine:null,engineFactory:null,engineLocked:false,loading:false,completed:false",
+    'engineLocked state');
+  js=replaceRequired(js,
     "function updateControlAvailability(){const ready=Boolean(state.engine)&&!state.loading,done=state.completed,reviewLocked=Boolean(review);setDisabled('#newPuzzle',state.loading);setDisabled('#hint',!capability('hint')||!ready||done||state.solutionVisible);setDisabled('#solution',!capability('solution')||!ready||done);setDisabled('#resetPuzzle',!ready||(done&&!state.practiceComplete));setDisabled('#undoAction',!capability('undo')||!ready||done);",
-    "function updateControlAvailability(){const ready=Boolean(state.engine)&&!state.loading,done=state.completed,locked=Boolean(state.engineLocked),reviewLocked=Boolean(review);setDisabled('#newPuzzle',state.loading);setDisabled('#hint',!capability('hint')||!ready||done||locked||state.solutionVisible);setDisabled('#solution',!capability('solution')||!ready||done||locked);setDisabled('#resetPuzzle',!ready||(done&&!state.practiceComplete));setDisabled('#undoAction',!capability('undo')||!ready||done||locked);"
-  );
-  js=js.replace(
-    "state.engine?.destroy?.();state.engine=null;state.loading=true;",
-    "state.engine?.destroy?.();state.engine=null;state.engineLocked=false;state.loading=true;"
-  );
-  js=js.replace(
-    "b.textContent=visible?'Hide Solution':'Solution';",
-    "b.textContent=gameKey==='echo-step'?(visible?'Exit Guide':'Guide'):(visible?'Hide Solution':'Solution');"
-  );
-  js=js.replace(
+    "function updateControlAvailability(){const ready=Boolean(state.engine)&&!state.loading,done=state.completed,locked=Boolean(state.engineLocked),reviewLocked=Boolean(review);setDisabled('#newPuzzle',state.loading);setDisabled('#hint',!capability('hint')||!ready||done||locked||state.solutionVisible);setDisabled('#solution',!capability('solution')||!ready||done||locked);setDisabled('#resetPuzzle',!ready||(done&&!state.practiceComplete));setDisabled('#undoAction',!capability('undo')||!ready||done||locked);",
+    'terminal control lock');
+  js=replaceRequired(js,"state.engine?.destroy?.();state.engine=null;state.loading=true;","state.engine?.destroy?.();state.engine=null;state.engineLocked=false;state.loading=true;",'new puzzle unlock');
+  js=replaceRequired(js,"b.textContent=visible?'Hide Solution':'Solution';","b.textContent=gameKey==='echo-step'?(visible?'Exit Guide':'Guide'):(visible?'Hide Solution':'Solution');",'Echo Guide label');
+  js=replaceRequired(js,
     "function setSmartNext(action){state.smartNext=action||null;const next=$('#resultNext');if(!next)return;next.hidden=false;next.textContent=action?.label?`${action.label} →`:'Next Challenge →';}",
-    "function setSmartNext(action){state.smartNext=action||null;const next=$('#resultNext');if(!next)return;next.hidden=!action;if(!action)return;next.textContent=action.label?`${action.label} →`:'Next Challenge →';}"
-  );
-  js=js.replace(
-    "replay?'+0 pts':hasAccount()?'Unranked':'Sign in';",
-    "replay?'+0 pts':hasAccount()?'Unranked':'—';"
-  );
+    "function setSmartNext(action){state.smartNext=action||null;const next=$('#resultNext');if(!next)return;next.hidden=!action;if(!action)return;next.textContent=action.label?`${action.label} →`:'Next Challenge →';}",
+    'result next action visibility');
+  js=replaceRequired(js,"replay?'+0 pts':hasAccount()?'Unranked':'Sign in';","replay?'+0 pts':hasAccount()?'Unranked':'—';",'guest rank points');
   const lockListener="window.addEventListener('snapoki:game-lock',event=>{if(event.detail?.game!==game.key)return;state.engineLocked=Boolean(event.detail?.locked);if(state.engineLocked)stopTimer();updateControlAvailability();});";
-  if(!js.includes("snapoki:game-lock"))js=js.replace('init();',`${lockListener}\ninit();`);
-
+  if(!js.includes('snapoki:game-lock'))js=replaceRequired(js,'init();',`${lockListener}\ninit();`,'game lock listener');
   await fs.writeFile(gamePageAsset,js);
-}catch(error){
-  if(error?.code!=='ENOENT')throw error;
-}
+}catch(error){if(error?.code!=='ENOENT')throw error;}
+
+/* Keep Arrow/WASD usable after clicking the board, while preventing movement when focus is on toolbar buttons. */
+const echoUiAsset=path.join(dist,'assets','js','games','echo-step-ui-v32.js');
+try{
+  let js=await fs.readFile(echoUiAsset,'utf8');
+  js=replaceRequired(js,
+    "/INPUT|TEXTAREA|SELECT|BUTTON/.test(event.target?.tagName||'')",
+    "(/INPUT|TEXTAREA|SELECT/.test(event.target?.tagName||'')||(event.target?.tagName==='BUTTON'&&!event.target?.classList?.contains('echo-cell')))",
+    'Echo focused-cell keyboard support');
+  await fs.writeFile(echoUiAsset,js);
+}catch(error){if(error?.code!=='ENOENT')throw error;}
