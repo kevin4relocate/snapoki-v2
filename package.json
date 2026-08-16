@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/generate-brand.mjs && node scripts/build.mjs && node scripts/enrich-content.mjs && node scripts/post-build-platform.mjs && node scripts/echo-step-integration.mjs && node scripts/launch-readiness.mjs && node scripts/post-build-ui-safety.mjs && node scripts/release-integrations.mjs",
+    "build": "node scripts/generate-brand.mjs && node scripts/build.mjs && node scripts/enrich-content.mjs && node scripts/post-build-platform.mjs && node scripts/launch-readiness.mjs && node scripts/echo-step-integration.mjs && node scripts/post-build-ui-safety.mjs && node scripts/release-integrations.mjs",
     "test": "node --test tests/*.test.mjs",
     "brand": "node scripts/generate-brand.mjs"
   }
