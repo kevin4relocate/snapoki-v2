@@ -16,20 +16,33 @@ function bothHome(puzzle,state){return state.player===puzzle.playerGoal&&state.e
 function arrows(actions){return actions.map(action=>DIRS[action]?.arrow||'').filter(Boolean).join(' ');}
 function stepGuide(steps){const guide=new Map();for(const step of steps)guide.set(step.from,{arrow:DIRS[step.action]?.arrow||'',step:step.turn});return guide;}
 function friendlyFailure(message){
-  if(message==='Echo hit a cyan phase wall.')return'Echo hit a cyan wall.';
-  if(message==='Echo hit a dark wall.')return'Echo hit a dark wall.';
-  if(message==='Echo left the board.')return'Echo moved off the board.';
+  if(message==='Echo hit a cyan phase wall.')return'Echo replayed into a cyan cell.';
+  if(message==='Echo hit a dark wall.')return'Echo replayed into a dark cell.';
+  if(message==='Echo left the board.')return'Echo replayed a move off the board.';
+  if(message==='Echo collided with YOU.')return'Echo replayed into YOU.';
   return message;
+}
+function friendlyBlock(message){
+  if(message==='That move leaves the board.')return['Move blocked',"YOU can’t leave the board."];
+  if(message==='That move hits a dark wall.')return['Move blocked','Dark cell — nobody can enter.'];
+  if(message==='Purple phase wall: YOU cannot cross it.')return['Move blocked','Purple cell — YOU cannot enter.'];
+  if(message==='Echo is occupying that cell.')return['Move blocked','Echo is occupying that cell.'];
+  return['Move blocked',message];
+}
+function signalLock(locked,reason=''){
+  window.dispatchEvent(new CustomEvent('snapoki:game-lock',{detail:{game:'echo-step',locked:Boolean(locked),reason}}));
 }
 
 export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,onPracticeComplete=()=>{}}){
   const puzzle=generateEchoStep(difficulty,seed),timeDivisor=scoreTimeDivisor('echo-step',difficulty),sharedBlocked=new Set(puzzle.blocked),playerPhase=new Set(puzzle.playerBarriers),echoPhase=new Set(puzzle.echoBarriers),feedbackTimers=new Set();
-  let state={player:puzzle.playerStart,echo:puzzle.echoStart,pending:[]},moves=0,actions=[],hintActions=[],hintForecast=null,hintAtMove=-1,solutionVisible=false,practice=false,complete=false,failed=false,failureMessage='',practiceMessage='';
+  let state={player:puzzle.playerStart,echo:puzzle.echoStart,pending:[]},moves=0,actions=[],hintActions=[],hintForecast=null,hintAtMove=-1,solutionVisible=false,practice=false,complete=false,failed=false,failureMessage='',practiceMessage='',notice=null,noticeTimer=null;
 
-  host.innerHTML=`<div class="echo-stage"><div class="echo-compact-bar"><span class="echo-compact-you"><i></i><b>YOU</b></span><span class="echo-copy-mark">→</span><span class="echo-compact-echo"><i></i><b>ECHO</b><small>${puzzle.delay}-turn delay</small></span><details class="echo-rules"><summary>Walls</summary><div class="echo-rules-popover"><span><i class="wall-swatch wall-swatch-you"></i><b>Purple</b><small><strong>YOU ✕</strong><em>ECHO ✓</em></small></span><span><i class="wall-swatch wall-swatch-echo"></i><b>Cyan</b><small><em>YOU ✓</em><strong>ECHO ✕</strong></small></span><span><i class="wall-swatch wall-swatch-both"></i><b>Dark</b><small><strong>YOU ✕</strong><strong>ECHO ✕</strong></small></span><p>✕ cannot enter · ✓ can pass through</p></div></details></div><div class="echo-board-shell"><div class="echo-state-banner" role="status" aria-live="polite" hidden></div><div class="echo-grid" style="--grid-size:${puzzle.size}" role="grid" aria-label="Echo Step board"></div></div><div class="echo-timeline"><span>Echo memory</span><div class="echo-queue" aria-live="polite"></div></div><div class="echo-sequence" hidden></div></div>`;
+  host.innerHTML=`<div class="echo-stage"><div class="echo-compact-bar" aria-label="Echo Step rules"><span class="echo-compact-you"><i></i><b>YOU</b></span><span class="echo-copy-mark">→</span><span class="echo-compact-echo"><i></i><b>ECHO</b><small>${puzzle.delay}-turn delay</small></span><span class="echo-rule-separator" aria-hidden="true"></span><div class="echo-rule-strip"><span><i class="wall-swatch wall-swatch-you"></i><b>Purple</b><small><strong>YOU ✕</strong><em>ECHO ✓</em></small></span><span><i class="wall-swatch wall-swatch-echo"></i><b>Cyan</b><small><em>YOU ✓</em><strong>ECHO ✕</strong></small></span><span><i class="wall-swatch wall-swatch-both"></i><b>Dark</b><small><strong>YOU ✕</strong><strong>ECHO ✕</strong></small></span></div></div><div class="echo-board-shell"><div class="echo-state-banner" role="status" aria-live="polite" hidden></div><div class="echo-grid" style="--grid-size:${puzzle.size}" role="grid" aria-label="Echo Step board"></div></div><div class="echo-timeline"><span>Echo memory</span><div class="echo-queue" aria-live="polite"></div></div><div class="echo-sequence" hidden></div></div>`;
   const grid=host.querySelector('.echo-grid'),queue=host.querySelector('.echo-queue'),sequence=host.querySelector('.echo-sequence'),banner=host.querySelector('.echo-state-banner');
   for(let i=0;i<puzzle.size*puzzle.size;i++){const cell=document.createElement('button');cell.type='button';cell.className='echo-cell';cell.dataset.index=String(i);cell.setAttribute('role','gridcell');cell.setAttribute('aria-label',`Row ${Math.floor(i/puzzle.size)+1}, column ${i%puzzle.size+1}`);grid.appendChild(cell);}
 
+  function clearNotice(){if(noticeTimer){clearTimeout(noticeTimer);feedbackTimers.delete(noticeTimer);noticeTimer=null;}notice=null;}
+  function showNotice(title,message,type='info',duration=1500){clearNotice();notice={title,message,type};render();if(duration>0){noticeTimer=setTimeout(()=>{notice=null;noticeTimer=null;render();},duration);feedbackTimers.add(noticeTimer);}}
   function clearHint(){hintActions=[];hintForecast=null;hintAtMove=-1;}
   function addHintGuide(cell,guide,kind){
     if(solutionVisible||!hintActions.length)return;
@@ -45,24 +58,24 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
   }
   function practiceStep(){
     if(!solutionVisible||complete)return null;
-    const index=actions.length,action=puzzle.solution[index];
-    if(!action)return null;
+    const index=actions.length,action=puzzle.solution[index];if(!action)return null;
     const playerTarget=targetFor(state.player,puzzle.size,action),echoAction=state.pending.length===puzzle.delay?state.pending[0]:'',echoTarget=echoAction?targetFor(state.echo,puzzle.size,echoAction):-1;
     return{index,action,playerTarget,echoAction,echoTarget};
   }
   function flashCell(index,className){
     const cell=grid.querySelector(`.echo-cell[data-index="${index}"]`);if(!cell)return;
     cell.classList.remove(className);void cell.offsetWidth;cell.classList.add(className);
-    const timer=setTimeout(()=>{cell.classList.remove(className);feedbackTimers.delete(timer);},260);feedbackTimers.add(timer);
+    const timer=setTimeout(()=>{cell.classList.remove(className);feedbackTimers.delete(timer);},280);feedbackTimers.add(timer);
   }
   function renderQueue(){
     if(complete)return'<small class="echo-sync-done">✓ Synced</small>';
+    if(failed)return'<small>Retry to restart the timeline</small>';
     if(!state.pending.length)return`<small>Echo starts after ${puzzle.delay} moves</small>`;
     const preview=nextEchoPreview();
     return state.pending.map((action,index)=>`<b class="${preview.ready&&index===0?'is-next':''} ${preview.ready&&preview.danger&&index===0?'is-danger':''}" aria-label="${preview.ready&&index===0?'Next Echo move: ':''}${DIRS[action].label}">${preview.ready&&index===0?'<em>NEXT</em>':''}<span>${DIRS[action].arrow}</span></b>`).join('');
   }
   function renderSequence(){
-    if(solutionVisible)return'';
+    if(solutionVisible||failed)return'';
     if(!hintActions.length||!hintForecast)return'';
     const echoMoves=hintForecast.echoSteps.map(step=>step.action).filter(Boolean),echoCopy=echoMoves.length?`replays ${arrows(echoMoves)}`:`still waiting (${Math.max(0,puzzle.delay-state.pending.length)} turn${Math.max(0,puzzle.delay-state.pending.length)===1?'':'s'})`;
     return`<b>3-move hint</b><span class="echo-hint-sequence-player">YOU: ${arrows(hintActions)}</span><span class="echo-hint-sequence-echo">ECHO: ${echoCopy}</span><small>Purple numbers are your next moves. Cyan markers show what Echo replays during them.</small>`;
@@ -72,48 +85,52 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
     if(failed){banner.className='echo-state-banner is-failed';banner.innerHTML=`<div><strong>Timeline failed</strong><span>${failureMessage}</span></div><button type="button" data-echo-reset>Retry</button>`;return;}
     const guide=practiceStep();
     if(guide){const echoCopy=guide.echoAction?`${DIRS[guide.echoAction].arrow} ${DIRS[guide.echoAction].label}`:'waits';banner.className='echo-state-banner is-practice';banner.innerHTML=`<div><strong>Guide · ${guide.index+1}/${puzzle.solution.length}</strong><span>${practiceMessage||`YOU ${DIRS[guide.action].arrow} · Echo ${echoCopy}`}</span></div>`;return;}
-    if(state.player===puzzle.playerGoal&&!complete){banner.className='echo-state-banner is-waiting-player';banner.innerHTML='<div><strong>P reached — sync missing</strong><span>Get Echo onto E on the same turn.</span></div>';return;}
-    if(state.echo===puzzle.echoGoal&&!complete){banner.className='echo-state-banner is-waiting-echo';banner.innerHTML='<div><strong>Echo reached E — sync missing</strong><span>Get YOU onto P on the same turn.</span></div>';return;}
+    if(notice){banner.className=`echo-state-banner is-notice is-${notice.type}`;banner.innerHTML=`<div><strong>${notice.title}</strong><span>${notice.message}</span></div>`;return;}
+    if(state.player===puzzle.playerGoal&&!complete){banner.className='echo-state-banner is-waiting-player';banner.innerHTML='<div><strong>P reached — not synced yet</strong><span>Echo must be on E on the same turn.</span></div>';return;}
+    if(state.echo===puzzle.echoGoal&&!complete){banner.className='echo-state-banner is-waiting-echo';banner.innerHTML='<div><strong>Echo reached E — not synced yet</strong><span>YOU must be on P on the same turn.</span></div>';return;}
     banner.hidden=true;banner.className='echo-state-banner';banner.innerHTML='';
   }
   function render(){
     const echoPreview=nextEchoPreview(),guide=practiceStep(),hintPlayerGuide=hintForecast?stepGuide(hintForecast.playerSteps):new Map(),hintEchoGuide=hintForecast?stepGuide(hintForecast.echoSteps):new Map();
     grid.querySelectorAll('.echo-cell').forEach(cell=>{
       const index=Number(cell.dataset.index);cell.className='echo-cell';cell.title='';
-      if(sharedBlocked.has(index)){cell.classList.add('blocked','shared-blocked');cell.title='Dark wall: YOU and Echo cannot enter.';}
-      if(playerPhase.has(index)){cell.classList.add('barrier-player');cell.title='Purple wall: YOU cannot enter; Echo can pass through.';}
-      if(echoPhase.has(index)){cell.classList.add('barrier-echo');cell.title='Cyan wall: Echo cannot enter; YOU can pass through.';}
+      if(sharedBlocked.has(index)){cell.classList.add('blocked','shared-blocked');cell.title='Dark: YOU and Echo cannot enter.';}
+      if(playerPhase.has(index)){cell.classList.add('barrier-player');cell.title='Purple: YOU cannot enter; Echo can pass through.';}
+      if(echoPhase.has(index)){cell.classList.add('barrier-echo');cell.title='Cyan: Echo cannot enter; YOU can pass through.';}
       if(index===puzzle.playerGoal)cell.classList.add('player-goal');if(index===puzzle.echoGoal)cell.classList.add('echo-goal');if(index===state.player)cell.classList.add('has-player');if(index===state.echo)cell.classList.add('has-echo');
       if(index===puzzle.playerGoal&&state.player===puzzle.playerGoal&&!bothHome(puzzle,state))cell.classList.add('goal-waiting');if(index===puzzle.echoGoal&&state.echo===puzzle.echoGoal&&!bothHome(puzzle,state))cell.classList.add('goal-waiting');
-      if(echoPreview.ready&&!solutionVisible&&index===echoPreview.target)cell.classList.add('echo-next-target',...(echoPreview.danger?['echo-next-danger']:[]));
+      if(echoPreview.ready&&!solutionVisible&&!failed&&index===echoPreview.target)cell.classList.add('echo-next-target',...(echoPreview.danger?['echo-next-danger']:[]));
       if(guide&&index===guide.playerTarget)cell.classList.add('practice-next-player');if(guide?.echoAction&&index===guide.echoTarget)cell.classList.add('practice-next-echo');
       cell.disabled=sharedBlocked.has(index)||playerPhase.has(index)||complete||failed;cell.innerHTML='';
       addHintGuide(cell,hintPlayerGuide,'player');addHintGuide(cell,hintEchoGuide,'echo');
-      if(echoPreview.ready&&!solutionVisible&&index===echoPreview.target){const next=document.createElement('span');next.className='echo-next-marker';next.textContent=echoPreview.danger?'!':'NEXT';next.setAttribute('aria-hidden','true');cell.appendChild(next);}
+      if(echoPreview.ready&&!solutionVisible&&!failed&&index===echoPreview.target){const next=document.createElement('span');next.className='echo-next-marker';next.textContent=echoPreview.danger?'!':'NEXT';next.setAttribute('aria-hidden','true');cell.appendChild(next);}
       if(guide&&index===guide.playerTarget){const next=document.createElement('span');next.className='echo-practice-marker echo-practice-marker-you';next.textContent='NEXT';next.setAttribute('aria-hidden','true');cell.appendChild(next);}
       if(guide?.echoAction&&index===guide.echoTarget){const next=document.createElement('span');next.className='echo-practice-marker echo-practice-marker-echo';next.textContent='ECHO';next.setAttribute('aria-hidden','true');cell.appendChild(next);}
       if(index===puzzle.playerGoal){const goal=document.createElement('span');goal.className='echo-goal-mark echo-goal-player';goal.setAttribute('aria-hidden','true');cell.appendChild(goal);}if(index===puzzle.echoGoal){const goal=document.createElement('span');goal.className='echo-goal-mark echo-goal-ghost';goal.setAttribute('aria-hidden','true');cell.appendChild(goal);}if(index===state.player){const token=document.createElement('span');token.className='echo-agent echo-agent-player';token.textContent='YOU';cell.appendChild(token);}if(index===state.echo){const token=document.createElement('span');token.className='echo-agent echo-agent-ghost';token.textContent='E';token.setAttribute('aria-label','Echo');cell.appendChild(token);}
     });
     queue.innerHTML=renderQueue();const sequenceHtml=renderSequence();sequence.hidden=!sequenceHtml;sequence.innerHTML=sequenceHtml;renderBanner();onMetrics({moves,delay:puzzle.delay});
   }
-  function fail(message){failed=true;failureMessage=friendlyFailure(message);practiceMessage='';clearHint();render();onStatus('');}
-  function finish(){complete=true;practiceMessage='';clearHint();host.classList.add('game-solved-bloom');render();if(practice){onStatus('');onPracticeComplete('Guided practice complete. YOU and Echo reached P and E on the same turn.');}else{onStatus('');onComplete();}}
+  function fail(message){failed=true;failureMessage=friendlyFailure(message);practiceMessage='';clearNotice();clearHint();signalLock(true,'failed');render();onStatus('');}
+  function finish(){complete=true;practiceMessage='';clearNotice();clearHint();host.classList.add('game-solved-bloom');render();if(practice){onStatus('');onPracticeComplete('Guided practice complete. YOU and Echo reached P and E on the same turn.');}else{onStatus('');onComplete();}}
   function move(action){
     if(complete||failed||!DIRS[action])return false;
     if(solutionVisible){const expected=puzzle.solution[actions.length];if(action!==expected){practiceMessage=`Follow NEXT: ${DIRS[expected]?.arrow||''} ${DIRS[expected]?.label||''}.`;render();onStatus('');return false;}practiceMessage='';}
-    const previousEcho=state.echo,next=advanceEchoState(puzzle,state,action);if(!next.ok){if(next.playerBlocked){if(solutionVisible){practiceMessage=next.reason;render();}else onStatus(next.reason);return false;}fail(next.reason);return false;}
-    state=next.state;moves++;actions.push(action);clearHint();render();flashCell(state.player,'just-moved-you');if(state.echo!==previousEcho)flashCell(state.echo,'just-moved-echo');
+    const attemptedTarget=targetFor(state.player,puzzle.size,action),previousEcho=state.echo,next=advanceEchoState(puzzle,state,action);
+    if(!next.ok){
+      if(next.playerBlocked){const[title,message]=friendlyBlock(next.reason);if(attemptedTarget>=0)flashCell(attemptedTarget,'echo-blocked-attempt');if(solutionVisible){practiceMessage=message;render();}else showNotice(title,message,'blocked',1300);onStatus('');return false;}
+      fail(next.reason);return false;
+    }
+    clearNotice();state=next.state;moves++;actions.push(action);clearHint();render();flashCell(state.player,'just-moved-you');if(state.echo!==previousEcho)flashCell(state.echo,'just-moved-echo');
     if(bothHome(puzzle,state)){finish();return true;}
-    if(state.player===puzzle.playerGoal||state.echo===puzzle.echoGoal){onStatus('');return true;}
     onStatus('');return true;
   }
   function directionTo(index){if(index<0||index>=puzzle.size*puzzle.size)return'';const[pr,pc]=rcOf(state.player,puzzle.size),[tr,tc]=rcOf(index,puzzle.size);if(Math.abs(pr-tr)+Math.abs(pc-tc)!==1)return'';return tr<pr?'u':tr>pr?'d':tc<pc?'l':'r';}
 
   grid.addEventListener('click',event=>{const cell=event.target.closest('.echo-cell');if(cell)move(directionTo(Number(cell.dataset.index)));});
   banner.addEventListener('click',event=>{if(event.target.closest('[data-echo-reset]'))document.querySelector('#resetPuzzle')?.click();});
-  const keyHandler=event=>{if(event.defaultPrevented||event.metaKey||event.ctrlKey||event.altKey||/INPUT|TEXTAREA|SELECT/.test(event.target?.tagName||''))return;const map={ArrowUp:'u',w:'u',W:'u',ArrowRight:'r',d:'r',D:'r',ArrowDown:'d',s:'d',S:'d',ArrowLeft:'l',a:'l',A:'l'},action=map[event.key];if(action){event.preventDefault();move(action);}};window.addEventListener('keydown',keyHandler);
+  const keyHandler=event=>{if(event.defaultPrevented||event.metaKey||event.ctrlKey||event.altKey||/INPUT|TEXTAREA|SELECT|BUTTON/.test(event.target?.tagName||''))return;const map={ArrowUp:'u',w:'u',W:'u',ArrowRight:'r',d:'r',D:'r',ArrowDown:'d',s:'d',S:'d',ArrowLeft:'l',a:'l',A:'l'},action=map[event.key];if(action){event.preventDefault();move(action);}};window.addEventListener('keydown',keyHandler);
 
-  function resetState({keepPractice=false,keepSolution=false}={}){host.classList.remove('game-solved-bloom');state={player:puzzle.playerStart,echo:puzzle.echoStart,pending:[]};moves=0;actions=[];clearHint();solutionVisible=keepSolution;practice=keepPractice;complete=false;failed=false;failureMessage='';practiceMessage='';render();onStatus('');}
+  function resetState({keepPractice=false,keepSolution=false}={}){host.classList.remove('game-solved-bloom');clearNotice();state={player:puzzle.playerStart,echo:puzzle.echoStart,pending:[]};moves=0;actions=[];clearHint();solutionVisible=keepSolution;practice=keepPractice;complete=false;failed=false;failureMessage='';practiceMessage='';signalLock(false);render();onStatus('');}
   resetState();
 
   return{
@@ -122,16 +139,16 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
     hint(){
       if(complete||failed||solutionVisible)return false;
       const prefix=actions.every((action,index)=>puzzle.solution[index]===action);
-      if(!prefix||actions.length>=puzzle.solution.length){onStatus('You left the guided route. Reset Puzzle if you want another hint.');return false;}
-      if(hintAtMove===actions.length&&hintActions.length){onStatus('This hint is already on the board. Make a move first.');return false;}
+      if(!prefix||actions.length>=puzzle.solution.length){showNotice('Hint unavailable here','This route left the guide. Keep solving, or Retry to restart from the planned route.','info',2200);onStatus('');return false;}
+      if(hintAtMove===actions.length&&hintActions.length){showNotice('Hint already shown','Make one move before asking for another forecast.','info',1300);onStatus('');return false;}
       hintActions=puzzle.solution.slice(actions.length,actions.length+HINT_LOOKAHEAD);hintForecast=forecastEchoStep(puzzle,state,hintActions);hintAtMove=actions.length;
-      if(!hintForecast.ok){clearHint();onStatus('Hint unavailable from this position. Reset Puzzle and try again.');return false;}
-      render();const echoMoves=hintForecast.echoSteps.map(step=>step.action).filter(Boolean),echoMessage=echoMoves.length?` Echo replays ${arrows(echoMoves)}.`:'';onStatus(`Hint: ${arrows(hintActions)}.${echoMessage}`);return true;
+      if(!hintForecast.ok){clearHint();showNotice('Hint unavailable','Retry if you want to return to the guided route.','info',1800);onStatus('');return false;}
+      render();onStatus('');return true;
     },
-    solution(){if(complete)return;resetState({keepPractice:true,keepSolution:true});},
-    hideSolution(){if(complete)return;solutionVisible=false;practiceMessage='';render();onStatus('');},
+    solution(){if(complete||failed)return;resetState({keepPractice:true,keepSolution:true});},
+    hideSolution(){if(complete||failed)return;solutionVisible=false;practiceMessage='';render();onStatus('');},
     previewScore(timeMs,hints=0){return scoreFromPerformance({timeMs,timeDivisor,actionPenalty:Math.max(0,moves-puzzle.solutionMoves)*70,hintPenalty:hints*190});},
     getResult(timeMs,hints=0){return{score:scoreFromPerformance({timeMs,timeDivisor,actionPenalty:Math.max(0,moves-puzzle.solutionMoves)*70,hintPenalty:hints*190}),metadata:{moves,size:puzzle.size,delay:puzzle.delay,solution_moves:puzzle.solutionMoves,actions:[...actions]}};},
-    destroy(){window.removeEventListener('keydown',keyHandler);for(const timer of feedbackTimers)clearTimeout(timer);feedbackTimers.clear();host.classList.remove('game-solved-bloom');}
+    destroy(){signalLock(false);window.removeEventListener('keydown',keyHandler);clearNotice();for(const timer of feedbackTimers)clearTimeout(timer);feedbackTimers.clear();host.classList.remove('game-solved-bloom');}
   };
 }
