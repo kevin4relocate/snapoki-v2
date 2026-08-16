@@ -18,6 +18,9 @@ async function htmlFiles(dir){
 for(const file of await htmlFiles(dist)){
   let html=await fs.readFile(file,'utf8');
   html=html.replaceAll('<span class="eyebrow">Same boards for everyone</span>','');
+  if(html.includes('class="content-page')&&!html.includes('/assets/styles/content.css')){
+    html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/content.css"></head>');
+  }
   if(!html.includes('/assets/styles/ui-safety.css')){
     html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/ui-safety.css"></head>');
   }
