@@ -27,23 +27,13 @@ const echoFooter='<a href="/echo-step/">Echo Step</a>';
 const echoCard='<a class="game-card" href="/echo-step/"><div class="game-card-icon game-card-icon--echo-step">E</div><div><span class="eyebrow">Logic puzzle</span><h3>Echo Step</h3><p>Move YOU now while Echo repeats your moves later. Reach P and E on the same turn.</p></div><span class="card-arrow" aria-hidden="true">→</span></a>';
 const echoGuideCard='<a class="guide-card" href="/blog/how-to-play-echo-step/"><img src="/brand/guides/echo-step.svg" width="900" height="500" loading="lazy" alt="Echo Step puzzle preview"><div><span class="eyebrow">Logic guide</span><h2>How to Play Echo Step</h2><p>Move YOU now, plan for Echo repeating the same moves later, and reach P and E on the same turn.</p><span class="text-link">Read guide →</span></div></a>';
 const echoSpotlight='<section class="section daily-home" data-echo-step-spotlight><div class="daily-home-copy"><span class="eyebrow">New puzzle</span><h2>Your moves come back.</h2><p>Move purple YOU now while cyan Echo repeats the same moves a few turns later. Purple, cyan and dark striped cells affect who can enter, so every move has to work now and later.</p><a class="button button-primary" href="/echo-step/">Play Echo Step</a></div><div class="daily-home-levels"><div><span>01</span><b>YOU → P</b><small>Your goal</small></div><div><span>02</span><b>ECHO → E</b><small>Echo’s goal</small></div><div><span>03</span><b>SAME TURN</b><small>Finish together</small></div></div></section>';
-
 const social='<div class="footer-social" aria-label="Snapoki social links"><a href="https://www.linkedin.com/company/snapoki/" target="_blank" rel="noopener noreferrer" aria-label="Snapoki on LinkedIn"><span class="social-glyph" aria-hidden="true">in</span><span>LinkedIn</span></a><a href="https://www.instagram.com/playsnapoki/" target="_blank" rel="noopener noreferrer" aria-label="Snapoki on Instagram"><span class="social-glyph" aria-hidden="true">IG</span><span>Instagram</span></a><a href="https://x.com/playsnapoki" target="_blank" rel="noopener noreferrer" aria-label="Snapoki on X"><span class="social-glyph social-glyph--x" aria-hidden="true">X</span><span>@playsnapoki</span></a><a href="https://www.facebook.com/playsnapoki" target="_blank" rel="noopener noreferrer" aria-label="Snapoki on Facebook"><span class="social-glyph" aria-hidden="true">f</span><span>Facebook</span></a></div>';
 
 function revealEcho(html){
-  if(html.includes('<nav class="desktop-nav"')&&!html.includes('class="desktop-game-link" data-game-link="echo-step"')){
-    html=html.replace(/(<nav class="desktop-nav"[^>]*>)/,`$1${echoDesktop}`);
-  }
-  if(html.includes('<nav id="mobileMenu"')&&!new RegExp('<nav id="mobileMenu"[\\s\\S]*?data-game-link="echo-step"').test(html)){
-    html=html.replace(/(<nav id="mobileMenu"[^>]*>)/,`$1${echoMobile}`);
-  }
-  const gamesColumn='<div class="footer-column"><strong>Games</strong>';
-  const gamesStart=html.indexOf(gamesColumn);
-  if(gamesStart>=0){
-    const gamesEnd=html.indexOf('</div>',gamesStart);
-    const block=html.slice(gamesStart,gamesEnd);
-    if(!block.includes('href="/echo-step/"'))html=html.slice(0,gamesStart)+block.replace('<strong>Games</strong>',`<strong>Games</strong>${echoFooter}`)+html.slice(gamesEnd);
-  }
+  if(html.includes('<nav class="desktop-nav"')&&!html.includes('class="desktop-game-link" data-game-link="echo-step"'))html=html.replace(/(<nav class="desktop-nav"[^>]*>)/,`$1${echoDesktop}`);
+  if(html.includes('<nav id="mobileMenu"')&&!new RegExp('<nav id="mobileMenu"[\\s\\S]*?data-game-link="echo-step"').test(html))html=html.replace(/(<nav id="mobileMenu"[^>]*>)/,`$1${echoMobile}`);
+  const gamesColumn='<div class="footer-column"><strong>Games</strong>',gamesStart=html.indexOf(gamesColumn);
+  if(gamesStart>=0){const gamesEnd=html.indexOf('</div>',gamesStart),block=html.slice(gamesStart,gamesEnd);if(!block.includes('href="/echo-step/"'))html=html.slice(0,gamesStart)+block.replace('<strong>Games</strong>',`<strong>Games</strong>${echoFooter}`)+html.slice(gamesEnd);}
   return html;
 }
 
@@ -51,8 +41,7 @@ function updateFooter(html){
   html=html.replace(/<a href="\/sitemap\.xml">Sitemap<\/a>/g,'');
   if(/<div class="footer-social"/.test(html))html=html.replace(/<div class="footer-social"[\s\S]*?<\/div>/,social);
   else html=html.replace(/(<div class="footer-brand">[\s\S]*?<p>[\s\S]*?<\/p>)/,`$1${social}`);
-  html=html.replaceAll('https://x.com/snapoki_x','https://x.com/playsnapoki');
-  html=html.replaceAll('@snapoki_x','@playsnapoki');
+  html=html.replaceAll('https://x.com/snapoki_x','https://x.com/playsnapoki').replaceAll('@snapoki_x','@playsnapoki');
   html=html.replace(/"sameAs":\[[^\]]*\]/,`"sameAs":["https://www.linkedin.com/company/snapoki/","https://www.instagram.com/playsnapoki/","https://x.com/playsnapoki","https://www.facebook.com/playsnapoki"]`);
   return html;
 }
@@ -74,9 +63,7 @@ const echoHowTo='<div class="echo-howto"><div class="echo-howto-goal"><strong>Go
 function updateEchoPage(html){
   html=html.replace(/(<section class="panel how-to"><div class="panel-heading"><strong>How to play<\/strong><span>Echo Step<\/span><\/div>)[\s\S]*?(<\/section><section class="panel rankings">)/,`$1${echoHowTo}$2`);
   if(!html.includes('/assets/styles/echo-step-launch.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/echo-step-launch.css"></head>');
-  return html
-    .replaceAll('Move now. Sync with your past.','Move now. Echo follows later.')
-    .replaceAll('Asymmetric phase walls','Striped cell rules');
+  return html.replaceAll('Move now. Sync with your past.','Move now. Echo follows later.').replaceAll('Asymmetric phase walls','Striped cell rules');
 }
 
 function updateEchoGuide(html){
@@ -96,29 +83,17 @@ function updateEchoGuide(html){
 
 function updateHome(html){
   html=updateSharedCopy(html);
-  const grid='<div class="game-card-grid">';
-  const start=html.indexOf(grid);
-  if(start>=0){
-    const end=html.indexOf('</div></section>',start);
-    const block=html.slice(start,end);
-    if(!block.includes('class="game-card" href="/echo-step/"'))html=html.slice(0,start)+block.replace(grid,`${grid}${echoCard}`)+html.slice(end);
-  }
+  const grid='<div class="game-card-grid">',start=html.indexOf(grid);
+  if(start>=0){const end=html.indexOf('</div></section>',start),block=html.slice(start,end);if(!block.includes('class="game-card" href="/echo-step/"'))html=html.slice(0,start)+block.replace(grid,`${grid}${echoCard}`)+html.slice(end);}
   if(!html.includes('data-echo-step-spotlight'))html=html.replace('<section class="section daily-home">',`${echoSpotlight}<section class="section daily-home">`);
-  html=html.replace('Play Maze, Number Path, Color Connect, Lights Out and Loop Puzzle online for free','Play Echo Step, Maze, Number Path, Color Connect, Lights Out and Loop Puzzle online for free');
-  return html;
+  return html.replace('Play Maze, Number Path, Color Connect, Lights Out and Loop Puzzle online for free','Play Echo Step, Maze, Number Path, Color Connect, Lights Out and Loop Puzzle online for free');
 }
 
 function updateBlog(html){
   html=updateSharedCopy(html);
-  const grid='<div class="guide-grid">';
-  const start=html.indexOf(grid);
-  if(start>=0){
-    const end=html.indexOf('</div><article>',start);
-    const block=html.slice(start,end);
-    if(!block.includes('/blog/how-to-play-echo-step/'))html=html.slice(0,start)+block.replace(grid,`${grid}${echoGuideCard}`)+html.slice(end);
-  }
-  html=html.replace('Snapoki does not treat board size as the only difficulty setting. Each game uses structural signals that match its rules: Maze emphasizes deceptive branches and detours, Number Path adds path constraints and blockers, Color Connect measures route dependencies with a solver, Lights Out uses minimum presses, and Loop Puzzle controls both loop shape and clue quality.','Snapoki does not treat board size as the only difficulty setting. Each game uses structural signals that match its rules: Echo Step adds delayed consequences, Maze emphasizes deceptive branches and detours, Number Path adds path constraints and blockers, Color Connect measures route dependencies with a solver, Lights Out uses minimum presses, and Loop Puzzle controls both loop shape and clue quality.');
-  return html;
+  const grid='<div class="guide-grid">',start=html.indexOf(grid);
+  if(start>=0){const end=html.indexOf('</div><article>',start),block=html.slice(start,end);if(!block.includes('/blog/how-to-play-echo-step/'))html=html.slice(0,start)+block.replace(grid,`${grid}${echoGuideCard}`)+html.slice(end);}
+  return html.replace('Snapoki does not treat board size as the only difficulty setting. Each game uses structural signals that match its rules: Maze emphasizes deceptive branches and detours, Number Path adds path constraints and blockers, Color Connect measures route dependencies with a solver, Lights Out uses minimum presses, and Loop Puzzle controls both loop shape and clue quality.','Snapoki does not treat board size as the only difficulty setting. Each game uses structural signals that match its rules: Echo Step adds delayed consequences, Maze emphasizes deceptive branches and detours, Number Path adds path constraints and blockers, Color Connect measures route dependencies with a solver, Lights Out uses minimum presses, and Loop Puzzle controls both loop shape and clue quality.');
 }
 
 function updateGeneralGuide(html){
@@ -127,7 +102,7 @@ function updateGeneralGuide(html){
   return html;
 }
 
-// Undo staging-only noindex headers now that the game and guide are being prepared for launch.
+// Remove legacy staging noindex headers for the launch build.
 await patch('_headers',headers=>headers
   .replace(/\n\/echo-step\/\*\n\s+X-Robots-Tag: noindex, nofollow, noarchive\n?/g,'\n')
   .replace(/\n\/blog\/how-to-play-echo-step\/\*\n\s+X-Robots-Tag: noindex, nofollow, noarchive\n?/g,'\n'));
@@ -148,7 +123,4 @@ for(const file of htmlFiles){
   await fs.writeFile(file,html);
 }
 
-// Practice completion is already announced by the Practice Complete banner; avoid a second "Synced" status below the board.
-await patch('assets/js/games/echo-step-ui-v32.js',js=>js.replace(/if\(complete\)return'<small class="echo-sync-done">✓ Synced<\/small>';/,"if(complete)return'';"));
-
-console.log('Echo Step launch pass complete: public navigation, six-game surfaces, social handles, compact help and practice completion polish.');
+console.log('Echo Step launch pass complete: public navigation, six-game surfaces, social handles and compact help.');
