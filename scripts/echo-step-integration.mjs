@@ -59,6 +59,7 @@ if(!ECHO_STEP_PUBLIC){
 await patch('echo-step/index.html',html=>{
   if(!html.includes('/assets/styles/echo-step.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/echo-step.css"></head>');
   if(!html.includes('/assets/styles/echo-step-polish.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/echo-step-polish.css"></head>');
+  if(!html.includes('/assets/styles/echo-step-rulebar.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/echo-step-rulebar.css"></head>');
   return html;
 });
 await enrichEchoGuide();
