@@ -18,10 +18,10 @@ test('Echo Step stays first in the registry but is hidden from every public navi
   assert.doesNotMatch(home,/data-game-link="echo-step"/);
   assert.doesNotMatch(home,/class="game-card" href="\/echo-step\/"/);
   assert.match(home,/class="desktop-game-link" data-game-link="maze"/);
-  assert.match(home,/class="desktop-game-link" data-game-link="lights-out"/);
   const more=home.slice(home.indexOf('id="gamesMenu"'),home.indexOf('</div></div></nav>',home.indexOf('id="gamesMenu"')));
+  assert.match(more,/Lights Out/);
   assert.match(more,/Loop Puzzle/);
-  assert.doesNotMatch(more,/Echo Step|Lights Out/);
+  assert.doesNotMatch(more,/Echo Step/);
 });
 
 test('Echo Step direct test route remains built with dedicated styles and staging noindex headers',()=>{
