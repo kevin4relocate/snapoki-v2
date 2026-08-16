@@ -41,3 +41,12 @@ for(const file of await htmlFiles(dist)){
   }
   await fs.writeFile(file,html);
 }
+
+const gamePageAsset=path.join(dist,'assets','js','game-page.js');
+try{
+  let js=await fs.readFile(gamePageAsset,'utf8');
+  js=js.replaceAll(' · EXPERT','');
+  await fs.writeFile(gamePageAsset,js);
+}catch(error){
+  if(error?.code!=='ENOENT')throw error;
+}
