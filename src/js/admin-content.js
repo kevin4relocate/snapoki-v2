@@ -21,46 +21,39 @@ function textValue(platform){return $(`${platform}Text`).value;}
 function updateCounts(){for(const p of ['linkedIn','x','instagram'])$(`${p}Count`).textContent=String(textValue(p).length);}
 function setPosted(platform,value){const status=$(`${platform}Status`),button=document.querySelector(`[data-posted="${platform}"]`);status.textContent=value?'Posted':'Not posted';status.style.color=value?'#69e8a8':'';button.textContent=value?'Unmark':'Mark posted';button.dataset.value=value?'1':'0';}
 
-function wrapText(ctx,text,maxWidth){
-  const words=String(text||'').split(/\s+/).filter(Boolean),lines=[];let line='';
-  for(const word of words){const test=line?`${line} ${word}`:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word;}else line=test;}
-  if(line)lines.push(line);return lines;
-}
-function rounded(ctx,x,y,w,h,r){const radius=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+radius,y);ctx.arcTo(x+w,y,x+w,y+h,radius);ctx.arcTo(x+w,y+h,x,y+h,radius);ctx.arcTo(x,y+h,x,y,radius);ctx.arcTo(x,y,x+w,y,radius);ctx.closePath();}
 function background(ctx,w,h){
-  const grad=ctx.createLinearGradient(0,0,w,h);grad.addColorStop(0,'#0b1120');grad.addColorStop(.58,'#10172b');grad.addColorStop(1,'#182344');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
-  ctx.fillStyle='rgba(124,95,255,.18)';ctx.beginPath();ctx.arc(w*.91,h*.06,Math.min(w,h)*.20,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='rgba(49,204,255,.08)';ctx.beginPath();ctx.arc(w*.05,h*.90,Math.min(w,h)*.24,0,Math.PI*2);ctx.fill();
+  const grad=ctx.createLinearGradient(0,0,w,h);grad.addColorStop(0,'#0a1020');grad.addColorStop(1,'#131c35');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='rgba(124,95,255,.12)';ctx.beginPath();ctx.arc(w*.92,h*.06,190,0,Math.PI*2);ctx.fill();
 }
-function smallCaps(ctx,text,x,y,size=21){ctx.fillStyle='#aab7ff';ctx.font=`850 ${size}px system-ui,sans-serif`;ctx.fillText(text,x,y);}
-function hook(ctx,text,x,y,maxWidth,fontSize,maxLines=2,lineHeight=1.08){
-  ctx.fillStyle='#fff';ctx.font=`850 ${fontSize}px system-ui,sans-serif`;const lines=wrapText(ctx,text,maxWidth).slice(0,maxLines);lines.forEach((line,i)=>ctx.fillText(line,x,y+i*fontSize*lineHeight));return lines.length;
+function imageHook(payload){
+  const raw=String(payload.headline||'').replace(/\s+/g,' ').trim();
+  const first=raw.split(/[.!?]/)[0]?.trim()||'';
+  if(first.length>=8&&first.length<=42)return `${first}${raw.includes('?')?'?':''}`;
+  const key=payload.game?.key||'';
+  return ({
+    maze:'Can you find the exit?',
+    'number-path':'Can you connect the path?',
+    'color-connect':'Can you connect them all?',
+    'lights-out':'Can you turn them all off?',
+    'loop-puzzle':'Can you close the loop?'
+  })[key]||'Can you solve this?';
 }
-function brand(ctx,w,h,x=56){ctx.fillStyle='#fff';ctx.font='850 27px system-ui,sans-serif';ctx.fillText('Snapoki',x,h-48);ctx.fillStyle='#55d4ff';ctx.font='750 21px system-ui,sans-serif';ctx.fillText('snapoki.com',x+112,h-48);}
-function difficultyPill(ctx,x,y,label='HARD • PLAY IT YOURSELF'){
-  ctx.font='850 17px system-ui,sans-serif';const width=ctx.measureText(label).width+30;rounded(ctx,x,y-27,width,38,19);ctx.fillStyle='rgba(5,10,20,.88)';ctx.fill();ctx.strokeStyle='rgba(121,142,200,.38)';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#d8e3ff';ctx.fillText(label,x+15,y-2);
+function drawHook(ctx,text,w){
+  let size=48;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#f7f9ff';ctx.font=`850 ${size}px system-ui,sans-serif`;
+  while(size>34&&ctx.measureText(text).width>w-150){size-=2;ctx.font=`850 ${size}px system-ui,sans-serif`;}
+  ctx.fillText(text,w/2,62);
+}
+function drawWatermark(ctx,w,h){
+  ctx.save();ctx.globalAlpha=.34;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillStyle='#d9e4ff';ctx.font='700 21px system-ui,sans-serif';ctx.fillText('snapoki.com',w-42,h-28);ctx.restore();
+}
+function drawSquare(canvas,payload){
+  canvas.width=1080;canvas.height=1080;const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;background(ctx,w,h);
+  drawHook(ctx,imageHook(payload),w);
+  const boardSize=900,boardX=(w-boardSize)/2,boardY=105;drawGameBoard(ctx,payload,{x:boardX,y:boardY,size:boardSize});
+  drawWatermark(ctx,w,h);
 }
 
-function drawPortrait(canvas,payload){
-  canvas.width=1080;canvas.height=1350;const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;background(ctx,w,h);
-  smallCaps(ctx,`${String(payload.game?.name||'SNAPOKI').toUpperCase()} • DAILY CHALLENGE`,58,67,20);
-  hook(ctx,payload.headline||`Can you solve this ${payload.game?.name||'puzzle'}?`,58,126,964,45,2,1.05);
-  const boardSize=930,boardX=(w-boardSize)/2,boardY=205,meta=drawGameBoard(ctx,payload,{x:boardX,y:boardY,size:boardSize});
-  difficultyPill(ctx,boardX+24,boardY+boardSize-18,`${String(meta.difficulty||'hard').toUpperCase()} • NO SOLUTION SHOWN`);
-  brand(ctx,w,h,58);
-}
-
-function drawLandscape(canvas,payload){
-  canvas.width=1200;canvas.height=675;const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;background(ctx,w,h);
-  const boardSize=605,boardX=w-boardSize-35,boardY=35,meta=drawGameBoard(ctx,payload,{x:boardX,y:boardY,size:boardSize});
-  const left=48,leftWidth=470;smallCaps(ctx,String(payload.game?.name||'SNAPOKI').toUpperCase(),left,72,20);
-  hook(ctx,payload.headline||`Can you solve this ${payload.game?.name||'puzzle'}?`,left,143,leftWidth,47,3,1.06);
-  difficultyPill(ctx,left,390,`${String(meta.difficulty||'hard').toUpperCase()} • NO HINTS`);
-  ctx.fillStyle='#95a3c4';ctx.font='650 21px system-ui,sans-serif';ctx.fillText('Try the board before checking the answer.',left,448);
-  ctx.fillStyle='#fff';ctx.font='850 27px system-ui,sans-serif';ctx.fillText('Snapoki',left,h-58);ctx.fillStyle='#55d4ff';ctx.font='750 21px system-ui,sans-serif';ctx.fillText('snapoki.com',left+112,h-58);
-}
-
-function drawPreview(payload){drawPortrait($('socialCanvas'),payload);}
+function drawPreview(payload){drawSquare($('socialCanvas'),payload);}
 function render(content){
   state.content=content;const p=content.payload;
   $('contentDate').textContent=content.date;$('contentGame').textContent=`${p.game.name} · ${p.angle}`;$('angleBadge').textContent=p.angle.toUpperCase().replace('-', ' ');$('headlinePreview').textContent=p.headline;
@@ -89,14 +82,12 @@ async function remove(all=false){
 async function copy(platform){
   try{await navigator.clipboard.writeText(textValue(platform));notice(`${platform==='linkedIn'?'LinkedIn':platform==='x'?'X':'Instagram'} copied.`);}catch{notice('Could not access the clipboard. Select the text and copy manually.','error');}
 }
-function downloadCard(format){
-  if(!state.content?.payload)return;const canvas=$('exportCanvas');
-  if(format==='landscape')drawLandscape(canvas,state.content.payload);else drawPortrait(canvas,state.content.payload);
-  const dims=format==='landscape'?'1200x675':'1080x1350',a=document.createElement('a');a.download=`snapoki-${state.content.payload.game?.key||'puzzle'}-${state.content.date}-${dims}.png`;a.href=canvas.toDataURL('image/png');a.click();
+function downloadCard(){
+  if(!state.content?.payload)return;const canvas=$('exportCanvas');drawSquare(canvas,state.content.payload);
+  const a=document.createElement('a');a.download=`snapoki-${state.content.payload.game?.key||'puzzle'}-${state.content.date}-1080x1080.png`;a.href=canvas.toDataURL('image/png');a.click();
 }
 
 for(const p of ['linkedIn','x','instagram'])$(`${p}Text`).addEventListener('input',updateCounts);
-$('saveAllBtn').addEventListener('click',save);$('regenerateBtn').addEventListener('click',regenerate);$('deleteTodayBtn').addEventListener('click',()=>remove(false));$('deleteAllBtn').addEventListener('click',()=>remove(true));
-$('downloadPortraitBtn').addEventListener('click',()=>downloadCard('portrait'));$('downloadLandscapeBtn').addEventListener('click',()=>downloadCard('landscape'));
+$('saveAllBtn').addEventListener('click',save);$('regenerateBtn').addEventListener('click',regenerate);$('deleteTodayBtn').addEventListener('click',()=>remove(false));$('deleteAllBtn').addEventListener('click',()=>remove(true));$('downloadSquareBtn').addEventListener('click',downloadCard);
 document.addEventListener('click',event=>{const copyBtn=event.target.closest('[data-copy]');if(copyBtn)copy(copyBtn.dataset.copy);const postedBtn=event.target.closest('[data-posted]');if(postedBtn)togglePosted(postedBtn.dataset.posted,postedBtn);});
 load();
