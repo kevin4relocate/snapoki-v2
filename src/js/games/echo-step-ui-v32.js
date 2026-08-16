@@ -16,18 +16,18 @@ function bothHome(puzzle,state){return state.player===puzzle.playerGoal&&state.e
 function arrows(actions){return actions.map(action=>DIRS[action]?.arrow||'').filter(Boolean).join(' ');}
 function stepGuide(steps){const guide=new Map();for(const step of steps)guide.set(step.from,{arrow:DIRS[step.action]?.arrow||'',step:step.turn});return guide;}
 function friendlyFailure(message){
-  if(message==='Echo hit a cyan phase wall.')return'Echo replayed into a cyan cell.';
-  if(message==='Echo hit a dark wall.')return'Echo replayed into a dark cell.';
-  if(message==='Echo left the board.')return'Echo replayed a move off the board.';
-  if(message==='Echo collided with YOU.')return'Echo replayed into YOU.';
+  if(message==='Echo hit a cyan phase wall.')return'Echo hit a cyan wall.';
+  if(message==='Echo hit a dark wall.')return'Echo hit a dark wall.';
+  if(message==='Echo left the board.')return'Echo moved off the board.';
+  if(message==='Echo collided with YOU.')return'Echo hit YOU.';
   return message;
 }
 function friendlyBlock(message){
-  if(message==='That move leaves the board.')return['Move blocked',"YOU can’t leave the board."];
-  if(message==='That move hits a dark wall.')return['Move blocked','Dark cell — nobody can enter.'];
-  if(message==='Purple phase wall: YOU cannot cross it.')return['Move blocked','Purple cell — YOU cannot enter.'];
-  if(message==='Echo is occupying that cell.')return['Move blocked','Echo is occupying that cell.'];
-  return['Move blocked',message];
+  if(message==='That move leaves the board.')return["YOU can’t move off the board.",'Choose another direction.'];
+  if(message==='That move hits a dark wall.')return["YOU can’t enter dark cells.",'Choose another direction.'];
+  if(message==='Purple phase wall: YOU cannot cross it.')return["YOU can’t enter purple cells.",'Choose another direction.'];
+  if(message==='Echo is occupying that cell.')return['Echo is in that cell.','Choose another direction.'];
+  return["That move can’t be made.",'Choose another direction.'];
 }
 function signalLock(locked,reason=''){
   window.dispatchEvent(new CustomEvent('snapoki:game-lock',{detail:{game:'echo-step',locked:Boolean(locked),reason}}));
@@ -37,12 +37,12 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
   const puzzle=generateEchoStep(difficulty,seed),timeDivisor=scoreTimeDivisor('echo-step',difficulty),sharedBlocked=new Set(puzzle.blocked),playerPhase=new Set(puzzle.playerBarriers),echoPhase=new Set(puzzle.echoBarriers),feedbackTimers=new Set();
   let state={player:puzzle.playerStart,echo:puzzle.echoStart,pending:[]},moves=0,actions=[],hintActions=[],hintForecast=null,hintAtMove=-1,solutionVisible=false,practice=false,complete=false,failed=false,failureMessage='',practiceMessage='',notice=null,noticeTimer=null;
 
-  host.innerHTML=`<div class="echo-stage"><div class="echo-compact-bar" aria-label="Echo Step rules"><span class="echo-compact-you"><i></i><b>YOU</b></span><span class="echo-copy-mark">→</span><span class="echo-compact-echo"><i></i><b>ECHO</b><small>${puzzle.delay}-turn delay</small></span><span class="echo-rule-separator" aria-hidden="true"></span><div class="echo-rule-strip"><span><i class="wall-swatch wall-swatch-you"></i><b>Purple</b><small><strong>YOU ✕</strong><em>ECHO ✓</em></small></span><span><i class="wall-swatch wall-swatch-echo"></i><b>Cyan</b><small><em>YOU ✓</em><strong>ECHO ✕</strong></small></span><span><i class="wall-swatch wall-swatch-both"></i><b>Dark</b><small><strong>YOU ✕</strong><strong>ECHO ✕</strong></small></span></div></div><div class="echo-board-shell"><div class="echo-state-banner" role="status" aria-live="polite" hidden></div><div class="echo-grid" style="--grid-size:${puzzle.size}" role="grid" aria-label="Echo Step board"></div></div><div class="echo-timeline"><span>Echo memory</span><div class="echo-queue" aria-live="polite"></div></div><div class="echo-sequence" hidden></div></div>`;
+  host.innerHTML=`<div class="echo-stage"><div class="echo-state-banner" role="status" aria-live="polite" hidden></div><div class="echo-compact-bar" aria-label="Echo Step rules"><span class="echo-compact-you"><i></i><b>YOU</b></span><span class="echo-copy-mark">→</span><span class="echo-compact-echo"><i></i><b>ECHO</b><small>${puzzle.delay} turns later</small></span><div class="echo-goal-strip" aria-label="Goal: YOU to P and Echo to E on the same turn"><b>GOAL</b><span class="echo-goal-you">YOU → P</span><span class="echo-goal-divider" aria-hidden="true">|</span><span class="echo-goal-echo">ECHO → E</span><em>SAME TURN</em></div><span class="echo-rule-separator" aria-hidden="true"></span><div class="echo-rule-strip"><span><i class="wall-swatch wall-swatch-you"></i><b>Purple</b><small><strong>YOU ✕</strong><em>ECHO ✓</em></small></span><span><i class="wall-swatch wall-swatch-echo"></i><b>Cyan</b><small><em>YOU ✓</em><strong>ECHO ✕</strong></small></span><span><i class="wall-swatch wall-swatch-both"></i><b>Dark</b><small><strong>YOU ✕</strong><strong>ECHO ✕</strong></small></span></div></div><div class="echo-board-shell"><div class="echo-grid" style="--grid-size:${puzzle.size}" role="grid" aria-label="Echo Step board"></div></div><div class="echo-timeline"><span>Echo will replay</span><div class="echo-queue" aria-live="polite"></div></div><div class="echo-sequence" hidden></div></div>`;
   const grid=host.querySelector('.echo-grid'),queue=host.querySelector('.echo-queue'),sequence=host.querySelector('.echo-sequence'),banner=host.querySelector('.echo-state-banner');
   for(let i=0;i<puzzle.size*puzzle.size;i++){const cell=document.createElement('button');cell.type='button';cell.className='echo-cell';cell.dataset.index=String(i);cell.setAttribute('role','gridcell');cell.setAttribute('aria-label',`Row ${Math.floor(i/puzzle.size)+1}, column ${i%puzzle.size+1}`);grid.appendChild(cell);}
 
   function clearNotice(){if(noticeTimer){clearTimeout(noticeTimer);feedbackTimers.delete(noticeTimer);noticeTimer=null;}notice=null;}
-  function showNotice(title,message,type='info',duration=1500){clearNotice();notice={title,message,type};render();if(duration>0){noticeTimer=setTimeout(()=>{notice=null;noticeTimer=null;render();},duration);feedbackTimers.add(noticeTimer);}}
+  function showNotice(title,message,type='info',duration=1500){clearNotice();notice={title,message,type};render();if(duration>0&&type!=='blocked'){noticeTimer=setTimeout(()=>{notice=null;noticeTimer=null;render();},duration);feedbackTimers.add(noticeTimer);}}
   function clearHint(){hintActions=[];hintForecast=null;hintAtMove=-1;}
   function addHintGuide(cell,guide,kind){
     if(solutionVisible||!hintActions.length)return;
@@ -53,7 +53,7 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
   }
   function nextEchoPreview(){
     if(state.pending.length!==puzzle.delay)return{ready:false,action:'',target:-1,danger:false};
-    const action=state.pending[0],target=targetFor(state.echo,puzzle.size,action),danger=target<0||sharedBlocked.has(target)||echoPhase.has(target)||target===state.player;
+    const action=state.pending[0],target=targetFor(state.echo,puzzle.size,action),danger=target<0||sharedBlocked.has(target)||echoPhase.has(target);
     return{ready:true,action,target,danger};
   }
   function practiceStep(){
@@ -68,8 +68,7 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
     const timer=setTimeout(()=>{cell.classList.remove(className);feedbackTimers.delete(timer);},280);feedbackTimers.add(timer);
   }
   function renderQueue(){
-    if(complete)return'<small class="echo-sync-done">✓ Synced</small>';
-    if(failed)return'<small>Retry to restart the timeline</small>';
+    if(complete||failed)return'';
     if(!state.pending.length)return`<small>Echo starts after ${puzzle.delay} moves</small>`;
     const preview=nextEchoPreview();
     return state.pending.map((action,index)=>`<b class="${preview.ready&&index===0?'is-next':''} ${preview.ready&&preview.danger&&index===0?'is-danger':''}" aria-label="${preview.ready&&index===0?'Next Echo move: ':''}${DIRS[action].label}">${preview.ready&&index===0?'<em>NEXT</em>':''}<span>${DIRS[action].arrow}</span></b>`).join('');
@@ -82,31 +81,36 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
   }
   function renderBanner(){
     banner.hidden=false;
-    if(failed){banner.className='echo-state-banner is-failed';banner.innerHTML=`<div><strong>Timeline failed</strong><span>${failureMessage}</span></div><button type="button" data-echo-reset>Retry</button>`;return;}
+    if(failed){banner.className='echo-state-banner is-failed';banner.innerHTML=`<div><strong>${failureMessage}</strong><span>Try another path in this puzzle.</span></div><button type="button" data-echo-reset>Retry</button>`;return;}
     const guide=practiceStep();
     if(guide){const echoCopy=guide.echoAction?`${DIRS[guide.echoAction].arrow} ${DIRS[guide.echoAction].label}`:'waits';banner.className='echo-state-banner is-practice';banner.innerHTML=`<div><strong>Guide · ${guide.index+1}/${puzzle.solution.length}</strong><span>${practiceMessage||`YOU ${DIRS[guide.action].arrow} · Echo ${echoCopy}`}</span></div>`;return;}
     if(notice){banner.className=`echo-state-banner is-notice is-${notice.type}`;banner.innerHTML=`<div><strong>${notice.title}</strong><span>${notice.message}</span></div>`;return;}
-    if(state.player===puzzle.playerGoal&&!complete){banner.className='echo-state-banner is-waiting-player';banner.innerHTML='<div><strong>P reached — not synced yet</strong><span>Echo must be on E on the same turn.</span></div>';return;}
-    if(state.echo===puzzle.echoGoal&&!complete){banner.className='echo-state-banner is-waiting-echo';banner.innerHTML='<div><strong>Echo reached E — not synced yet</strong><span>YOU must be on P on the same turn.</span></div>';return;}
+    if(state.player===puzzle.playerGoal&&!complete){banner.className='echo-state-banner is-waiting-player';banner.innerHTML="<div><strong>YOU reached P.</strong><span>Echo isn’t at E yet. Keep moving and return to P when Echo reaches E.</span></div>";return;}
+    if(state.echo===puzzle.echoGoal&&!complete){banner.className='echo-state-banner is-waiting-echo';banner.innerHTML='<div><strong>Echo reached E.</strong><span>Reach P while Echo is still on E.</span></div>';return;}
     banner.hidden=true;banner.className='echo-state-banner';banner.innerHTML='';
   }
   function render(){
-    const echoPreview=nextEchoPreview(),guide=practiceStep(),hintPlayerGuide=hintForecast?stepGuide(hintForecast.playerSteps):new Map(),hintEchoGuide=hintForecast?stepGuide(hintForecast.echoSteps):new Map();
+    const echoPreview=nextEchoPreview(),guide=practiceStep(),hintPlayerGuide=hintForecast?stepGuide(hintForecast.playerSteps):new Map(),hintEchoGuide=hintForecast?stepGuide(hintForecast.echoSteps):new Map(),showGoalCue=difficulty==='easy'&&moves===0&&!solutionVisible&&!failed&&!complete;
     grid.querySelectorAll('.echo-cell').forEach(cell=>{
       const index=Number(cell.dataset.index);cell.className='echo-cell';cell.title='';
       if(sharedBlocked.has(index)){cell.classList.add('blocked','shared-blocked');cell.title='Dark: YOU and Echo cannot enter.';}
       if(playerPhase.has(index)){cell.classList.add('barrier-player');cell.title='Purple: YOU cannot enter; Echo can pass through.';}
       if(echoPhase.has(index)){cell.classList.add('barrier-echo');cell.title='Cyan: Echo cannot enter; YOU can pass through.';}
-      if(index===puzzle.playerGoal)cell.classList.add('player-goal');if(index===puzzle.echoGoal)cell.classList.add('echo-goal');if(index===state.player)cell.classList.add('has-player');if(index===state.echo)cell.classList.add('has-echo');
+      if(index===puzzle.playerGoal){cell.classList.add('player-goal');cell.title="P — YOU's goal";if(showGoalCue)cell.classList.add('goal-onboarding-player');}
+      if(index===puzzle.echoGoal){cell.classList.add('echo-goal');cell.title="E — Echo's goal";if(showGoalCue)cell.classList.add('goal-onboarding-echo');}
+      if(index===state.player)cell.classList.add('has-player');if(index===state.echo)cell.classList.add('has-echo');
       if(index===puzzle.playerGoal&&state.player===puzzle.playerGoal&&!bothHome(puzzle,state))cell.classList.add('goal-waiting');if(index===puzzle.echoGoal&&state.echo===puzzle.echoGoal&&!bothHome(puzzle,state))cell.classList.add('goal-waiting');
       if(echoPreview.ready&&!solutionVisible&&!failed&&index===echoPreview.target)cell.classList.add('echo-next-target',...(echoPreview.danger?['echo-next-danger']:[]));
       if(guide&&index===guide.playerTarget)cell.classList.add('practice-next-player');if(guide?.echoAction&&index===guide.echoTarget)cell.classList.add('practice-next-echo');
-      cell.disabled=sharedBlocked.has(index)||playerPhase.has(index)||complete||failed;cell.innerHTML='';
+      cell.disabled=complete||failed;cell.setAttribute('aria-disabled',String(sharedBlocked.has(index)||playerPhase.has(index)));cell.innerHTML='';
       addHintGuide(cell,hintPlayerGuide,'player');addHintGuide(cell,hintEchoGuide,'echo');
       if(echoPreview.ready&&!solutionVisible&&!failed&&index===echoPreview.target){const next=document.createElement('span');next.className='echo-next-marker';next.textContent=echoPreview.danger?'!':'NEXT';next.setAttribute('aria-hidden','true');cell.appendChild(next);}
       if(guide&&index===guide.playerTarget){const next=document.createElement('span');next.className='echo-practice-marker echo-practice-marker-you';next.textContent='NEXT';next.setAttribute('aria-hidden','true');cell.appendChild(next);}
       if(guide?.echoAction&&index===guide.echoTarget){const next=document.createElement('span');next.className='echo-practice-marker echo-practice-marker-echo';next.textContent='ECHO';next.setAttribute('aria-hidden','true');cell.appendChild(next);}
-      if(index===puzzle.playerGoal){const goal=document.createElement('span');goal.className='echo-goal-mark echo-goal-player';goal.setAttribute('aria-hidden','true');cell.appendChild(goal);}if(index===puzzle.echoGoal){const goal=document.createElement('span');goal.className='echo-goal-mark echo-goal-ghost';goal.setAttribute('aria-hidden','true');cell.appendChild(goal);}if(index===state.player){const token=document.createElement('span');token.className='echo-agent echo-agent-player';token.textContent='YOU';cell.appendChild(token);}if(index===state.echo){const token=document.createElement('span');token.className='echo-agent echo-agent-ghost';token.textContent='E';token.setAttribute('aria-label','Echo');cell.appendChild(token);}
+      if(index===puzzle.playerGoal){const goal=document.createElement('span');goal.className='echo-goal-mark echo-goal-player';goal.setAttribute('aria-hidden','true');cell.appendChild(goal);if(showGoalCue){const cue=document.createElement('span');cue.className='echo-goal-cue echo-goal-cue-you';cue.textContent='YOU → P';cue.setAttribute('aria-hidden','true');cell.appendChild(cue);}}
+      if(index===puzzle.echoGoal){const goal=document.createElement('span');goal.className='echo-goal-mark echo-goal-ghost';goal.setAttribute('aria-hidden','true');cell.appendChild(goal);if(showGoalCue){const cue=document.createElement('span');cue.className='echo-goal-cue echo-goal-cue-echo';cue.textContent='ECHO → E';cue.setAttribute('aria-hidden','true');cell.appendChild(cue);}}
+      if(index===state.player){const token=document.createElement('span');token.className='echo-agent echo-agent-player';token.textContent='YOU';cell.appendChild(token);}
+      if(index===state.echo){const token=document.createElement('span');token.className='echo-agent echo-agent-ghost';token.textContent='E';token.setAttribute('aria-label','Echo');cell.appendChild(token);}
     });
     queue.innerHTML=renderQueue();const sequenceHtml=renderSequence();sequence.hidden=!sequenceHtml;sequence.innerHTML=sequenceHtml;renderBanner();onMetrics({moves,delay:puzzle.delay});
   }
@@ -114,10 +118,10 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
   function finish(){complete=true;practiceMessage='';clearNotice();clearHint();host.classList.add('game-solved-bloom');render();if(practice){onStatus('');onPracticeComplete('Guided practice complete. YOU and Echo reached P and E on the same turn.');}else{onStatus('');onComplete();}}
   function move(action){
     if(complete||failed||!DIRS[action])return false;
-    if(solutionVisible){const expected=puzzle.solution[actions.length];if(action!==expected){practiceMessage=`Follow NEXT: ${DIRS[expected]?.arrow||''} ${DIRS[expected]?.label||''}.`;render();onStatus('');return false;}practiceMessage='';}
+    if(solutionVisible){const expected=puzzle.solution[actions.length];if(action!==expected){practiceMessage=`Follow the highlighted NEXT cell: ${DIRS[expected]?.arrow||''} ${DIRS[expected]?.label||''}.`;render();onStatus('');return false;}practiceMessage='';}
     const attemptedTarget=targetFor(state.player,puzzle.size,action),previousEcho=state.echo,next=advanceEchoState(puzzle,state,action);
     if(!next.ok){
-      if(next.playerBlocked){const[title,message]=friendlyBlock(next.reason);if(attemptedTarget>=0)flashCell(attemptedTarget,'echo-blocked-attempt');if(solutionVisible){practiceMessage=message;render();}else showNotice(title,message,'blocked',1300);onStatus('');return false;}
+      if(next.playerBlocked){const[title,message]=friendlyBlock(next.reason);if(solutionVisible){practiceMessage=message;render();}else showNotice(title,message,'blocked',1300);if(attemptedTarget>=0)flashCell(attemptedTarget,'echo-blocked-attempt');onStatus('');return false;}
       fail(next.reason);return false;
     }
     clearNotice();state=next.state;moves++;actions.push(action);clearHint();render();flashCell(state.player,'just-moved-you');if(state.echo!==previousEcho)flashCell(state.echo,'just-moved-echo');
@@ -128,7 +132,7 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
 
   grid.addEventListener('click',event=>{const cell=event.target.closest('.echo-cell');if(cell)move(directionTo(Number(cell.dataset.index)));});
   banner.addEventListener('click',event=>{if(event.target.closest('[data-echo-reset]'))document.querySelector('#resetPuzzle')?.click();});
-  const keyHandler=event=>{if(event.defaultPrevented||event.metaKey||event.ctrlKey||event.altKey||/INPUT|TEXTAREA|SELECT|BUTTON/.test(event.target?.tagName||''))return;const map={ArrowUp:'u',w:'u',W:'u',ArrowRight:'r',d:'r',D:'r',ArrowDown:'d',s:'d',S:'d',ArrowLeft:'l',a:'l',A:'l'},action=map[event.key];if(action){event.preventDefault();move(action);}};window.addEventListener('keydown',keyHandler);
+  const keyHandler=event=>{if(event.defaultPrevented||event.metaKey||event.ctrlKey||event.altKey||(/INPUT|TEXTAREA|SELECT/.test(event.target?.tagName||'')||(event.target?.tagName==='BUTTON'&&!event.target?.classList?.contains('echo-cell'))))return;const map={ArrowUp:'u',w:'u',W:'u',ArrowRight:'r',d:'r',D:'r',ArrowDown:'d',s:'d',S:'d',ArrowLeft:'l',a:'l',A:'l'},action=map[event.key];if(action){event.preventDefault();move(action);}};window.addEventListener('keydown',keyHandler);
 
   function resetState({keepPractice=false,keepSolution=false}={}){host.classList.remove('game-solved-bloom');clearNotice();state={player:puzzle.playerStart,echo:puzzle.echoStart,pending:[]};moves=0;actions=[];clearHint();solutionVisible=keepSolution;practice=keepPractice;complete=false;failed=false;failureMessage='';practiceMessage='';signalLock(false);render();onStatus('');}
   resetState();
