@@ -6,7 +6,8 @@ test('Echo Step shows goal and wall rules inline instead of hiding them behind a
   const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step-rulebar.css','utf8'),polish=fs.readFileSync('scripts/echo-step-message-polish.mjs','utf8');
   assert.match(source,/echo-rule-strip/);
   assert.doesNotMatch(source,/<details class="echo-rules"|<summary>Walls<\/summary>|echo-rules-popover/);
-  assert.match(css,/grid-template-areas:"you arrow echo" "goal goal goal" "rules rules rules"/);
+  assert.match(css,/V3\.8 compact two-row HUD/);
+  assert.match(css,/grid-template-areas:"you arrow echo goal" "rules rules rules rules"/);
   assert.match(css,/\.echo-goal-strip\{grid-area:goal/);
   assert.match(polish,/echo-goal-strip/);
   assert.match(polish,/YOU → P/);
@@ -15,14 +16,14 @@ test('Echo Step shows goal and wall rules inline instead of hiding them behind a
   assert.match(css,/white-space:nowrap/);
 });
 
-test('three-row rules keep the goal plus Purple, Cyan and Dark visible without horizontal scrolling',()=>{
+test('two-row HUD keeps goal, delay and all wall rules visible without horizontal scrolling',()=>{
   const css=fs.readFileSync('src/styles/echo-step-rulebar.css','utf8'),contract=fs.readFileSync('src/styles/board-contract.css','utf8'),polish=fs.readFileSync('scripts/echo-step-message-polish.mjs','utf8');
   assert.doesNotMatch(css,/overflow-x:auto/);
   assert.doesNotMatch(contract,/overflow-x:auto/);
   assert.match(contract,/\.echo-compact-bar\{overflow:visible;justify-content:center\}/);
   assert.match(polish,/<small>\$\{puzzle\.delay\} turns later<\/small>/);
   assert.doesNotMatch(polish,/repeats \$\{puzzle\.delay\} turns later/);
-  assert.match(css,/min-height:86px!important/);
+  assert.match(css,/min-height:56px!important/);
 });
 
 test('Echo Step built page loads the always-visible rule bar stylesheet',()=>{
