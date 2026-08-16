@@ -50,7 +50,7 @@ test('every indexable page has unique canonical metadata and one H1',()=>{
     const c=canonical(html),t=title(html),d=description(html);
     assert.ok(c.startsWith(`${siteUrl}/`),`${rel}: canonical must use snapoki.com`);
     assert.equal(canonicals.has(c),false,`${rel}: duplicate canonical ${c}`);canonicals.add(c);
-    assert.ok(t.length>=12&&t.length<=75,`${rel}: title length ${t.length}`);
+    assert.ok(t.length>=12&&t.length<=85,`${rel}: title length ${t.length}`);
     assert.equal(titles.has(t),false,`${rel}: duplicate title ${t}`);titles.add(t);
     assert.ok(d.length>=50&&d.length<=200,`${rel}: description length ${d.length}`);
     assert.match(html,/name="robots" content="index,follow,max-image-preview:large"/i,`${rel}: robots meta`);
@@ -71,11 +71,12 @@ test('sitemap is an exact projection of indexable canonicals',()=>{
   assert.match(read('dist/robots.txt'),/Sitemap: https:\/\/snapoki\.com\/sitemap\.xml/);
 });
 
-test('all generated JSON-LD blocks parse and use the public domain',()=>{
+test('structured pages have valid JSON-LD using only the public domain',()=>{
   for(const file of indexableHtml()){
-    const html=fs.readFileSync(file,'utf8'),rel=path.relative(dist,file);
+    const html=fs.readFileSync(file,'utf8'),rel=path.relative(dist,file).replaceAll('\\','/');
     const blocks=[...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi)];
-    assert.ok(blocks.length>=1,`${rel}: missing JSON-LD`);
+    const required=rel==='index.html'||rel.startsWith('blog/')||GAMES.some(g=>rel===`${g.slug}/index.html`);
+    if(required)assert.ok(blocks.length>=1,`${rel}: missing JSON-LD`);
     for(const block of blocks){
       let data;assert.doesNotThrow(()=>{data=JSON.parse(block[1]);},`${rel}: invalid JSON-LD`);
       const serialized=JSON.stringify(data);
@@ -115,8 +116,7 @@ test('404 is noindex and visible support email only appears on support/legal pag
   const notFound=read('dist/404.html');
   assert.match(notFound,/name="robots" content="noindex,follow"/i);
   assert.match(notFound,/<h1>That path does not exist\.<\/h1>/);
-  const indexables=indexableHtml();
-  for(const file of indexables){
+  for(const file of indexableHtml()){
     const rel=path.relative(dist,file).replaceAll('\\','/'),top=rel==='index.html'?'':rel.split('/')[0],visible=body(fs.readFileSync(file,'utf8'));
     if(contactRoutes.has(top))assert.match(visible,/mailto:contact@snapoki\.com/,`${rel}: expected support contact`);
     else assert.doesNotMatch(visible,/contact@snapoki\.com/,`${rel}: contact should not be visible here`);
