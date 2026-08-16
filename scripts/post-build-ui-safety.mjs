@@ -68,6 +68,14 @@ try{
   let js=await fs.readFile(echoUiAsset,'utf8');
   js=replaceRequired(js,"if(failed)return'<small>Retry to restart the timeline</small>';","if(failed)return'';",'single failure message');
   js=replaceRequired(js,
+    "const action=state.pending[0],target=targetFor(state.echo,puzzle.size,action),danger=target<0||sharedBlocked.has(target)||echoPhase.has(target)||target===state.player;",
+    "const action=state.pending[0],target=targetFor(state.echo,puzzle.size,action),danger=target<0||sharedBlocked.has(target)||echoPhase.has(target);",
+    'accurate Echo fixed-hazard preview');
+  js=replaceRequired(js,
+    "cell.disabled=sharedBlocked.has(index)||playerPhase.has(index)||complete||failed;cell.innerHTML='';",
+    "cell.disabled=complete||failed;cell.setAttribute('aria-disabled',String(sharedBlocked.has(index)||playerPhase.has(index)));cell.innerHTML='';",
+    'clickable blocked-cell feedback');
+  js=replaceRequired(js,
     "if(next.playerBlocked){const[title,message]=friendlyBlock(next.reason);if(attemptedTarget>=0)flashCell(attemptedTarget,'echo-blocked-attempt');if(solutionVisible){practiceMessage=message;render();}else showNotice(title,message,'blocked',1300);onStatus('');return false;}",
     "if(next.playerBlocked){const[title,message]=friendlyBlock(next.reason);if(solutionVisible){practiceMessage=message;render();}else showNotice(title,message,'blocked',1300);if(attemptedTarget>=0)flashCell(attemptedTarget,'echo-blocked-attempt');onStatus('');return false;}",
     'blocked-cell feedback order');
