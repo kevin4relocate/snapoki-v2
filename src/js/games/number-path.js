@@ -1,7 +1,7 @@
 import {deterministicHamiltonianPath,blockedLayoutStats,openRegionStats,rngFromSeed,areAdjacent,directionLabel,scoreFromPerformance,scoreTimeDivisor,orthogonalNeighbors} from './utils.js';
 
 const LEVEL={
-  easy:{size:6,blockedCount:0,clueCount:8,candidates:16,flips:18},
+  easy:{size:6,blockedCount:0,clueCount:8,candidates:36,flips:42},
   medium:{size:8,blockedCount:14,clueCount:7,candidates:64,flips:0},
   hard:{size:10,blockedCount:34,clueCount:6,candidates:72,flips:0}
 };
@@ -107,7 +107,7 @@ function layoutGate(blocks,clusters,blockedCount,difficulty){
 }
 
 function routeGate(graph,shape,blockerTurns,difficulty){
-  if(difficulty==='easy')return graph.turns>=8&&shape.longestStraight<=5;
+  if(difficulty==='easy')return graph.turns>=14&&shape.longestStraight<=4&&shape.shortRuns>=8&&shape.avgStraight<=2.8;
   if(difficulty==='medium')return graph.turns>=22&&shape.longestStraight<=6&&blockerTurns>=17&&graph.ambiguousSteps>=10;
   return graph.turns>=36&&shape.longestStraight<=6&&blockerTurns>=30&&graph.ambiguousSteps>=11;
 }
@@ -154,12 +154,13 @@ export function numberPathComplexity(puzzle){return puzzle.quality||openRegionSt
 
 export function generateNumberPath(difficulty='easy',seed='number-path'){
   const cfg=LEVEL[difficulty]||LEVEL.easy,candidates=[];let bestFallback=null;
-  const primary=cfg.candidates,max=difficulty==='easy'?primary:primary*4;
+  const primary=cfg.candidates,max=primary*4;
   for(let i=0;i<max;i++){
     const candidate=candidateFor(cfg,seed,i,difficulty);
     if(!bestFallback||candidate.quality.score>bestFallback.quality.score)bestFallback=candidate;
-    if(difficulty==='easy'||candidate.quality.tacticalValid)candidates.push(candidate);
-    if(i+1>=primary&&(difficulty==='easy'||candidates.length>=Math.max(4,Math.floor(primary*.08))))break;
+    if(candidate.quality.tacticalValid)candidates.push(candidate);
+    const enough=difficulty==='easy'?8:Math.max(4,Math.floor(primary*.08));
+    if(i+1>=primary&&candidates.length>=enough)break;
   }
   const pool=candidates.length?candidates:[bestFallback],chosen=pool.sort((a,b)=>b.quality.score-a.quality.score)[0],clues=chooseClues(chosen.solution,cfg.clueCount,seed,cfg.size);
   return{size:cfg.size,solution:chosen.solution,clues,blocked:chosen.blocked,openCount:chosen.openCount,quality:chosen.quality,seed,difficulty};
