@@ -34,7 +34,6 @@ function revealEcho(html){
   if(html.includes('<nav class="desktop-nav"')&&!html.includes('class="desktop-game-link" data-game-link="echo-step"')){
     html=html.replace(/(<nav class="desktop-nav"[^>]*>)/,`$1${echoDesktop}`);
   }
-  if(html.includes('<nav id="mobileMenu"')&&!html.includes('<nav id="mobileMenu"')?false:false){}
   if(html.includes('<nav id="mobileMenu"')&&!new RegExp('<nav id="mobileMenu"[\\s\\S]*?data-game-link="echo-step"').test(html)){
     html=html.replace(/(<nav id="mobileMenu"[^>]*>)/,`$1${echoMobile}`);
   }
@@ -60,6 +59,7 @@ function updateFooter(html){
 
 function updateSharedCopy(html){
   return html
+    .replaceAll('&amp;amp;','&amp;')
     .replaceAll('Five puzzles.<br><span>Endless challenges.</span>','Six puzzles.<br><span>Endless challenges.</span>')
     .replaceAll('Five ways to think differently','Six ways to think differently')
     .replaceAll('all five puzzle games','all six puzzle games')
@@ -77,6 +77,21 @@ function updateEchoPage(html){
   return html
     .replaceAll('Move now. Sync with your past.','Move now. Echo follows later.')
     .replaceAll('Asymmetric phase walls','Striped cell rules');
+}
+
+function updateEchoGuide(html){
+  return html
+    .replaceAll('Purple phase walls block YOU only, cyan phase walls block Echo only, and dark walls block both — so the same command can be safe now but dangerous a few turns later.','Purple striped cells block YOU, cyan striped cells block Echo, and dark striped cells block both — so every move has to work for YOU now and Echo later.')
+    .replaceAll('Purple phase walls marked Y block YOU only. Cyan phase walls marked E block Echo only. Dark walls block both, so you must plan the same command against two different obstacle maps.','Purple striped cells block YOU only. Cyan striped cells block Echo only. Dark striped cells block both.')
+    .replaceAll('Hint and Solution reveal a valid synchronized route.','Hint shows the next three moves; Guide teaches the puzzle step by step.')
+    .replaceAll('Use Echo Memory as a forecast','Check what Echo will replay')
+    .replaceAll("Echo Memory shows the commands waiting to be replayed.","The replay row shows the moves Echo is waiting to repeat.")
+    .replaceAll('safe on both timelines','safe for YOU now and Echo later')
+    .replaceAll('off the board, or into YOU you must Retry.','off the board, or into YOU means you must Retry.')
+    .replaceAll('two moments at once','YOU now and Echo later')
+    .replaceAll('timeline fails','run ends')
+    .replaceAll('phase wall','striped cell')
+    .replaceAll('phase walls','striped cells');
 }
 
 function updateHome(html){
@@ -127,6 +142,7 @@ for(const file of htmlFiles){
   const rel=path.relative(dist,file).replaceAll('\\','/');
   if(rel==='index.html')html=updateHome(html);
   if(rel==='blog/index.html')html=updateBlog(html);
+  if(rel==='blog/how-to-play-echo-step/index.html')html=updateEchoGuide(html);
   if(rel==='how-to-play/index.html')html=updateGeneralGuide(html);
   if(rel==='echo-step/index.html')html=updateEchoPage(html);
   await fs.writeFile(file,html);
