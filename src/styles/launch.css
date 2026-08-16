@@ -1,8 +1,82 @@
-.breadcrumbs{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;margin:0 0 1.4rem;color:#7f8ba8;font-size:.82rem}.breadcrumbs a{color:#aeb9d2;text-decoration:none}.breadcrumbs a:hover{color:#fff}.guide-hero{padding-bottom:1.5rem}.guide-actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.35rem}.guide-figure{margin:1.5rem 0 2.25rem;border:1px solid #26324d;border-radius:22px;overflow:hidden;background:#0b1020;box-shadow:0 20px 60px rgba(0,0,0,.18)}.guide-figure img{display:block;width:100%;height:auto}.guide-figure figcaption{padding:.78rem 1rem;color:#8390aa;font-size:.78rem;border-top:1px solid #202b43}.guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:0 auto 2.6rem;max-width:1180px}.guide-card{display:grid;grid-template-columns:210px 1fr;gap:1.15rem;padding:1rem;border:1px solid #26324d;border-radius:20px;background:linear-gradient(145deg,rgba(20,27,48,.96),rgba(11,16,31,.96));text-decoration:none;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.guide-card:hover{transform:translateY(-2px);border-color:#4a5d86;box-shadow:0 18px 50px rgba(0,0,0,.18)}.guide-card img{width:100%;height:132px;object-fit:cover;border-radius:14px;border:1px solid #293754}.guide-card h2{font-size:1.12rem;margin:.25rem 0 .45rem;color:#f4f7ff}.guide-card p{font-size:.86rem;color:#a4aec3;margin:0 0 .6rem;line-height:1.55}.text-link{color:#6edcf7;font-weight:750;font-size:.82rem}.guide-steps{display:grid;gap:.65rem;padding-left:1.25rem}.guide-steps li{padding-left:.3rem;color:#c4ccdc}.difficulty-explainer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:1rem 0 1.2rem}.difficulty-explainer>div{position:relative;padding:1rem 1rem 1rem 1.25rem;border:1px solid #26324d;border-radius:16px;background:#0e1527}.difficulty-explainer strong{display:block;margin-left:1.05rem;color:#f7f8fc}.difficulty-explainer p{margin:.35rem 0 0 1.05rem;color:#8f9bb4;font-size:.82rem}.difficulty-dot{position:absolute;left:1rem;top:1.25rem;width:.55rem;height:.55rem;border-radius:50%;background:#7457ff;box-shadow:0 0 14px currentColor}.difficulty-dot--medium{background:#23c9f5}.difficulty-dot--hard{background:#ffc247}.article-cta{display:flex;align-items:center;justify-content:space-between;gap:2rem;margin:2.5rem 0 .5rem;padding:1.3rem 1.4rem;border:1px solid #334261;border-radius:20px;background:linear-gradient(120deg,rgba(116,87,255,.12),rgba(35,201,245,.07))}.article-cta h2{margin:.2rem 0 .35rem}.article-cta p{margin:0}.game-learn-more{display:grid;grid-template-columns:1fr auto;align-items:center;gap:1rem;margin-top:1rem;padding-top:1.4rem;padding-bottom:1.4rem}.game-learn-more h2{font-size:1.15rem;margin:.2rem 0}.game-learn-more p{margin:0;color:#8f9bb4;font-size:.86rem}.related-games{grid-column:1/-1;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;color:#77839d;font-size:.78rem}.related-games a{color:#a8b4cf;text-decoration:none}.related-games a:hover{color:#fff}.not-found{min-height:52vh;display:flex;align-items:center}.content-page-shell .site-footer{margin-top:3rem}.content-page article a:not(.button){color:#68d9f6}.contact-callout a{font-weight:750}.footer-contact{display:none!important}
+/* Snapoki launch/content layout */
+:root{--site-shell-max:1280px;--site-shell-gutter:24px;--guide-visual-max:1180px;--reading-max:900px}
 
-/* Shared release shell: header, footer and all content pages must respect the same 1280px boundary. */
-:root{--site-shell-max:1280px;--site-shell-gutter:24px}.site-header-inner,.footer-inner,.footer-bottom{max-width:var(--site-shell-max)}.content-page{width:100%;max-width:var(--site-shell-max);margin-left:auto;margin-right:auto;padding-left:var(--site-shell-gutter);padding-right:var(--site-shell-gutter)}.guide-page article{max-width:none}.guide-page article>h2,.guide-page article>h3,.guide-page article>p,.guide-page article>ul,.guide-page article>ol{max-width:900px}.guide-page .guide-figure,.guide-page .difficulty-explainer,.guide-page .article-cta{width:100%;max-width:100%}
+/* Shared release shell: header, footer and all content pages stay inside one boundary. */
+.site-header-inner,.footer-inner,.footer-bottom{max-width:var(--site-shell-max)}
+.content-page{width:100%;max-width:var(--site-shell-max);margin-left:auto;margin-right:auto;padding-left:var(--site-shell-gutter);padding-right:var(--site-shell-gutter)}
 
-@media(max-width:900px){.guide-grid{grid-template-columns:1fr}.guide-card{grid-template-columns:180px 1fr}.difficulty-explainer{grid-template-columns:1fr}.game-learn-more{grid-template-columns:1fr}.article-cta{align-items:flex-start;flex-direction:column}.article-cta .button{width:100%;text-align:center}}
-@media(max-width:700px){:root{--site-shell-gutter:14px}.content-page{width:100%}}
-@media(max-width:620px){.guide-card{grid-template-columns:1fr}.guide-card img{height:auto}.guide-actions{flex-direction:column}.guide-actions .button{width:100%;text-align:center}.guide-figure{border-radius:16px}.breadcrumbs{font-size:.74rem}.game-learn-more{padding-left:1rem;padding-right:1rem}}
+.breadcrumbs{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;margin:0 0 1.4rem;color:#7f8ba8;font-size:.82rem}
+.breadcrumbs a{color:#aeb9d2;text-decoration:none}
+.breadcrumbs a:hover{color:#fff}
+.guide-hero{padding-bottom:1.5rem}
+.guide-actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.35rem}
+
+/* Guide detail: wide visual canvas, readable prose. */
+.guide-page .breadcrumbs,.guide-page .content-hero,.guide-page article{width:100%;max-width:var(--guide-visual-max);margin-left:auto;margin-right:auto}
+.guide-page article>h2,.guide-page article>h3,.guide-page article>p,.guide-page article>ul,.guide-page article>ol{width:100%;max-width:var(--reading-max)}
+.guide-figure{width:100%;max-width:100%;margin:1.5rem 0 2.25rem;border:1px solid #26324d;border-radius:22px;overflow:hidden;background:#0b1020;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.guide-figure img{display:block;width:100%;height:auto}
+.guide-figure figcaption{padding:.78rem 1rem;color:#8390aa;font-size:.78rem;border-top:1px solid #202b43}
+
+/* Guide hub: three vertical cards on desktop; incomplete final rows stay centered. */
+.blog-index .breadcrumbs,.blog-index .content-hero,.blog-index .guide-grid,.blog-index>article{width:100%;max-width:var(--guide-visual-max);margin-left:auto;margin-right:auto}
+.guide-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:18px;margin-top:0;margin-bottom:2.8rem}
+.guide-card{flex:0 1 calc((100% - 36px)/3);min-width:0;display:flex;flex-direction:column;padding:14px;border:1px solid #26324d;border-radius:20px;background:linear-gradient(145deg,rgba(20,27,48,.96),rgba(11,16,31,.96));text-decoration:none;overflow:hidden;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.guide-card:hover{transform:translateY(-2px);border-color:#4a5d86;box-shadow:0 18px 50px rgba(0,0,0,.18)}
+.guide-card>img{width:100%;height:auto;aspect-ratio:9/5;object-fit:cover;border-radius:14px;border:1px solid #293754;background:#0b1020}
+.guide-card>div{min-width:0;display:flex;flex:1;flex-direction:column;padding:15px 4px 4px}
+.guide-card h2{font-size:1.28rem;line-height:1.25;margin:.35rem 0 .55rem;color:#f4f7ff;overflow-wrap:anywhere}
+.guide-card p{font-size:.88rem;color:#a4aec3;margin:0 0 .85rem;line-height:1.6;overflow-wrap:anywhere}
+.guide-card .text-link{margin-top:auto}
+.text-link{color:#6edcf7;font-weight:750;font-size:.82rem}
+
+.guide-steps{display:grid;gap:.65rem;padding-left:1.25rem}
+.guide-steps li{padding-left:.3rem;color:#c4ccdc}
+.difficulty-explainer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;width:100%;max-width:100%;margin:1rem 0 1.2rem}
+.difficulty-explainer>div{position:relative;min-width:0;padding:1rem 1rem 1rem 1.25rem;border:1px solid #26324d;border-radius:16px;background:#0e1527}
+.difficulty-explainer strong{display:block;margin-left:1.05rem;color:#f7f8fc}
+.difficulty-explainer p{margin:.35rem 0 0 1.05rem;color:#8f9bb4;font-size:.82rem}
+.difficulty-dot{position:absolute;left:1rem;top:1.25rem;width:.55rem;height:.55rem;border-radius:50%;background:#7457ff;box-shadow:0 0 14px currentColor}
+.difficulty-dot--medium{background:#23c9f5}
+.difficulty-dot--hard{background:#ffc247}
+
+.article-cta{display:flex;align-items:center;justify-content:space-between;gap:2rem;width:100%;max-width:100%;margin:2.5rem 0 .5rem;padding:1.3rem 1.4rem;border:1px solid #334261;border-radius:20px;background:linear-gradient(120deg,rgba(116,87,255,.12),rgba(35,201,245,.07))}
+.article-cta>div{min-width:0}
+.article-cta h2{margin:.2rem 0 .35rem}
+.article-cta p{margin:0}
+.game-learn-more{display:grid;grid-template-columns:1fr auto;align-items:center;gap:1rem;margin-top:1rem;padding-top:1.4rem;padding-bottom:1.4rem}
+.game-learn-more h2{font-size:1.15rem;margin:.2rem 0}
+.game-learn-more p{margin:0;color:#8f9bb4;font-size:.86rem}
+.related-games{grid-column:1/-1;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;color:#77839d;font-size:.78rem}
+.related-games a{color:#a8b4cf;text-decoration:none}
+.related-games a:hover{color:#fff}
+.not-found{min-height:52vh;display:flex;align-items:center}
+.content-page-shell .site-footer{margin-top:3rem}
+.content-page article a:not(.button){color:#68d9f6}
+.contact-callout a{font-weight:750}
+.footer-contact{display:none!important}
+
+@media(max-width:1040px){
+  .guide-card{flex-basis:calc((100% - 18px)/2)}
+}
+@media(max-width:900px){
+  .difficulty-explainer{grid-template-columns:1fr}
+  .game-learn-more{grid-template-columns:1fr}
+  .article-cta{align-items:flex-start;flex-direction:column}
+  .article-cta .button{width:100%;text-align:center}
+}
+@media(max-width:700px){
+  :root{--site-shell-gutter:14px}
+  .content-page{width:100%}
+}
+@media(max-width:620px){
+  .guide-grid{gap:14px}
+  .guide-card{flex-basis:100%;padding:12px}
+  .guide-card>div{padding:13px 3px 3px}
+  .guide-card h2{font-size:1.18rem}
+  .guide-actions{flex-direction:column}
+  .guide-actions .button{width:100%;text-align:center}
+  .guide-figure{border-radius:16px}
+  .breadcrumbs{font-size:.74rem}
+  .game-learn-more{padding-left:1rem;padding-right:1rem}
+}

@@ -35,9 +35,23 @@ test('release shell keeps header footer and content pages inside one 1280px boun
   assert.doesNotMatch(css,/100vw/);
 });
 
-test('guide pages keep wide visual blocks inside the shared shell while prose stays readable',()=>{
+test('guide detail uses a 1180px visual canvas and a 900px reading column',()=>{
   const css=fs.readFileSync(path.join(dist,'assets','styles','launch.css'),'utf8');
-  assert.match(css,/\.guide-page article\{max-width:none\}/);
-  assert.match(css,/\.guide-page article>h2,[^\n]*max-width:900px/);
-  assert.match(css,/\.guide-page \.guide-figure,[^\n]*max-width:100%/);
+  assert.match(css,/--guide-visual-max:1180px/);
+  assert.match(css,/--reading-max:900px/);
+  assert.match(css,/\.guide-page \.breadcrumbs,\.guide-page \.content-hero,\.guide-page article\{width:100%;max-width:var\(--guide-visual-max\);margin-left:auto;margin-right:auto\}/);
+  assert.match(css,/\.guide-page article>h2,[^\n]*max-width:var\(--reading-max\)/);
+  assert.match(css,/\.guide-figure\{width:100%;max-width:100%/);
+  assert.match(css,/\.article-cta\{[^\n]*width:100%;max-width:100%/);
+});
+
+test('guide hub uses centered responsive vertical cards for any future game count',()=>{
+  const css=fs.readFileSync(path.join(dist,'assets','styles','launch.css'),'utf8');
+  const blog=fs.readFileSync(path.join(dist,'blog','index.html'),'utf8');
+  assert.match(css,/\.guide-grid\{display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch/);
+  assert.match(css,/\.guide-card\{flex:0 1 calc\(\(100% - 36px\)\/3\);[^\n]*display:flex;flex-direction:column/);
+  assert.match(css,/\.guide-card>img\{[^\n]*aspect-ratio:9\/5/);
+  assert.match(css,/@media\(max-width:1040px\)[\s\S]*\.guide-card\{flex-basis:calc\(\(100% - 18px\)\/2\)\}/);
+  assert.match(css,/@media\(max-width:620px\)[\s\S]*\.guide-card\{flex-basis:100%/);
+  assert.ok((blog.match(/class="guide-card"/g)||[]).length>=5,'guide hub should contain all current game cards');
 });
