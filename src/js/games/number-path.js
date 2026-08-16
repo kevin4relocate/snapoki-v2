@@ -120,7 +120,7 @@ function assessCandidate(cfg,solution,blocked,difficulty){
 
 function candidateFor(cfg,seed,index,difficulty){
   if(difficulty==='easy'){
-    const base=deterministicHamiltonianPath(cfg.size,`${seed}:easy:${index}`),solution=randomizeHamiltonianPath(base,cfg.size,`${seed}:easy:${index}`,cfg.flips);
+    const solution=greedyTacticalRoute(cfg.size,cfg.size*cfg.size,`${seed}:easy:${index}`,'medium');
     return assessCandidate(cfg,solution,[],difficulty);
   }
   const openCount=cfg.size*cfg.size-cfg.blockedCount,solution=greedyTacticalRoute(cfg.size,openCount,`${seed}:candidate:${index}`,difficulty),open=new Set(solution),blocked=[];
