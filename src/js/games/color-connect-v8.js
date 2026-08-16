@@ -16,7 +16,7 @@ import {colorConnectDifficultyScore,colorConnectSolverInvariant} from './color-c
 const LEVEL={
   easy:{size:6,colors:4,blockedRuns:[],candidates:12,maxCandidates:16,pathFlips:44,weaveAttempts:14,minRoute:5,splitAttempts:1,shortlist:3,variants:6,variantSlack:4,nodeLimit:700,solutionLimit:2},
   medium:{size:9,colors:7,blockedRuns:[4,3,3,2,2,1,1],candidates:14,maxCandidates:24,pathFlips:84,weaveAttempts:25,minRoute:5,splitAttempts:6,shortlist:4,variants:9,variantSlack:7,nodeLimit:2200,solutionLimit:2},
-  hard:{size:12,colors:11,blockedRuns:[7,5,5,4,4,3,3,2,2,1],candidates:18,maxCandidates:48,pathFlips:128,weaveAttempts:38,minRoute:6,splitAttempts:8,shortlist:6,variants:12,variantSlack:11,nodeLimit:8000,solutionLimit:2}
+  hard:{size:12,colors:11,blockedRuns:[7,5,5,4,4,3,3,2,2,1],candidates:16,maxCandidates:40,pathFlips:128,weaveAttempts:38,minRoute:6,splitAttempts:8,shortlist:6,variants:12,variantSlack:11,nodeLimit:8000,solutionLimit:2}
 };
 
 const COLORS=['#ff5d8f','#52d273','#5ca8ff','#ffb347','#b879ff','#39d0d8','#ff7c54','#e7e25a','#8b9cff','#f0a3ff','#f7f7f2'];
@@ -111,7 +111,7 @@ function endpointSpread(route,size){
 }
 
 function routeLocalScore(route,size,difficulty='easy'){
-  const turns=pathTurns(route,size),[aR,aC]=rcOf(route[0],size),[bR,bC]=rcOf(route.at(-1),size),manhattan=Math.abs(aR-bR)+Math.abs(aC-bC),detour=Math.max(0,route.length-1-manhattan),zones=new Set(route.map(index=>{const[r,c]=rcOf(index,size);return `${Math.min(2,Math.floor(r*3/size))}:${Math.min(2,Math.floor(c*3/size))}`;})),spread=endpointSpread(route,size),endpointPressure=difficulty==='hard'?spread.manhattan*12+spread.diagonalSpan*18+(spread.crossBoard?110:0):0;
+  const turns=pathTurns(route,size),[aR,aC]=rcOf(route[0],size),[bR,bC]=rcOf(route.at(-1),size),manhattan=Math.abs(aR-bR)+Math.abs(aC-bC),detour=Math.max(0,route.length-1-manhattan),zones=new Set(route.map(index=>{const[r,c]=rcOf(index,size);return `${Math.min(2,Math.floor(r*3/size))}:${Math.min(2,Math.floor(c*3/size))}`;})),spread=endpointSpread(route,size),endpointPressure=difficulty==='hard'?spread.manhattan*20+spread.diagonalSpan*28+(spread.crossBoard?180:0):0;
   return turns*18+detour*9+zones.size*24-(aR===bR||aC===bC?24:0)+endpointPressure;
 }
 
@@ -195,21 +195,21 @@ function interactionStats(segments,size,blocked){
   };
 }
 
-function cheapGate(difficulty,q,size){
+function cheapGate(difficulty,q){
   if(difficulty==='easy')return q.straightRoutes<=1&&q.avgTurns>=1.6;
   if(difficulty==='medium')return q.routeGraphComponents===1&&q.mixedZones>=5&&q.avgRouteZones>=2.4&&q.avgTurns>=2.5&&q.straightRoutes<=1&&q.blocks.quadrants>=3&&q.blocks.rowSpread>=6&&q.blocks.colSpread>=6&&q.blocks.largestCluster<=9;
-  return q.routeGraphComponents===1&&q.mixedZones>=7&&q.hotZones>=3&&q.avgRouteZones>=2.4&&q.straightRoutes<=1&&q.competitiveRoutes>=8&&q.blocks.quadrants===4&&q.blocks.rowSpread>=9&&q.blocks.colSpread>=9&&q.blocks.largestCluster<=12&&q.crossBoardPairs>=2&&q.farEndpointPairs>=4&&q.avgEndpointDistance>=size*.62;
+  return q.routeGraphComponents===1&&q.mixedZones>=7&&q.hotZones>=3&&q.avgRouteZones>=2.4&&q.straightRoutes<=1&&q.competitiveRoutes>=8&&q.blocks.quadrants===4&&q.blocks.rowSpread>=9&&q.blocks.colSpread>=9&&q.blocks.largestCluster<=12;
 }
 
 function cheapScore(q,weaves,difficulty){
-  const endpointPressure=difficulty==='hard'?q.crossBoardPairs*600+q.farEndpointPairs*260+q.avgEndpointDistance*120+q.avgEndpointDiagonalSpan*140:0;
+  const endpointPressure=difficulty==='hard'?q.crossBoardPairs*1200+q.farEndpointPairs*500+q.avgEndpointDistance*240+q.avgEndpointDiagonalSpan*300:0;
   return q.crossEdges*18+q.mixedZones*180+q.hotZones*220+q.avgRouteZones*180+q.endpointNearPairs*55+q.endpointBoxIntrusions*65+q.boxOverlapPairs*80+q.minNeighborColors*210+q.avgTurns*160+q.avgDetour*90+q.blocks.isolated*70+q.clusters.clusterCount*45+weaves*10+endpointPressure-q.straightRoutes*500-q.blocks.largestCluster*35;
 }
 
 function candidateFor(cfg,seed,index,difficulty){
   const base=randomizeHamiltonianPath(cfg.size,`${seed}:candidate:${index}`,cfg.pathFlips),split=splitTacticalRuns(base,cfg,seed,index);if(!split)return null;
   const woven=weaveRoutes(split.routes,cfg.size,`${seed}:${index}`,cfg.weaveAttempts,cfg.minRoute,difficulty),segments=makeSegments(woven.routes,`${seed}:${index}`),quality=interactionStats(segments,cfg.size,split.blocked);
-  quality.cheapValid=cheapGate(difficulty,quality,cfg.size);quality.cheapScore=cheapScore(quality,woven.weaves,difficulty);quality.weaves=woven.weaves;
+  quality.cheapValid=cheapGate(difficulty,quality);quality.cheapScore=cheapScore(quality,woven.weaves,difficulty);quality.weaves=woven.weaves;
   return{segments,blocked:split.blocked,openCount:segments.reduce((sum,segment)=>sum+segment.path.length,0),quality,weaves:woven.weaves};
 }
 
