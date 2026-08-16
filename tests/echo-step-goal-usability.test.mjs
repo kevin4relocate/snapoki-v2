@@ -23,13 +23,25 @@ test('Easy Echo Step teaches P and E on the board until the first accepted move'
   assert.match(css,/echo-goal-pulse-echo/);
 });
 
-test('Echo Step How to Play is goal-first and uses scan-friendly plain language',()=>{
+test('Echo Step How to Play is compact, goal-first and has no orphan numbering',()=>{
   const page=fs.readFileSync('dist/echo-step/index.html','utf8');
-  assert.match(page,/<strong>Goal:<\/strong> Get <b class="echo-help-you">YOU<\/b> to <b class="echo-help-you">P<\/b> and <b class="echo-help-echo">Echo<\/b> to <b class="echo-help-echo">E<\/b> on the <strong>same turn<\/strong>/);
-  assert.match(page,/<strong>Move:<\/strong>/);
-  assert.match(page,/<strong>Walls:<\/strong>/);
-  assert.match(page,/<strong>Finish:<\/strong>/);
+  assert.match(page,/class="echo-howto"/);
+  assert.match(page,/class="echo-howto-you">YOU → P<\/b>/);
+  assert.match(page,/class="echo-howto-echo">Echo → E<\/b>/);
+  assert.match(page,/<em>Same turn<\/em>/);
+  assert.match(page,/<strong>Move<\/strong>/);
+  assert.match(page,/<strong>Walls<\/strong>/);
+  assert.match(page,/<strong>Avoid<\/strong>/);
+  assert.match(page,/<b>Hint<\/b> · next 3 moves/);
+  assert.match(page,/<b>Guide<\/b> · step-by-step practice/);
+  assert.doesNotMatch(page,/<p><strong>1\.<\/strong>/);
   assert.doesNotMatch(page,/not synced|timeline failed|phase wall/i);
+});
+
+test('Practice completion does not repeat the technical Synced status below the board',()=>{
+  const js=fs.readFileSync('dist/assets/js/games/echo-step-ui-v32.js','utf8');
+  assert.doesNotMatch(js,/✓ Synced/);
+  assert.match(js,/if\(complete\)return'';/);
 });
 
 test('Retry copy says explicitly that the player stays on the same puzzle',()=>{
