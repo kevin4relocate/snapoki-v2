@@ -1,0 +1,24 @@
+/* V3.5: always-visible one-line rule bar */
+.echo-compact-bar{width:min(100%,760px);min-height:34px;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.echo-rules{display:contents!important;margin:0!important}
+.echo-rules>summary{display:none!important}
+.echo-rules>.echo-rules-popover,.echo-rules:not([open])>.echo-rules-popover{position:static!important;inset:auto!important;z-index:auto!important;width:auto!important;display:flex!important;align-items:center;gap:7px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.echo-rules-popover>span{display:inline-flex!important;grid-template-columns:none!important;align-items:center;gap:4px!important;padding:4px 7px;border:1px solid rgba(113,132,181,.20);border-radius:999px;background:rgba(13,20,36,.48)}
+.echo-rules-popover>span b{font-size:9px!important;line-height:1;color:#eef3ff}
+.echo-rules-popover>span small{display:inline-flex!important;align-items:center;gap:4px!important;font-size:8px!important;line-height:1;font-weight:850!important;white-space:nowrap}
+.echo-rules-popover>span small strong,.echo-rules-popover>span small em{font-size:8px!important;line-height:1}
+.echo-rules-popover>p{display:none!important}
+.wall-swatch{width:12px!important;height:12px!important;border-radius:4px!important;flex:0 0 12px}
+
+@media(max-width:760px){
+  .echo-compact-bar{width:100%;justify-content:flex-start;gap:5px;overflow-x:auto;padding:0 2px 3px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .echo-compact-bar::-webkit-scrollbar{display:none}
+  .echo-compact-you b,.echo-compact-echo b{font-size:10px!important}
+  .echo-compact-echo small{font-size:8px!important}
+  .echo-copy-mark{font-size:10px!important}
+  .echo-rules>.echo-rules-popover,.echo-rules:not([open])>.echo-rules-popover{gap:4px!important;flex:0 0 auto}
+  .echo-rules-popover>span{gap:3px!important;padding:4px 6px}
+  .echo-rules-popover>span b{font-size:8px!important}
+  .echo-rules-popover>span small,.echo-rules-popover>span small strong,.echo-rules-popover>span small em{font-size:7px!important}
+  .wall-swatch{width:10px!important;height:10px!important;flex-basis:10px}
+}
