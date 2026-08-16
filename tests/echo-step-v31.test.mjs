@@ -1,0 +1,54 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {advanceEchoState,forecastEchoStep,generateEchoStep} from '../src/js/games/echo-step.js';
+
+test('Echo Step V3.1 Hint forecasts three YOU moves and the exact delayed Echo consequence',()=>{
+  for(const difficulty of ['easy','medium','hard']){
+    const puzzle=generateEchoStep(difficulty,`echo-v31-hint:${difficulty}`);
+    let state={player:puzzle.playerStart,echo:puzzle.echoStart,pending:[]};
+    for(let i=0;i<puzzle.delay;i++){
+      const next=advanceEchoState(puzzle,state,puzzle.solution[i]);
+      assert.equal(next.ok,true);state=next.state;
+    }
+    const nextThree=puzzle.solution.slice(puzzle.delay,puzzle.delay+3),forecast=forecastEchoStep(puzzle,state,nextThree);
+    assert.equal(forecast.ok,true);
+    assert.equal(forecast.playerSteps.length,nextThree.length);
+    assert.equal(forecast.echoSteps.length,nextThree.length);
+    assert.deepEqual(forecast.echoSteps.map(step=>step.action),puzzle.solution.slice(0,nextThree.length));
+  }
+});
+
+test('Echo Step V3.1 Hint is a short route guide rather than one highlighted square',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),polish=fs.readFileSync('src/styles/echo-step-polish.css','utf8');
+  assert.match(source,/const HINT_LOOKAHEAD=3/);
+  assert.match(source,/forecastEchoStep/);
+  assert.match(source,/hintActions=puzzle\.solution\.slice\(actions\.length,actions\.length\+HINT_LOOKAHEAD\)/);
+  assert.match(source,/3-move route hint/);
+  assert.match(source,/3-move forecast is already on the board/);
+  assert.match(source,/echo-hint-arrow echo-hint-arrow-/);
+  assert.match(source,/echo-hint-step echo-hint-step-/);
+  assert.doesNotMatch(source,/classList\.add\('hinted'\)/);
+  assert.match(polish,/\.echo-cell\.hint-player/);
+  assert.match(polish,/\.echo-cell\.hint-echo/);
+  assert.match(polish,/\.echo-hint-arrow-player/);
+  assert.match(polish,/\.echo-hint-step-echo/);
+});
+
+test('Echo Step homepage and blog release content is prepared but remains hidden while staging flag is false',()=>{
+  const integration=fs.readFileSync('scripts/echo-step-integration.mjs','utf8');
+  assert.match(integration,/const ECHO_STEP_PUBLIC=false/);
+  assert.match(integration,/data-echo-step-spotlight/);
+  assert.match(integration,/data-echo-guide-v31/);
+  assert.match(integration,/hideEchoFromSitemap/);
+
+  const home=fs.readFileSync('dist/index.html','utf8'),blog=fs.readFileSync('dist/blog/index.html','utf8'),guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8'),sitemap=fs.readFileSync('dist/sitemap.xml','utf8'),echoPage=fs.readFileSync('dist/echo-step/index.html','utf8');
+  assert.doesNotMatch(home,/href="\/echo-step\/"/);
+  assert.doesNotMatch(home,/data-echo-step-spotlight/);
+  assert.doesNotMatch(blog,/href="\/blog\/how-to-play-echo-step\/"/);
+  assert.match(guide,/data-echo-guide-v31/);
+  assert.match(guide,/How the Hint works/);
+  assert.doesNotMatch(sitemap,/\/echo-step\//);
+  assert.doesNotMatch(sitemap,/\/blog\/how-to-play-echo-step\//);
+  assert.match(echoPage,/\/assets\/styles\/echo-step-polish\.css/);
+});
