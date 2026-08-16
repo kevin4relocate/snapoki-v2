@@ -3,7 +3,11 @@ dist/
 .dev.vars
 .wrangler/
 .DS_Store
+public/brand/logo-mark.svg
+public/brand/logo.svg
 public/brand/logo-mark-*.png
 public/brand/social-card.png
+public/favicon.svg
 public/favicon-32.png
 public/apple-touch-icon.png
+public/manifest.webmanifest
