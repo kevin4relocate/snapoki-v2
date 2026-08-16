@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {generateEchoStep,simulateEchoStep} from '../src/js/games/echo-step.js';
 import {verifyAndScoreResult} from '../functions/_lib/scoring.js';
@@ -22,6 +23,16 @@ test('Echo Step generates deterministic solvable boards across all difficulties'
     assert.equal(result.state.echo,a.echoGoal);
     assert.deepEqual(result.state.pending,[]);
   }
+});
+
+test('Echo Step generation is bounded and does not use DFS search',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8');
+  assert.doesNotMatch(source,/routeCandidate|120000|function dfs/);
+  assert.match(source,/constructiveRoute/);
+  const started=performance.now();
+  for(const difficulty of Object.keys(EXPECTED))for(let sample=0;sample<300;sample++)generateEchoStep(difficulty,`echo-step:${difficulty}:speed:${sample}`);
+  const elapsed=performance.now()-started;
+  assert.ok(elapsed<1500,`900 generated Echo Step boards took ${Math.round(elapsed)}ms`);
 });
 
 test('Echo Step server verifier accepts the generated completion proof and rejects tampering',()=>{

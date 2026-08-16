@@ -1,4 +1,4 @@
-import {rngFromSeed,shuffle,scoreFromPerformance,scoreTimeDivisor,orthogonalNeighbors,rcOf,indexOf} from './utils.js';
+import {rngFromSeed,scoreFromPerformance,scoreTimeDivisor,orthogonalNeighbors,rcOf,indexOf} from './utils.js';
 
 const DIRS={u:{dr:-1,dc:0,label:'Up',arrow:'↑'},r:{dr:0,dc:1,label:'Right',arrow:'→'},d:{dr:1,dc:0,label:'Down',arrow:'↓'},l:{dr:0,dc:-1,label:'Left',arrow:'←'}};
 const LEVEL={easy:{size:6,delay:2,minMoves:8,maxMoves:11,blocked:5,minTurns:3},medium:{size:8,delay:3,minMoves:14,maxMoves:19,blocked:14,minTurns:6},hard:{size:10,delay:4,minMoves:22,maxMoves:30,blocked:28,minTurns:10}};
@@ -22,27 +22,27 @@ export function advanceEchoState(puzzle,state,action){
 export function settleEchoState(puzzle,state){let next={player:state.player,echo:state.echo,pending:[...state.pending]};while(next.pending.length){const action=next.pending.shift(),moved=moveEcho(puzzle,next,action);if(!moved.ok)return moved;next=moved.state;}return{ok:next.player===puzzle.playerGoal&&next.echo===puzzle.echoGoal,state:next,reason:next.echo===puzzle.echoGoal?'':'Echo finished on the wrong cell.'};}
 export function simulateEchoStep(puzzle,actions){let state={player:puzzle.playerStart,echo:puzzle.echoStart,pending:[]};for(let i=0;i<actions.length;i++){const next=advanceEchoState(puzzle,state,actions[i]);if(!next.ok)return{solved:false,reason:next.reason,state,terminalAt:i};state=next.state;if(state.player===puzzle.playerGoal){const settled=settleEchoState(puzzle,state);return{solved:Boolean(settled.ok)&&i===actions.length-1,reason:settled.reason,state:settled.state||state,terminalAt:i+1};}}return{solved:false,reason:'Player has not reached the goal.',state,terminalAt:actions.length};}
 
-function routeCandidate(size,targetMoves,delta,rng,minTurns,delay){
-  const safe=[];for(let i=0;i<size*size;i++)if(translated(i,size,delta[0],delta[1])>=0)safe.push(i);
-  const safeSet=new Set(safe),starts=shuffle(safe,rng);let nodes=0;
-  for(const start of starts.slice(0,Math.min(starts.length,24))){
-    const path=[start],used=new Set(path),actions=[];
-    function dfs(current){
-      if(path.length===targetMoves+1){const[a,b]=rcOf(path[0],size),[c,d]=rcOf(path.at(-1),size),direct=Math.abs(a-c)+Math.abs(b-d);if(countTurns(actions)<minTurns||direct<Math.max(3,Math.floor(targetMoves*.18)))return null;const echoStart=translated(path[0],size,delta[0],delta[1]),echoGoal=translated(path.at(-1),size,delta[0],delta[1]),shell={size,delay,blocked:[],playerStart:path[0],echoStart,playerGoal:path.at(-1),echoGoal};return simulateEchoStep(shell,actions).solved?{path:[...path],actions:[...actions],delta:[...delta]}:null;}
-      if(++nodes>120000)return null;
-      const last=actions.at(-1)||'',choices=shuffle(orthogonalNeighbors(current,size,size).filter(n=>safeSet.has(n)&&!used.has(n)),rng).map(next=>({next,action:actionBetween(current,next,size)}));choices.sort((a,b)=>((b.action!==last?1:0)-(a.action!==last?1:0))||rng()-.5);
-      for(const choice of choices){used.add(choice.next);path.push(choice.next);actions.push(choice.action);const found=dfs(choice.next);if(found)return found;actions.pop();path.pop();used.delete(choice.next);}return null;
-    }
-    const found=dfs(start);if(found)return found;
+function routeActions(path,size){const actions=[];for(let i=1;i<path.length;i++)actions.push(actionBetween(path[i-1],path[i],size));return actions;}
+function constructiveRoute(size,targetMoves,rng,minTurns){
+  const half=Math.floor(size/2),transpose=rng()>=.5,side=rng()>=.5,reverse=rng()>=.5,mirror=rng()>=.5,base=[];
+  for(let row=0;row<size;row++){
+    const forward=(row%2===0)!==mirror;
+    if(forward){for(let col=0;col<half;col++)base.push([row,col]);}
+    else{for(let col=half-1;col>=0;col--)base.push([row,col]);}
   }
-  return null;
+  if(reverse)base.reverse();
+  const needed=targetMoves+1,maxStart=Math.max(0,base.length-needed),options=[];
+  for(let start=0;start<=maxStart;start++){
+    const local=base.slice(start,start+needed),localPath=local.map(([row,col])=>indexOf(row,col,size)),actions=routeActions(localPath,size),first=local[0],last=local.at(-1),direct=Math.abs(first[0]-last[0])+Math.abs(first[1]-last[1]),turns=countTurns(actions),quality=turns*100+direct*5+rng();
+    options.push({start,turns,direct,quality});
+  }
+  const minDirect=Math.max(3,Math.floor(targetMoves*.18)),eligible=options.filter(option=>option.turns>=minTurns&&option.direct>=minDirect),pool=eligible.length?eligible:options.sort((a,b)=>b.quality-a.quality).slice(0,Math.min(4,options.length)),picked=pool[Math.floor(rng()*pool.length)]||{start:0},segment=base.slice(picked.start,picked.start+needed),path=segment.map(([row,col])=>{let r=row,c=col+(side?half:0);if(transpose)[r,c]=[c,r];return indexOf(r,c,size);}),delta=transpose?[side?-half:half,0]:[0,side?-half:half];
+  return{path,actions:routeActions(path,size),delta};
 }
-function fallbackRoute(size,targetMoves){const split=Math.floor(size/2),path=[];for(let r=0;r<split;r++){if(r%2===0){for(let c=0;c<size;c++)path.push(indexOf(r,c,size));}else{for(let c=size-1;c>=0;c--)path.push(indexOf(r,c,size));}}const picked=path.slice(0,Math.min(path.length,targetMoves+1)),actions=[];for(let i=1;i<picked.length;i++)actions.push(actionBetween(picked[i-1],picked[i],size));return{path:picked,actions,delta:[split,0]};}
 function blockerScore(index,routeSet,echoSet,size){let score=0;for(const neighbor of orthogonalNeighbors(index,size,size)){if(routeSet.has(neighbor))score+=3;if(echoSet.has(neighbor))score+=3;}return score;}
 
 export function generateEchoStep(difficulty='easy',seed='echo-step'){
-  const cfg=LEVEL[difficulty]||LEVEL.easy,rng=rngFromSeed(`${seed}:echo-step:v1`),deltaPool=difficulty==='easy'?[[0,2],[2,0],[0,-2],[-2,0]]:difficulty==='medium'?[[0,2],[2,0],[1,2],[2,1],[-1,2],[2,-1]]:[[0,3],[3,0],[2,2],[-2,2],[2,-2],[1,3],[3,1]],target=cfg.minMoves+Math.floor(rng()*(cfg.maxMoves-cfg.minMoves+1));
-  let route=null;for(const delta of shuffle(deltaPool,rng)){route=routeCandidate(cfg.size,target,delta,rng,cfg.minTurns,cfg.delay);if(route)break;}if(!route)route=fallbackRoute(cfg.size,target);
+  const cfg=LEVEL[difficulty]||LEVEL.easy,rng=rngFromSeed(`${seed}:echo-step:v2`),target=cfg.minMoves+Math.floor(rng()*(cfg.maxMoves-cfg.minMoves+1)),route=constructiveRoute(cfg.size,target,rng,cfg.minTurns);
   const playerStart=route.path[0],playerGoal=route.path.at(-1),echoStart=translated(playerStart,cfg.size,route.delta[0],route.delta[1]),echoGoal=translated(playerGoal,cfg.size,route.delta[0],route.delta[1]),playerRoute=new Set(route.path),echoRoute=new Set(route.path.map(index=>translated(index,cfg.size,route.delta[0],route.delta[1]))),reserved=new Set([...playerRoute,...echoRoute]),candidates=[];
   for(let i=0;i<cfg.size*cfg.size;i++)if(!reserved.has(i))candidates.push({index:i,score:blockerScore(i,playerRoute,echoRoute,cfg.size)+rng()*1.8});candidates.sort((a,b)=>b.score-a.score);const blocked=candidates.slice(0,Math.min(cfg.blocked,candidates.length)).map(item=>item.index).sort((a,b)=>a-b);
   const puzzle={size:cfg.size,delay:cfg.delay,blocked,playerStart,echoStart,playerGoal,echoGoal,solution:[...route.actions],solutionMoves:route.actions.length,difficulty,seed,offset:{dr:route.delta[0],dc:route.delta[1]},turns:countTurns(route.actions)};if(!simulateEchoStep(puzzle,puzzle.solution).solved)throw new Error('Echo Step generator produced an invalid solution.');return puzzle;
