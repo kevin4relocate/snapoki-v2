@@ -16,8 +16,6 @@ function cachedSet(puzzle,key,source){return puzzle[key]||(puzzle[key]=new Set(s
 function sharedBlockedSet(puzzle){return cachedSet(puzzle,'_sharedBlockedSet',puzzle.blocked);}
 function playerPhaseSet(puzzle){return cachedSet(puzzle,'_playerPhaseSet',puzzle.playerBarriers);}
 function echoPhaseSet(puzzle){return cachedSet(puzzle,'_echoPhaseSet',puzzle.echoBarriers);}
-function blockedForPlayer(puzzle,index){return sharedBlockedSet(puzzle).has(index)||playerPhaseSet(puzzle).has(index);}
-function blockedForEcho(puzzle,index){return sharedBlockedSet(puzzle).has(index)||echoPhaseSet(puzzle).has(index);}
 function moveEcho(puzzle,state,action){
   const target=targetFor(state.echo,puzzle.size,action);
   if(target<0)return{ok:false,reason:'Echo left the board.'};
@@ -109,7 +107,6 @@ export function generateEchoStep(difficulty='easy',seed='echo-step'){
   return puzzle;
 }
 
-function sequenceLabel(actions,max=18){const shown=actions.slice(0,max).map(action=>DIRS[action].arrow).join(' ');return`${shown}${actions.length>max?' …':''}`;}
 function routeGuide(start,actions,size){
   const guide=new Map();let pos=start;
   actions.forEach((action,index)=>{guide.set(pos,{arrow:DIRS[action].arrow,step:index+1,goal:false});pos=targetFor(pos,size,action);});
@@ -135,21 +132,28 @@ export function createGame({host,difficulty,seed,onMetrics,onStatus,onComplete,o
     if(playerPhase.has(index)){const marker=document.createElement('span');marker.className='echo-phase-wall echo-phase-wall-player';marker.textContent='Y';marker.setAttribute('aria-hidden','true');cell.appendChild(marker);}
     if(echoPhase.has(index)){const marker=document.createElement('span');marker.className='echo-phase-wall echo-phase-wall-echo';marker.textContent='E';marker.setAttribute('aria-hidden','true');cell.appendChild(marker);}
   }
+  function nextEchoPreview(){
+    if(state.pending.length!==puzzle.delay)return{ready:false,action:'',target:-1,danger:false};
+    const action=state.pending[0],target=targetFor(state.echo,puzzle.size,action),danger=target<0||sharedBlocked.has(target)||echoPhase.has(target)||target===state.player;
+    return{ready:true,action,target,danger};
+  }
   function renderQueue(){
     if(complete)return'<small class="echo-sync-done">✓ Synced on this turn</small>';
     if(!state.pending.length)return`<small>Echo starts after ${puzzle.delay} moves</small>`;
-    const nextReady=state.pending.length===puzzle.delay;
-    return state.pending.map((action,index)=>`<b class="${nextReady&&index===0?'is-next':''}" aria-label="${nextReady&&index===0?'Next Echo move: ':''}${DIRS[action].label}">${nextReady&&index===0?'<em>NEXT</em>':''}<span>${DIRS[action].arrow}</span></b>`).join('');
+    const preview=nextEchoPreview();
+    return state.pending.map((action,index)=>`<b class="${preview.ready&&index===0?'is-next':''} ${preview.ready&&preview.danger&&index===0?'is-danger':''}" aria-label="${preview.ready&&index===0?'Next Echo move: ':''}${DIRS[action].label}">${preview.ready&&index===0?'<em>NEXT</em>':''}<span>${DIRS[action].arrow}</span></b>`).join('');
   }
   function render(){
+    const echoPreview=nextEchoPreview();
     grid.querySelectorAll('.echo-cell').forEach(cell=>{
       const index=Number(cell.dataset.index);cell.className='echo-cell';
       if(sharedBlocked.has(index))cell.classList.add('blocked','shared-blocked');
       if(playerPhase.has(index))cell.classList.add('barrier-player');
       if(echoPhase.has(index))cell.classList.add('barrier-echo');
-      if(index===puzzle.playerGoal)cell.classList.add('player-goal');if(index===puzzle.echoGoal)cell.classList.add('echo-goal');if(index===state.player)cell.classList.add('has-player');if(index===state.echo)cell.classList.add('has-echo');if(index===puzzle.playerGoal&&state.player===puzzle.playerGoal&&!bothHome(puzzle,state))cell.classList.add('goal-waiting');if(index===puzzle.echoGoal&&state.echo===puzzle.echoGoal&&!bothHome(puzzle,state))cell.classList.add('goal-waiting');if(hinted&&targetFor(state.player,puzzle.size,hinted)===index)cell.classList.add('hinted');
+      if(index===puzzle.playerGoal)cell.classList.add('player-goal');if(index===puzzle.echoGoal)cell.classList.add('echo-goal');if(index===state.player)cell.classList.add('has-player');if(index===state.echo)cell.classList.add('has-echo');if(index===puzzle.playerGoal&&state.player===puzzle.playerGoal&&!bothHome(puzzle,state))cell.classList.add('goal-waiting');if(index===puzzle.echoGoal&&state.echo===puzzle.echoGoal&&!bothHome(puzzle,state))cell.classList.add('goal-waiting');if(hinted&&targetFor(state.player,puzzle.size,hinted)===index)cell.classList.add('hinted');if(echoPreview.ready&&index===echoPreview.target)cell.classList.add('echo-next-target',...(echoPreview.danger?['echo-next-danger']:[]));
       cell.disabled=sharedBlocked.has(index)||playerPhase.has(index)||complete||failed;cell.innerHTML='';
       addPhaseMarker(cell,index);addRouteGuide(cell,solutionPlayerGuide,'player');addRouteGuide(cell,solutionEchoGuide,'echo');
+      if(echoPreview.ready&&index===echoPreview.target){const next=document.createElement('span');next.className='echo-next-marker';next.textContent=echoPreview.danger?'!':'E';next.setAttribute('aria-hidden','true');cell.appendChild(next);}
       if(index===puzzle.playerGoal){const goal=document.createElement('span');goal.className='echo-goal-mark echo-goal-player';goal.setAttribute('aria-hidden','true');cell.appendChild(goal);}if(index===puzzle.echoGoal){const goal=document.createElement('span');goal.className='echo-goal-mark echo-goal-ghost';goal.setAttribute('aria-hidden','true');cell.appendChild(goal);}if(index===state.player){const token=document.createElement('span');token.className='echo-agent echo-agent-player';token.textContent='YOU';cell.appendChild(token);}if(index===state.echo){const token=document.createElement('span');token.className='echo-agent echo-agent-ghost';token.textContent='E';cell.appendChild(token);}
     });
     queue.innerHTML=renderQueue();sequence.hidden=!solutionVisible;sequence.innerHTML=solutionVisible?`<b>Route guide</b><span class="echo-sequence-player">YOU: purple arrows · avoid purple + dark walls</span><span class="echo-sequence-ghost">ECHO: cyan arrows · avoid cyan + dark walls</span><small>Same commands, different barriers, ${puzzle.delay}-turn delay · both must land on SYNC together.</small>`:'';host.querySelectorAll('[data-echo-move]').forEach(button=>button.disabled=complete||failed);onMetrics({moves,delay:puzzle.delay});
