@@ -3,10 +3,10 @@
 .game-board{--board-square-max:560px;--board-stage-max:580px}
 
 /* Square puzzle surfaces share the same geometry. */
-.number-grid,.color-board-wrap,.lights-grid,.echo-board-shell{width:min(100%,var(--board-square-max));aspect-ratio:1/1;margin-inline:auto;min-width:0;max-width:100%}
+.number-grid,.color-board-wrap,.lights-grid,.loop-wrap,.echo-board-shell{width:min(100%,var(--board-square-max));aspect-ratio:1/1;margin-inline:auto;min-width:0;max-width:100%}
 
-/* Canvas/SVG stages use the same centered stage convention. */
-.maze-stage,.loop-wrap{width:min(100%,var(--board-stage-max));margin-inline:auto;min-width:0;max-width:100%}
+/* Maze keeps the wider canvas stage convention. */
+.maze-stage{width:min(100%,var(--board-stage-max));margin-inline:auto;min-width:0;max-width:100%}
 
 /* Echo has extra chrome, so it uses the same square contract plus a viewport-height cap.
    On short desktop/laptop screens the square shrinks so rules + board + replay stay visible together. */
