@@ -3,38 +3,49 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {execFileSync} from 'node:child_process';
 
-test('Echo Step V3.2 makes failure and unsynced goal states explicit',()=>{
+test('Echo Step V3.3 keeps the board first with compact chrome and overlay feedback',()=>{
   const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step-polish.css','utf8');
-  assert.match(source,/echo-state-banner/);
+  assert.match(source,/echo-compact-bar/);
+  assert.match(source,/echo-board-shell/);
+  assert.match(source,/echo-rules-popover/);
+  assert.doesNotMatch(source,/echo-phase-legend/);
+  assert.match(css,/\.echo-board-shell \.echo-state-banner\{position:absolute/);
+  assert.match(css,/\.echo-compact-bar/);
+  assert.match(css,/\.echo-rules-popover/);
+});
+
+test('Echo Step V3.3 uses one terminal failure message only',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8');
   assert.match(source,/Timeline failed/);
-  assert.match(source,/This run cannot continue/);
   assert.match(source,/data-echo-reset/);
-  assert.match(source,/YOU reached P — not solved yet/);
-  assert.match(source,/Echo must reach E on the same turn/);
-  assert.match(source,/Echo reached E — not solved yet/);
-  assert.match(css,/\.echo-state-banner\.is-failed/);
-  assert.match(css,/\.echo-state-banner\.is-waiting-player/);
+  assert.match(source,/friendlyFailure/);
+  assert.match(source,/function fail\(message\).*onStatus\(''\)/s);
+  assert.doesNotMatch(source,/Timeline failed · reset to retry/);
+  assert.doesNotMatch(source,/This run cannot continue/);
 });
 
-test('Echo Step V3.2 solution is a delayed turn timeline instead of an arrow-filled board',()=>{
-  const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),entry=fs.readFileSync('src/js/games/echo-step.js','utf8');
-  assert.match(source,/Solution timeline/);
-  assert.match(source,/Echo repeats the same commands \$\{puzzle\.delay\} turns later/);
-  assert.match(source,/echo-solution-turn/);
-  assert.match(source,/index>=puzzle\.delay\?puzzle\.solution\[index-puzzle\.delay\]/);
-  assert.doesNotMatch(source,/echo-route-arrow/);
-  assert.match(entry,/createGame.*echo-step-ui-v32\.js/);
+test('Echo Step V3.3 Solution is guided practice one move at a time',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step-polish.css','utf8');
+  assert.match(source,/function practiceStep\(\)/);
+  assert.match(source,/Practice · Step \$\{guide\.index\+1\}\/\$\{puzzle\.solution\.length\}/);
+  assert.match(source,/echo-practice-marker-you/);
+  assert.match(source,/next\.textContent='NEXT'/);
+  assert.match(source,/if\(solutionVisible\).*action!==expected/s);
+  assert.match(source,/Follow NEXT/);
+  assert.doesNotMatch(source,/Solution timeline/);
+  assert.doesNotMatch(source,/echo-solution-turn/);
+  assert.match(css,/\.echo-cell\.practice-next-player/);
+  assert.match(css,/\.echo-practice-marker-you/);
 });
 
-test('Echo Step V3.2 removes on-board arrow controls and clarifies striped phase walls',()=>{
+test('Echo Step V3.3 removes on-board arrow controls and keeps walls optional',()=>{
   const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8');
   assert.doesNotMatch(source,/echo-controls/);
   assert.doesNotMatch(source,/data-echo-move/);
-  assert.match(source,/Purple stripes/);
-  assert.match(source,/YOU blocked/);
-  assert.match(source,/Cyan stripes/);
-  assert.match(source,/Echo blocked/);
-  assert.match(source,/Dark stripes/);
+  assert.match(source,/<summary>Walls<\/summary>/);
+  assert.match(source,/Purple.*blocks YOU/s);
+  assert.match(source,/Cyan.*blocks Echo/s);
+  assert.match(source,/Dark.*blocks both/s);
   assert.match(source,/keyboard\/WASD or click an adjacent cell/);
 });
 
@@ -44,6 +55,6 @@ test('difficulty reward labels no longer include EXPERT on any built game',()=>{
   assert.match(built,/RANK PTS/);
 });
 
-test('Echo Step V3.2 UI module is valid JavaScript',()=>{
+test('Echo Step V3.3 UI module is valid JavaScript',()=>{
   execFileSync(process.execPath,['--check','src/js/games/echo-step-ui-v32.js'],{stdio:'pipe'});
 });
