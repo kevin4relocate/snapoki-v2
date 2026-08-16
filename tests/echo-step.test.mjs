@@ -41,11 +41,27 @@ test('Echo Step no longer auto-runs Echo after Player reaches a goal',()=>{
   assert.doesNotMatch(config,/Player locks in place|automatically replays every move still pending/);
 });
 
-test('Echo Step solution overlay shows only moves Echo has replayed by the synchronized finish',()=>{
-  const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8');
+test('Echo Step solution guide follows the delayed timeline and shows directional routes',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8');
   assert.match(source,/echoPracticeActions=puzzle\.solution\.slice\(0,Math\.max\(0,puzzle\.solution\.length-puzzle\.delay\)\)/);
-  assert.match(source,/solutionEcho=new Set\(pathFrom\(puzzle\.echoStart,echoPracticeActions\)\)/);
-  assert.doesNotMatch(source,/solutionEcho=new Set\(pathFrom\(puzzle\.echoStart,puzzle\.solution\)\)/);
+  assert.match(source,/solutionPlayerGuide=routeGuide\(puzzle\.playerStart,puzzle\.solution,puzzle\.size\)/);
+  assert.match(source,/solutionEchoGuide=routeGuide\(puzzle\.echoStart,echoPracticeActions,puzzle\.size\)/);
+  assert.match(source,/echo-route-arrow echo-route-arrow-/);
+  assert.match(source,/marker\.goal\?'SYNC'/);
+  assert.doesNotMatch(source,/routeGuide\(puzzle\.echoStart,puzzle\.solution,puzzle\.size\)/);
+  assert.match(css,/\.echo-route-arrow-player/);
+  assert.match(css,/\.echo-route-arrow-echo/);
+  assert.match(css,/\.echo-route-step/);
+});
+
+test('Echo Step memory highlights the next replay move and goal waiting state',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8');
+  assert.match(source,/nextReady=state\.pending\.length===puzzle\.delay/);
+  assert.match(source,/'is-next'/);
+  assert.match(source,/'goal-waiting'/);
+  assert.match(css,/\.echo-queue b\.is-next/);
+  assert.match(css,/\.echo-cell\.player-goal\.goal-waiting/);
+  assert.match(css,/\.echo-cell\.echo-goal\.goal-waiting/);
 });
 
 test('Echo Step generation is bounded and does not use DFS search',()=>{
