@@ -55,9 +55,13 @@ function randomizeHamiltonianPath(size,seed,flips){
   return path;
 }
 
-function balancedLengths(total,count,minLength,rng){
+function balancedLengths(total,count,minLength,rng,difficulty='easy'){
   const lengths=Array(count).fill(minLength);let remaining=total-minLength*count;
   if(remaining<0)return null;
+  if(difficulty==='hard'&&count>=3&&remaining>=18){
+    const anchors=shuffle(Array.from({length:count},(_,index)=>index),rng).slice(0,3),boosts=[7,6,5];
+    anchors.forEach((index,i)=>{lengths[index]+=boosts[i];remaining-=boosts[i];});
+  }
   while(remaining-->0){
     const choices=lengths.map((length,index)=>({index,score:rng()*2-length*.09})).sort((a,b)=>b.score-a.score);
     lengths[choices[0].index]++;
@@ -65,8 +69,8 @@ function balancedLengths(total,count,minLength,rng){
   return lengths;
 }
 
-function buildSplit(path,cfg,seed,index,attempt){
-  const rng=rngFromSeed(`${seed}:runs-v8:${index}:${attempt}`),blockedRuns=shuffle(cfg.blockedRuns,rng),blockedCount=blockedRuns.reduce((a,b)=>a+b,0),openCount=path.length-blockedCount,routeLengths=balancedLengths(openCount,cfg.colors,cfg.minRoute,rng);
+function buildSplit(path,cfg,seed,index,attempt,difficulty){
+  const rng=rngFromSeed(`${seed}:runs-v8:${index}:${attempt}`),blockedRuns=shuffle(cfg.blockedRuns,rng),blockedCount=blockedRuns.reduce((a,b)=>a+b,0),openCount=path.length-blockedCount,routeLengths=balancedLengths(openCount,cfg.colors,cfg.minRoute,rng,difficulty);
   if(!routeLengths)return null;
   const routes=[],blocked=[];let cursor=0;
   for(let color=0;color<cfg.colors;color++){
@@ -78,10 +82,10 @@ function buildSplit(path,cfg,seed,index,attempt){
   return{routes,blocked,blockScore,blocks,clusters};
 }
 
-function splitTacticalRuns(path,cfg,seed,index){
+function splitTacticalRuns(path,cfg,seed,index,difficulty){
   let best=null;
   for(let attempt=0;attempt<cfg.splitAttempts;attempt++){
-    const split=buildSplit(path,cfg,seed,index,attempt);
+    const split=buildSplit(path,cfg,seed,index,attempt,difficulty);
     if(split&&(!best||split.blockScore>best.blockScore))best=split;
   }
   return best;
@@ -107,7 +111,7 @@ function weaveOptions(routes,size,minRoute){
 
 function endpointSpread(route,size){
   const[aR,aC]=rcOf(route[0],size),[bR,bC]=rcOf(route.at(-1),size),rowGap=Math.abs(aR-bR),colGap=Math.abs(aC-bC),manhattan=rowGap+colGap,half=size/2,oppositeRows=(aR<half)!==(bR<half),oppositeCols=(aC<half)!==(bC<half),diagonalSpan=Math.min(rowGap,colGap);
-  return{rowGap,colGap,manhattan,diagonalSpan,crossBoard:oppositeRows&&oppositeCols&&diagonalSpan>=Math.floor(size*.42),far:manhattan>=Math.ceil(size*.75)};
+  return{rowGap,colGap,manhattan,diagonalSpan,crossBoard:oppositeRows&&oppositeCols&&diagonalSpan>=Math.floor(size*.34),far:manhattan>=Math.ceil(size*.75)};
 }
 
 function routeLocalScore(route,size,difficulty='easy'){
@@ -207,7 +211,7 @@ function cheapScore(q,weaves,difficulty){
 }
 
 function candidateFor(cfg,seed,index,difficulty){
-  const base=randomizeHamiltonianPath(cfg.size,`${seed}:candidate:${index}`,cfg.pathFlips),split=splitTacticalRuns(base,cfg,seed,index);if(!split)return null;
+  const base=randomizeHamiltonianPath(cfg.size,`${seed}:candidate:${index}`,cfg.pathFlips),split=splitTacticalRuns(base,cfg,seed,index,difficulty);if(!split)return null;
   const woven=weaveRoutes(split.routes,cfg.size,`${seed}:${index}`,cfg.weaveAttempts,cfg.minRoute,difficulty),segments=makeSegments(woven.routes,`${seed}:${index}`),quality=interactionStats(segments,cfg.size,split.blocked);
   quality.cheapValid=cheapGate(difficulty,quality);quality.cheapScore=cheapScore(quality,woven.weaves,difficulty);quality.weaves=woven.weaves;
   return{segments,blocked:split.blocked,openCount:segments.reduce((sum,segment)=>sum+segment.path.length,0),quality,weaves:woven.weaves};
