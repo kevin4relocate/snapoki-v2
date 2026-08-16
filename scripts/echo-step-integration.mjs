@@ -23,17 +23,7 @@ async function walk(dir){
 
 const ECHO_GAME_LINK=/<a\b[^>]*href="\/echo-step\/"[^>]*>[\s\S]*?<\/a>/g;
 const ECHO_GUIDE_LINK=/<a\b[^>]*href="\/blog\/how-to-play-echo-step\/"[^>]*>[\s\S]*?<\/a>/g;
-const LIGHTS_OVERFLOW='<a data-game-link="lights-out" href="/lights-out/"><span>Lights Out</span><small>Logic</small></a>';
-const LIGHTS_DIRECT='<a class="desktop-game-link" data-game-link="lights-out" href="/lights-out/">Lights Out</a>';
-
-function hideEchoNavigation(html){
-  html=html.replace(ECHO_GAME_LINK,'').replace(ECHO_GUIDE_LINK,'');
-  if(html.includes('class="site-header"')){
-    html=html.replace(LIGHTS_OVERFLOW,'');
-    if(!html.includes(LIGHTS_DIRECT))html=html.replace('<div class="games-menu-wrap">',`${LIGHTS_DIRECT}<div class="games-menu-wrap">`);
-  }
-  return html;
-}
+function hideEchoNavigation(html){return html.replace(ECHO_GAME_LINK,'').replace(ECHO_GUIDE_LINK,'');}
 
 for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
   const html=await fs.readFile(file,'utf8');
