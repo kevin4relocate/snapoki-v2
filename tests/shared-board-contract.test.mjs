@@ -13,9 +13,17 @@ test('all Snapoki game boards share one centered geometry contract',async()=>{
   assert.match(css,/--board-square-max:560px/);
   assert.match(css,/--board-stage-max:580px/);
   for(const selector of ['.number-grid','.color-board-wrap','.lights-grid','.maze-stage','.loop-wrap','.echo-board-shell'])assert.ok(css.includes(selector),`${selector} must use the shared board contract`);
+  assert.match(css,/\.number-grid,\.color-board-wrap,\.lights-grid,\.loop-wrap,\.echo-board-shell\{width:min\(100%,var\(--board-square-max\)\);aspect-ratio:1\/1/);
+  assert.match(css,/\.maze-stage\{width:min\(100%,var\(--board-stage-max\)\)/);
   assert.match(css,/\.echo-stage\{[^}]*grid-template-columns:minmax\(0,1fr\)[^}]*justify-items:center/);
   assert.match(css,/\.echo-stage>\*\{min-width:0;max-width:100%\}/);
   assert.match(css,/\.echo-board-shell>\.echo-grid\{width:100%;height:100%;max-width:none;aspect-ratio:auto;margin:0\}/);
+});
+
+test('Loop Puzzle uses the same 560px square board contract as Number Path, Color Connect and Lights Out',async()=>{
+  const css=await read('src/styles/board-contract.css');
+  assert.match(css,/\.number-grid,\.color-board-wrap,\.lights-grid,\.loop-wrap,\.echo-board-shell/);
+  assert.doesNotMatch(css,/\.maze-stage,\.loop-wrap\{/);
 });
 
 test('Echo chrome cannot widen the grid track or pull the square board off center',async()=>{
