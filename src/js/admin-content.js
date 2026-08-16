@@ -1,5 +1,6 @@
 const $ = id => document.getElementById(id);
 const state = {content:null};
+const CONTENT_API='/api/snapdesk-74kq/content';
 
 function notice(message,type=''){
   const el=$('adminNotice');
@@ -45,21 +46,21 @@ function render(content){
 }
 
 async function load(){
-  try{const data=await request('/api/admin/content');render(data.content);}catch(error){$('adminLoading').hidden=true;notice(`${error.message} If you are not signed in, sign in on the Snapoki homepage first. If this is the first deploy, configure ADMIN_EMAIL in Cloudflare.`, 'error');}
+  try{const data=await request(CONTENT_API);render(data.content);}catch(error){$('adminLoading').hidden=true;notice(`${error.message} If you are not signed in, sign in on the Snapoki homepage first. If this is the first deploy, configure ADMIN_EMAIL in Cloudflare.`, 'error');}
 }
 async function save(){
-  try{const data=await request('/api/admin/content',{method:'POST',body:JSON.stringify({action:'save',headline:$('headlinePreview').textContent,linkedIn:textValue('linkedIn'),x:textValue('x'),instagram:textValue('instagram')})});render(data.content);notice('Edits saved.');}catch(error){notice(error.message,'error');}
+  try{const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'save',headline:$('headlinePreview').textContent,linkedIn:textValue('linkedIn'),x:textValue('x'),instagram:textValue('instagram')})});render(data.content);notice('Edits saved.');}catch(error){notice(error.message,'error');}
 }
 async function regenerate(){
   if(!confirm('Generate a different content pack for today? Your current edits will be replaced.'))return;
-  try{const data=await request('/api/admin/content',{method:'POST',body:JSON.stringify({action:'regenerate'})});render(data.content);notice('Generated a new variation for today.');}catch(error){notice(error.message,'error');}
+  try{const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'regenerate'})});render(data.content);notice('Generated a new variation for today.');}catch(error){notice(error.message,'error');}
 }
 async function togglePosted(platform,button){
-  try{const value=button.dataset.value!=='1';const data=await request('/api/admin/content',{method:'POST',body:JSON.stringify({action:'posted',platform,value})});render(data.content);}catch(error){notice(error.message,'error');}
+  try{const value=button.dataset.value!=='1';const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'posted',platform,value})});render(data.content);}catch(error){notice(error.message,'error');}
 }
 async function remove(all=false){
-  const label=all?'all stored admin content':'today’s content';if(!confirm(`Delete ${label}?`))return;
-  try{await request(`/api/admin/content${all?'?all=1':''}`,{method:'DELETE'});state.content=null;$('contentPanel').hidden=true;$('contentDate').textContent='—';$('contentGame').textContent='Deleted';notice(all?'All admin content deleted. Opening this page again will create a fresh pack for the current day.':'Today’s pack deleted. Opening this page again will generate today again.');}catch(error){notice(error.message,'error');}
+  const label=all?'all stored content':'today’s content';if(!confirm(`Delete ${label}?`))return;
+  try{await request(`${CONTENT_API}${all?'?all=1':''}`,{method:'DELETE'});state.content=null;$('contentPanel').hidden=true;$('contentDate').textContent='—';$('contentGame').textContent='Deleted';notice(all?'All content deleted. Opening this page again will create a fresh pack for the current day.':'Today’s pack deleted. Opening this page again will generate today again.');}catch(error){notice(error.message,'error');}
 }
 async function copy(platform){
   try{await navigator.clipboard.writeText(textValue(platform));notice(`${platform==='linkedIn'?'LinkedIn':platform==='x'?'X':'Instagram'} copied.`);}catch{notice('Could not access the clipboard. Select the text and copy manually.','error');}
