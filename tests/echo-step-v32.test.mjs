@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {execFileSync} from 'node:child_process';
 
-test('Echo Step keeps failure and unsynced goal states explicit without duplicate terminal copy',()=>{
+test('Echo Step keeps failure and waiting-goal states explicit without technical jargon',()=>{
   const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step-polish.css','utf8');
-  assert.match(source,/Timeline failed/);
+  assert.doesNotMatch(source,/Timeline failed|not synced/);
   assert.match(source,/data-echo-reset>Retry/);
-  assert.match(source,/P reached — not synced yet/);
-  assert.match(source,/Echo reached E — not synced yet/);
+  assert.match(source,/YOU reached P\./);
+  assert.match(source,/Echo reached E\./);
+  assert.match(source,/Try another path in this puzzle\./);
   assert.match(source,/function fail\(message\).*signalLock\(true,'failed'\).*onStatus\(''\)/s);
   assert.match(css,/\.echo-state-banner\.is-failed/);
   assert.match(css,/\.echo-state-banner\.is-waiting-player/);
@@ -19,14 +20,15 @@ test('Echo Step guided solution reveals only the next move instead of painting t
   assert.match(source,/Guide · \$\{guide\.index\+1\}\/\$\{puzzle\.solution\.length\}/);
   assert.match(source,/practice-next-player/);
   assert.match(source,/echo-practice-marker-you/);
-  assert.match(source,/Follow NEXT/);
+  assert.match(source,/Follow the highlighted NEXT cell/);
   assert.doesNotMatch(source,/solutionPlayerCells|solutionEchoCells|Solution timeline/);
   assert.match(entry,/createGame.*echo-step-ui-v32\.js/);
 });
 
-test('Echo Step top chrome explains the delay and walls in one glance',()=>{
+test('Echo Step top chrome explains the delay, goal and walls in one glance',()=>{
   const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step-rulebar.css','utf8');
-  assert.match(source,/\$\{puzzle\.delay\}-turn delay/);
+  assert.match(source,/\$\{puzzle\.delay\} turns later/);
+  assert.match(source,/echo-goal-strip/);
   assert.match(source,/echo-rule-strip/);
   assert.match(source,/Purple[\s\S]*YOU ✕[\s\S]*ECHO ✓/);
   assert.match(source,/Cyan[\s\S]*YOU ✓[\s\S]*ECHO ✕/);
