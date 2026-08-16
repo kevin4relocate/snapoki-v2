@@ -1,10 +1,17 @@
 import {deterministicHamiltonianPath,blockedLayoutStats,openRegionStats,rngFromSeed,areAdjacent,directionLabel,scoreFromPerformance,scoreTimeDivisor,orthogonalNeighbors} from './utils.js';
 
 const LEVEL={
-  easy:{size:6,blockedCount:0,clueCount:8,candidates:36,flips:42},
+  easy:{size:6,blockedCount:0,clueCount:8,candidates:28,flips:8},
   medium:{size:8,blockedCount:14,clueCount:7,candidates:64,flips:0},
   hard:{size:10,blockedCount:34,clueCount:6,candidates:72,flips:0}
 };
+
+const EASY_ROUTE_TEMPLATES=[
+  [0,1,2,3,4,10,9,8,7,6,12,18,24,30,31,32,33,27,28,34,35,29,23,22,21,20,26,25,19,13,14,15,16,17,11,5],
+  [34,35,29,23,17,16,15,9,10,11,5,4,3,2,8,14,13,7,1,0,6,12,18,19,20,21,22,28,27,26,25,24,30,31,32,33],
+  [15,16,17,23,29,35,34,28,22,21,27,33,32,31,30,24,25,26,20,14,8,9,10,11,5,4,3,2,1,7,13,19,18,12,6,0],
+  [14,8,2,3,4,5,11,10,9,15,16,17,23,29,35,34,28,22,21,20,19,13,7,1,0,6,12,18,24,25,26,27,33,32,31,30]
+];
 
 function blockClusterStats(blocked,size){
   const set=new Set(blocked),seen=new Set(),sizes=[];
@@ -50,6 +57,19 @@ function pathShape(path,size){
   };
 }
 
+function transformEasyRoute(route,size,variant,reverse=false){
+  const turn=variant%4,mirror=variant>=4,n=size-1;
+  const out=route.map(index=>{
+    let r=Math.floor(index/size),c=index%size;
+    if(mirror)c=n-c;
+    for(let i=0;i<turn;i++){
+      const nextR=c,nextC=n-r;r=nextR;c=nextC;
+    }
+    return r*size+c;
+  });
+  return reverse?out.reverse():out;
+}
+
 function randomizeHamiltonianPath(base,size,seed,flips){
   const rng=rngFromSeed(`${seed}:route-flips`),path=[...base];
   for(let round=0;round<flips;round++){
@@ -60,6 +80,11 @@ function randomizeHamiltonianPath(base,size,seed,flips){
     path.splice(i+1,middle.length,...middle);
   }
   return path;
+}
+
+function easyRoute(size,seed,index,flips){
+  const rng=rngFromSeed(`${seed}:easy-template:${index}`),template=EASY_ROUTE_TEMPLATES[Math.floor(rng()*EASY_ROUTE_TEMPLATES.length)],variant=Math.floor(rng()*8),reverse=rng()<.5,base=transformEasyRoute(template,size,variant,reverse),flipCount=Math.floor(rng()*(flips+1));
+  return randomizeHamiltonianPath(base,size,`${seed}:easy-safe:${index}`,flipCount);
 }
 
 function greedyTacticalRoute(size,targetCount,seed,difficulty){
@@ -107,22 +132,20 @@ function layoutGate(blocks,clusters,blockedCount,difficulty){
 }
 
 function routeGate(graph,shape,blockerTurns,difficulty){
-  if(difficulty==='easy')return graph.turns>=12&&shape.longestStraight<=4&&shape.shortRuns>=7&&shape.avgStraight<=3.1;
+  if(difficulty==='easy')return graph.turns>=12&&graph.turns<=20&&shape.longestStraight<=4&&shape.shortRuns>=7&&shape.avgStraight<=3.1;
   if(difficulty==='medium')return graph.turns>=22&&shape.longestStraight<=6&&blockerTurns>=17&&graph.ambiguousSteps>=10;
   return graph.turns>=36&&shape.longestStraight<=6&&blockerTurns>=30&&graph.ambiguousSteps>=11;
 }
 
 function assessCandidate(cfg,solution,blocked,difficulty){
   const blocks=blockedLayoutStats(blocked,cfg.size),clusters=blockClusterStats(blocked,cfg.size),graph=openRegionStats(solution,cfg.size,solution),shape=pathShape(solution,cfg.size),blockerTurns=blockerTurnPressure(solution,blocked,cfg.size),layoutValid=layoutGate(blocks,clusters,blocked.length,difficulty),routeValid=routeGate(graph,shape,blockerTurns,difficulty),tacticalValid=layoutValid&&routeValid;
-  const score=graph.ambiguousSteps*24+graph.branchCells*9+graph.chokepoints*14+graph.turns*13+blockerTurns*22+shape.shortRuns*6+blocks.quadrants*30+(blocks.rowSpread+blocks.colSpread)*8+Math.min(blocks.isolated,8)*26+clusters.clusterCount*34+clusters.majorClusters*62+clusters.tacticalGroups*48-blocks.largestCluster*19-blocks.adjacentPairs*2-shape.longestStraight*78-shape.avgStraight*18-(tacticalValid?0:18000);
+  const easyBandPenalty=difficulty==='easy'?Math.abs(graph.turns-15)*42:0;
+  const score=graph.ambiguousSteps*24+graph.branchCells*9+graph.chokepoints*14+graph.turns*13+blockerTurns*22+shape.shortRuns*6+blocks.quadrants*30+(blocks.rowSpread+blocks.colSpread)*8+Math.min(blocks.isolated,8)*26+clusters.clusterCount*34+clusters.majorClusters*62+clusters.tacticalGroups*48-blocks.largestCluster*19-blocks.adjacentPairs*2-shape.longestStraight*78-shape.avgStraight*18-easyBandPenalty-(tacticalValid?0:18000);
   return{solution,blocked,openCount:solution.length,quality:{...graph,...shape,blocks,clusters,blockerTurns,layoutValid,routeValid,tacticalValid,score}};
 }
 
 function candidateFor(cfg,seed,index,difficulty){
-  if(difficulty==='easy'){
-    const solution=greedyTacticalRoute(cfg.size,cfg.size*cfg.size,`${seed}:easy:${index}`,'medium');
-    return assessCandidate(cfg,solution,[],difficulty);
-  }
+  if(difficulty==='easy')return assessCandidate(cfg,easyRoute(cfg.size,seed,index,cfg.flips),[],difficulty);
   const openCount=cfg.size*cfg.size-cfg.blockedCount,solution=greedyTacticalRoute(cfg.size,openCount,`${seed}:candidate:${index}`,difficulty),open=new Set(solution),blocked=[];
   for(let node=0;node<cfg.size*cfg.size;node++)if(!open.has(node))blocked.push(node);
   return assessCandidate(cfg,solution,blocked,difficulty);
