@@ -38,14 +38,18 @@ test('content desk storage is a singleton and predictable admin routes are gone'
   await assert.rejects(fs.access('functions/api/admin/content.js'));
 });
 
-test('OpenAI generation stays server-side and falls back when no key is configured',async()=>{
+test('Gemini generation stays server-side and falls back when no key is configured',async()=>{
   const api=await fs.readFile('functions/api/snapdesk-74kq/content.js','utf8');
   const client=await fs.readFile('src/js/admin-content.js','utf8');
-  assert.match(api,/env\.OPENAI_API_KEY/);
-  assert.match(api,/https:\/\/api\.openai\.com\/v1\/responses/);
-  assert.match(api,/gpt-5\.6-luna/);
+  assert.match(api,/env\.GEMINI_API_KEY/);
+  assert.match(api,/generativelanguage\.googleapis\.com\/v1beta\/models/);
+  assert.match(api,/gemini-2\.5-flash/);
+  assert.match(api,/x-goog-api-key/);
+  assert.match(api,/responseMimeType:'application\/json'/);
+  assert.match(api,/thinkingBudget:0/);
   assert.match(api,/generator:'template'/);
   assert.match(api,/generator:'template-fallback'/);
-  assert.doesNotMatch(client,/OPENAI_API_KEY/);
-  assert.doesNotMatch(client,/api\.openai\.com/);
+  assert.doesNotMatch(api,/OPENAI_API_KEY|api\.openai\.com|gpt-5\.6-luna/);
+  assert.doesNotMatch(client,/GEMINI_API_KEY/);
+  assert.doesNotMatch(client,/generativelanguage\.googleapis\.com/);
 });
