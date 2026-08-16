@@ -2,22 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-test('Echo Step shows wall rules inline instead of hiding them behind a popover',()=>{
-  const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step-rulebar.css','utf8');
+test('Echo Step shows goal and wall rules inline instead of hiding them behind a popover',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step-rulebar.css','utf8'),polish=fs.readFileSync('scripts/echo-step-message-polish.mjs','utf8');
   assert.match(source,/echo-rule-strip/);
   assert.doesNotMatch(source,/<details class="echo-rules"|<summary>Walls<\/summary>|echo-rules-popover/);
-  assert.match(css,/grid-template-areas:"you arrow echo" "rules rules rules"/);
+  assert.match(css,/grid-template-areas:"you arrow echo" "goal goal goal" "rules rules rules"/);
+  assert.match(css,/\.echo-goal-strip\{grid-area:goal/);
+  assert.match(polish,/echo-goal-strip/);
+  assert.match(polish,/YOU → P/);
+  assert.match(polish,/ECHO → E/);
   assert.match(css,/\.echo-rule-strip\{grid-area:rules;width:100%;display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/white-space:nowrap/);
 });
 
-test('two-row rules keep Purple, Cyan and Dark visible without horizontal scrolling',()=>{
+test('three-row rules keep the goal plus Purple, Cyan and Dark visible without horizontal scrolling',()=>{
   const css=fs.readFileSync('src/styles/echo-step-rulebar.css','utf8'),contract=fs.readFileSync('src/styles/board-contract.css','utf8'),polish=fs.readFileSync('scripts/echo-step-message-polish.mjs','utf8');
   assert.doesNotMatch(css,/overflow-x:auto/);
   assert.doesNotMatch(contract,/overflow-x:auto/);
   assert.match(contract,/\.echo-compact-bar\{overflow:visible;justify-content:center\}/);
   assert.match(polish,/<small>\$\{puzzle\.delay\} turns later<\/small>/);
   assert.doesNotMatch(polish,/repeats \$\{puzzle\.delay\} turns later/);
+  assert.match(css,/min-height:86px!important/);
 });
 
 test('Echo Step built page loads the always-visible rule bar stylesheet',()=>{
