@@ -26,7 +26,7 @@ test('Echo Step state messages overlay the rule row without moving the board',()
   assert.match(css,/\.echo-compact-bar\{min-height:46px\}/);
 });
 
-test('Echo Step staged help copy avoids timeline jargon',()=>{
+test('Echo Step launch help copy avoids internal timeline jargon',()=>{
   const page=fs.readFileSync('dist/echo-step/index.html','utf8');
   const guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8');
   assert.doesNotMatch(page,/timeline fails|ends the timeline|two timelines at once/i);
