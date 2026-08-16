@@ -50,6 +50,10 @@ try{
     "function updateControlAvailability(){const ready=Boolean(state.engine)&&!state.loading,done=state.completed,reviewLocked=Boolean(review);setDisabled('#newPuzzle',state.loading);setDisabled('#hint',!capability('hint')||!ready||done||state.solutionVisible);setDisabled('#solution',!capability('solution')||!ready||done);setDisabled('#resetPuzzle',!ready||(done&&!state.practiceComplete));setDisabled('#undoAction',!capability('undo')||!ready||done);",
     "function updateControlAvailability(){const ready=Boolean(state.engine)&&!state.loading,done=state.completed,locked=Boolean(state.engineLocked),reviewLocked=Boolean(review);setDisabled('#newPuzzle',state.loading);setDisabled('#hint',!capability('hint')||!ready||done||locked||state.solutionVisible);setDisabled('#solution',!capability('solution')||!ready||done||locked);setDisabled('#resetPuzzle',!ready||(done&&!state.practiceComplete));setDisabled('#undoAction',!capability('undo')||!ready||done||locked);",
     'terminal control lock');
+  js=replaceRequired(js,
+    "function tick(){const ms=elapsed();setMetric('time',formatTime(ms));if(state.engine?.previewScore&&metricElement('score'))setMetric('score',Number(state.engine.previewScore(ms,state.hints)).toLocaleString());}",
+    "function tick(){if(state.engineLocked||state.completed)return;const ms=elapsed();setMetric('time',formatTime(ms));if(state.engine?.previewScore&&metricElement('score'))setMetric('score',Number(state.engine.previewScore(ms,state.hints)).toLocaleString());}",
+    'terminal timer and score freeze');
   js=replaceRequired(js,"state.engine?.destroy?.();state.engine=null;state.loading=true;","state.engine?.destroy?.();state.engine=null;state.engineLocked=false;state.loading=true;",'new puzzle unlock');
   js=replaceRequired(js,"b.textContent=visible?'Hide Solution':'Solution';","b.textContent=gameKey==='echo-step'?(visible?'Exit Guide':'Guide'):(visible?'Hide Solution':'Solution');",'Echo Guide label');
   js=replaceRequired(js,
@@ -67,6 +71,22 @@ const echoUiAsset=path.join(dist,'assets','js','games','echo-step-ui-v32.js');
 try{
   let js=await fs.readFile(echoUiAsset,'utf8');
   js=replaceRequired(js,"if(failed)return'<small>Retry to restart the timeline</small>';","if(failed)return'';",'single failure message');
+  js=replaceRequired(js,
+    "<div class=\"echo-stage\"><div class=\"echo-compact-bar\"",
+    "<div class=\"echo-stage\"><div class=\"echo-state-banner\" role=\"status\" aria-live=\"polite\" hidden></div><div class=\"echo-compact-bar\"",
+    'failure banner before rule bar');
+  js=replaceRequired(js,
+    "<div class=\"echo-board-shell\"><div class=\"echo-state-banner\" role=\"status\" aria-live=\"polite\" hidden></div><div class=\"echo-grid\"",
+    "<div class=\"echo-board-shell\"><div class=\"echo-grid\"",
+    'remove in-board failure banner');
+  js=replaceRequired(js,
+    "if(failed){banner.className='echo-state-banner is-failed';banner.innerHTML=`<div><strong>Timeline failed</strong><span>${failureMessage}</span></div><button type=\"button\" data-echo-reset>Retry</button>`;return;}",
+    "if(failed){banner.className='echo-state-banner is-failed';banner.innerHTML=`<div><strong>${failureMessage}</strong><span>Try a different route.</span></div><button type=\"button\" data-echo-reset>Retry</button>`;return;}",
+    'plain-language failure banner');
+  js=js.replace("return'Echo replayed into a cyan cell.';","return'Echo hit a cyan wall.';")
+       .replace("return'Echo replayed into a dark cell.';","return'Echo hit a dark wall.';")
+       .replace("return'Echo replayed a move off the board.';","return'Echo moved off the board.';")
+       .replace("return'Echo replayed into YOU.';","return'Echo hit YOU.';");
   js=replaceRequired(js,
     "const action=state.pending[0],target=targetFor(state.echo,puzzle.size,action),danger=target<0||sharedBlocked.has(target)||echoPhase.has(target)||target===state.player;",
     "const action=state.pending[0],target=targetFor(state.echo,puzzle.size,action),danger=target<0||sharedBlocked.has(target)||echoPhase.has(target);",
