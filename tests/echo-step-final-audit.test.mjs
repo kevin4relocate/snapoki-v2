@@ -52,6 +52,20 @@ test('Echo Step keyboard remains usable after clicking a board cell but not from
   assert.match(built,/event\.target\?\.tagName==='BUTTON'&&!event\.target\?\.classList\?\.contains\('echo-cell'\)/);
 });
 
+test('Echo Step blocked cells remain clickable for feedback while terminal states truly disable the board',()=>{
+  const built=fs.readFileSync('dist/assets/js/games/echo-step-ui-v32.js','utf8');
+  assert.match(built,/cell\.disabled=complete\|\|failed/);
+  assert.match(built,/aria-disabled',String\(sharedBlocked\.has\(index\)\|\|playerPhase\.has\(index\)\)/);
+  assert.doesNotMatch(built,/cell\.disabled=sharedBlocked\.has\(index\)\|\|playerPhase\.has\(index\)/);
+  assert.match(built,/showNotice\(title,message,'blocked',1300\);if\(attemptedTarget>=0\)flashCell/);
+});
+
+test('Echo Step NEXT danger preview only marks fixed Echo hazards before the next YOU move is known',()=>{
+  const built=fs.readFileSync('dist/assets/js/games/echo-step-ui-v32.js','utf8');
+  assert.match(built,/danger=target<0\|\|sharedBlocked\.has\(target\)\|\|echoPhase\.has\(target\)/);
+  assert.doesNotMatch(built,/danger=[^;]*target===state\.player/);
+});
+
 test('Echo Step staged help copy matches the marker-free striped-cell UI',()=>{
   const page=fs.readFileSync('dist/echo-step/index.html','utf8');
   const guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8');
