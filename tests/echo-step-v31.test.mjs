@@ -19,8 +19,8 @@ test('Echo Step V3.1 Hint forecasts three YOU moves and the exact delayed Echo c
   }
 });
 
-test('Echo Step V3.1 Hint is a short route guide rather than one highlighted square',()=>{
-  const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),polish=fs.readFileSync('src/styles/echo-step-polish.css','utf8');
+test('Echo Step Hint is a short route guide rather than one highlighted square',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),polish=fs.readFileSync('src/styles/echo-step-polish.css','utf8');
   assert.match(source,/const HINT_LOOKAHEAD=3/);
   assert.match(source,/forecastEchoStep/);
   assert.match(source,/hintActions=puzzle\.solution\.slice\(actions\.length,actions\.length\+HINT_LOOKAHEAD\)/);
@@ -38,8 +38,9 @@ test('Echo Step V3.1 Hint is a short route guide rather than one highlighted squ
 test('Echo Step homepage, blog and guide are visible in the launch preview',()=>{
   const integration=fs.readFileSync('scripts/echo-step-integration.mjs','utf8');
   const finalPass=fs.readFileSync('scripts/echo-launch-final.mjs','utf8');
-  assert.match(integration,/data-echo-step-spotlight/);
   assert.match(integration,/data-echo-guide-v31/);
+  assert.doesNotMatch(integration,/ECHO_STEP_PUBLIC|hideEchoNavigation/);
+  assert.match(finalPass,/data-echo-step-spotlight/);
   assert.match(finalPass,/Echo Step launch pass complete/);
 
   const home=fs.readFileSync('dist/index.html','utf8'),blog=fs.readFileSync('dist/blog/index.html','utf8'),guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8'),echoPage=fs.readFileSync('dist/echo-step/index.html','utf8'),headers=fs.readFileSync('dist/_headers','utf8');
