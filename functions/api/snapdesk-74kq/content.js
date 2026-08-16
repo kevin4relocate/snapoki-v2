@@ -37,6 +37,110 @@ async function writeCurrent(env, pack, posted = {}) {
   return await readCurrent(env);
 }
 
+function responseText(data) {
+  for (const item of data?.output || []) {
+    for (const part of item?.content || []) {
+      if (part?.type === 'output_text' && typeof part.text === 'string') return part.text;
+    }
+  }
+  return '';
+}
+
+function includeUrl(text, url, limit = 6000) {
+  let value=String(text||'').trim();
+  if (!value.includes(url)) value=`${value}\n\n${url}`.trim();
+  return value.slice(0,limit);
+}
+
+function xCopy(text, url) {
+  const suffix=`\n\n${url}`;
+  let value=String(text||'').replaceAll(url,'').trim();
+  if (value.length + suffix.length > 280) value=value.slice(0,280-suffix.length).trimEnd();
+  return `${value}${suffix}`.slice(0,280);
+}
+
+async function generatePack(env, date, variant) {
+  const base=buildDailyContent(date,variant);
+  if (!env.OPENAI_API_KEY) return {...base,generator:'template'};
+
+  const model=env.OPENAI_MODEL || 'gpt-5.6-luna';
+  const prompt=`You write daily social copy for Snapoki, a free browser puzzle website.
+
+Use ONLY the facts below. Do not invent player counts, completion rates, scientific brain claims, scores, records, or puzzle-specific facts that were not supplied. Keep the tone smart, playful and concise, not corporate and not clickbait. Each platform should feel native rather than being the same paragraph copied three times.
+
+Date: ${date}
+Game: ${base.game.name}
+Category: ${base.game.category}
+Content angle: ${base.angle}
+Useful game insight: ${base.insight}
+Game URL: ${base.url}
+
+Requirements:
+- headline: short, specific and suitable for the social image.
+- insight: one or two concise sentences explaining the puzzle idea without unsupported claims.
+- LinkedIn: about 350-850 characters, short paragraphs, useful hook, one question or challenge, include the exact game URL.
+- X: maximum 280 characters including the exact game URL.
+- Instagram: concise caption, line breaks, include the exact game URL and finish with 4-7 relevant hashtags including #Snapoki.
+- Do not use markdown headings or code fences.
+- Do not claim the generated board has properties beyond the supplied game insight.`;
+
+  try {
+    const response=await fetch('https://api.openai.com/v1/responses',{
+      method:'POST',
+      headers:{
+        'authorization':`Bearer ${env.OPENAI_API_KEY}`,
+        'content-type':'application/json'
+      },
+      body:JSON.stringify({
+        model,
+        input:prompt,
+        max_output_tokens:1800,
+        text:{
+          format:{
+            type:'json_schema',
+            name:'snapoki_social_pack',
+            strict:true,
+            schema:{
+              type:'object',
+              additionalProperties:false,
+              properties:{
+                headline:{type:'string'},
+                insight:{type:'string'},
+                linkedIn:{type:'string'},
+                x:{type:'string'},
+                instagram:{type:'string'}
+              },
+              required:['headline','insight','linkedIn','x','instagram']
+            }
+          }
+        }
+      })
+    });
+    if (!response.ok) throw new Error(`OpenAI ${response.status}: ${(await response.text()).slice(0,500)}`);
+    const data=await response.json();
+    const text=responseText(data);
+    if (!text) throw new Error('OpenAI returned no output text.');
+    const ai=JSON.parse(text);
+    const headline=String(ai.headline||base.headline).trim().slice(0,120);
+    const instagram=includeUrl(ai.instagram,base.url,6000);
+    const withTags=instagram.includes('#Snapoki')?instagram:`${instagram}\n\n#Snapoki #puzzle #logicgame #puzzlegame`;
+    return {
+      ...base,
+      headline,
+      insight:String(ai.insight||base.insight).trim().slice(0,900),
+      linkedIn:includeUrl(ai.linkedIn,base.url,6000),
+      x:xCopy(ai.x,base.url),
+      instagram:withTags.slice(0,6000),
+      image:{...base.image,title:headline},
+      generator:'openai',
+      model
+    };
+  } catch (exception) {
+    console.error('AI social generation failed; using template fallback.',exception);
+    return {...base,generator:'template-fallback'};
+  }
+}
+
 async function authorize(request, env) {
   const result = await requireAdmin(request, env);
   if (!result.ok) return result.response;
@@ -49,7 +153,7 @@ export async function onRequestGet({request,env}) {
   const today = contentDate();
   let current = await readCurrent(env);
   if (!current || current.date !== today) {
-    current = await writeCurrent(env,buildDailyContent(today,0),{});
+    current = await writeCurrent(env,await generatePack(env,today,0),{});
   }
   return json({content:current});
 }
@@ -64,7 +168,7 @@ export async function onRequestPost({request,env}) {
 
   if (body.action === 'regenerate') {
     const variant = current?.date === today ? (current.variant + 1) : 0;
-    const next = await writeCurrent(env,buildDailyContent(today,variant),current?.date === today ? current.posted : {});
+    const next = await writeCurrent(env,await generatePack(env,today,variant),current?.date === today ? current.posted : {});
     return json({content:next});
   }
 
