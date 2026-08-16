@@ -24,8 +24,8 @@ test('Echo Step Hint is a short route guide rather than one highlighted square',
   assert.match(source,/const HINT_LOOKAHEAD=3/);
   assert.match(source,/forecastEchoStep/);
   assert.match(source,/hintActions=puzzle\.solution\.slice\(actions\.length,actions\.length\+HINT_LOOKAHEAD\)/);
-  assert.match(source,/3-move route hint/);
-  assert.match(source,/3-move forecast is already on the board/);
+  assert.match(source,/3-move hint/);
+  assert.match(source,/Make one move before asking for another forecast/);
   assert.match(source,/echo-hint-arrow echo-hint-arrow-/);
   assert.match(source,/echo-hint-step echo-hint-step-/);
   assert.doesNotMatch(source,/classList\.add\('hinted'\)/);
