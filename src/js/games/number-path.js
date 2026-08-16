@@ -107,7 +107,7 @@ function layoutGate(blocks,clusters,blockedCount,difficulty){
 }
 
 function routeGate(graph,shape,blockerTurns,difficulty){
-  if(difficulty==='easy')return graph.turns>=14&&shape.longestStraight<=4&&shape.shortRuns>=8&&shape.avgStraight<=2.8;
+  if(difficulty==='easy')return graph.turns>=12&&shape.longestStraight<=4&&shape.shortRuns>=7&&shape.avgStraight<=3.1;
   if(difficulty==='medium')return graph.turns>=22&&shape.longestStraight<=6&&blockerTurns>=17&&graph.ambiguousSteps>=10;
   return graph.turns>=36&&shape.longestStraight<=6&&blockerTurns>=30&&graph.ambiguousSteps>=11;
 }
@@ -159,7 +159,7 @@ export function generateNumberPath(difficulty='easy',seed='number-path'){
     const candidate=candidateFor(cfg,seed,i,difficulty);
     if(!bestFallback||candidate.quality.score>bestFallback.quality.score)bestFallback=candidate;
     if(candidate.quality.tacticalValid)candidates.push(candidate);
-    const enough=difficulty==='easy'?8:Math.max(4,Math.floor(primary*.08));
+    const enough=difficulty==='easy'?6:Math.max(4,Math.floor(primary*.08));
     if(i+1>=primary&&candidates.length>=enough)break;
   }
   const pool=candidates.length?candidates:[bestFallback],chosen=pool.sort((a,b)=>b.quality.score-a.quality.score)[0],clues=chooseClues(chosen.solution,cfg.clueCount,seed,cfg.size);
