@@ -41,6 +41,13 @@ test('Echo Step no longer auto-runs Echo after Player reaches a goal',()=>{
   assert.doesNotMatch(config,/Player locks in place|automatically replays every move still pending/);
 });
 
+test('Echo Step solution overlay shows only moves Echo has replayed by the synchronized finish',()=>{
+  const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8');
+  assert.match(source,/echoPracticeActions=puzzle\.solution\.slice\(0,Math\.max\(0,puzzle\.solution\.length-puzzle\.delay\)\)/);
+  assert.match(source,/solutionEcho=new Set\(pathFrom\(puzzle\.echoStart,echoPracticeActions\)\)/);
+  assert.doesNotMatch(source,/solutionEcho=new Set\(pathFrom\(puzzle\.echoStart,puzzle\.solution\)\)/);
+});
+
 test('Echo Step generation is bounded and does not use DFS search',()=>{
   const source=fs.readFileSync('src/js/games/echo-step-core.js','utf8');
   assert.doesNotMatch(source,/routeCandidate|120000|function dfs/);
