@@ -14,7 +14,8 @@ test('Echo Step messages use plain language and state-driven persistence',()=>{
   assert.match(js,/Echo reached E\./);
   assert.match(js,/Reach P while Echo is still on E\./);
   assert.match(js,/Echo will replay/);
-  assert.match(js,/repeats \$\{puzzle\.delay\} turns later/);
+  assert.match(js,/\$\{puzzle\.delay\} turns later/);
+  assert.doesNotMatch(js,/repeats \$\{puzzle\.delay\} turns later/);
   assert.match(js,/duration>0&&type!=='blocked'/);
 });
 
