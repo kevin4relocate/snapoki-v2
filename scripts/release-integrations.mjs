@@ -1,3 +1,4 @@
+// Final post-build launch integrations: analytics, social identity, FAQ width/content and privacy disclosure.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
