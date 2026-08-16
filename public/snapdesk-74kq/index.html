@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Snapoki Content Desk</title>
+  <meta name="theme-color" content="#080B14">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/assets/styles/site.css">
+  <link rel="stylesheet" href="/assets/styles/admin.css">
+</head>
+<body class="admin-page" data-private-utility="true">
+  <header class="admin-header">
+    <a class="brand" href="/" aria-label="Snapoki home"><img src="/brand/logo-mark.svg" width="38" height="38" alt=""><span>Snapoki</span></a>
+    <div><span class="admin-badge">CONTENT DESK</span><a class="admin-home" href="/">Back to site</a></div>
+  </header>
+  <main class="admin-shell">
+    <section class="admin-hero">
+      <div><span class="eyebrow">Daily social content</span><h1>Today’s Content Pack</h1><p>One pack per day. The next day automatically replaces the previous pack, so storage never grows with daily posts.</p></div>
+      <div class="admin-date"><small>CONTENT DATE</small><strong id="contentDate">—</strong><span id="contentGame">Loading…</span></div>
+    </section>
+
+    <div id="adminNotice" class="admin-notice" hidden></div>
+    <section id="adminLoading" class="admin-loading">Loading today’s content…</section>
+
+    <section id="contentPanel" class="admin-content" hidden>
+      <div class="admin-toolbar">
+        <div><span id="angleBadge" class="angle-badge">DAILY</span><strong id="headlinePreview">Today’s challenge</strong></div>
+        <div class="toolbar-actions"><button id="regenerateBtn" class="button button-secondary" type="button">Regenerate</button><button id="saveAllBtn" class="button button-primary" type="button">Save edits</button></div>
+      </div>
+
+      <div class="content-grid">
+        <article class="content-card">
+          <div class="content-card-head"><div><span>LinkedIn</span><small id="linkedInStatus">Not posted</small></div><div><button data-copy="linkedIn" class="mini-button" type="button">Copy</button><button data-posted="linkedIn" class="mini-button" type="button">Mark posted</button></div></div>
+          <textarea id="linkedInText" spellcheck="true"></textarea>
+          <div class="char-count"><span id="linkedInCount">0</span> characters</div>
+        </article>
+
+        <article class="content-card">
+          <div class="content-card-head"><div><span>X</span><small id="xStatus">Not posted</small></div><div><button data-copy="x" class="mini-button" type="button">Copy</button><button data-posted="x" class="mini-button" type="button">Mark posted</button></div></div>
+          <textarea id="xText" spellcheck="true"></textarea>
+          <div class="char-count"><span id="xCount">0</span> / 280 characters</div>
+        </article>
+
+        <article class="content-card">
+          <div class="content-card-head"><div><span>Instagram</span><small id="instagramStatus">Not posted</small></div><div><button data-copy="instagram" class="mini-button" type="button">Copy</button><button data-posted="instagram" class="mini-button" type="button">Mark posted</button></div></div>
+          <textarea id="instagramText" spellcheck="true"></textarea>
+          <div class="char-count"><span id="instagramCount">0</span> characters</div>
+        </article>
+
+        <article class="content-card social-card-panel">
+          <div class="content-card-head"><div><span>Social card</span><small>1080 × 1350</small></div><button id="downloadCardBtn" class="mini-button" type="button">Download PNG</button></div>
+          <canvas id="socialCanvas" width="1080" height="1350" aria-label="Social post preview"></canvas>
+        </article>
+      </div>
+
+      <section class="danger-zone">
+        <div><strong>Storage controls</strong><p>Snapoki stores one row only. Delete Today removes the current pack; Delete All clears the content table.</p></div>
+        <div><button id="deleteTodayBtn" class="danger-button" type="button">Delete Today</button><button id="deleteAllBtn" class="danger-button danger-button-strong" type="button">Delete All</button></div>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="/assets/js/admin-content.js"></script>
+</body>
+</html>
