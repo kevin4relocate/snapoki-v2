@@ -80,15 +80,20 @@ test('Echo Step NEXT danger preview only marks fixed Echo hazards before the nex
   assert.doesNotMatch(built,/danger=[^;]*target===state\.player/);
 });
 
-test('Echo Step staged help copy matches the goal-first striped-cell UI',()=>{
+test('Echo Step launch help is goal-first, compact and plain-language',()=>{
   const page=fs.readFileSync('dist/echo-step/index.html','utf8');
   const guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8');
-  assert.doesNotMatch(page,/marked Y|marked E|Purple phase walls|Cyan phase walls/);
-  assert.match(page,/<strong>Goal:<\/strong>/);
-  assert.match(page,/Purple stops YOU only\. Cyan stops Echo only\. Dark stops both\./);
-  assert.match(page,/If YOU cannot enter a cell, choose another direction/);
-  assert.match(page,/Guide teaches one step at a time/);
-  assert.doesNotMatch(guide,/Purple Y wall|Cyan E wall|E-markers/);
+  assert.match(page,/class="echo-howto"/);
+  assert.match(page,/YOU → P/);
+  assert.match(page,/Echo → E/);
+  assert.match(page,/Same turn/);
+  assert.match(page,/<strong>Walls<\/strong>/);
+  assert.match(page,/Purple<\/b> blocks YOU · <b class="echo-howto-cyan">Cyan<\/b> blocks Echo · <b>Dark<\/b> blocks both/);
+  assert.match(page,/<strong>Avoid<\/strong>/);
+  assert.match(page,/use <b>Retry<\/b>/);
+  assert.doesNotMatch(page,/marked Y|marked E|Purple phase walls|Cyan phase walls|not synced|timeline failed/i);
+  assert.match(guide,/How to Play Echo Step/);
   assert.match(guide,/Purple:<\/strong> YOU cannot enter; Echo can pass through/);
-  assert.match(guide,/Echo is different: it blindly replays/);
+  assert.match(guide,/same turn/i);
+  assert.doesNotMatch(guide,/timeline fails|phase wall/i);
 });
