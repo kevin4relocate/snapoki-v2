@@ -19,8 +19,11 @@ test('all Snapoki game boards share one centered geometry contract',async()=>{
 });
 
 test('Echo chrome cannot widen the grid track or pull the square board off center',async()=>{
-  const css=await read('src/styles/board-contract.css');
-  assert.match(css,/\.echo-compact-bar\{[^}]*overflow-x:auto[^}]*justify-content:safe center/);
+  const css=await read('src/styles/board-contract.css'),rules=await read('src/styles/echo-step-rulebar.css');
+  assert.match(css,/\.echo-compact-bar\{overflow:visible;justify-content:center\}/);
+  assert.doesNotMatch(css,/overflow-x:auto/);
+  assert.match(rules,/grid-template-areas:"you arrow echo" "rules rules rules"/);
+  assert.match(rules,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/\.echo-stage>\.echo-state-banner\{[^}]*left:50%;right:auto[^}]*width:min\(100%,var\(--board-square-max\)\)[^}]*transform:translateX\(-50%\)/);
 });
 
