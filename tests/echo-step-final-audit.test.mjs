@@ -17,7 +17,7 @@ test('Echo Step collision rules distinguish blocked YOU moves from terminal Echo
   assert.match(failed.reason,/Echo hit a cyan/);
 });
 
-test('Echo Step terminal failure locks nonessential controls and stops the shared timer',()=>{
+test('Echo Step terminal failure locks nonessential controls and freezes time plus score',()=>{
   const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8');
   const built=fs.readFileSync('dist/assets/js/game-page.js','utf8');
   assert.match(source,/signalLock\(true,'failed'\)/);
@@ -28,6 +28,7 @@ test('Echo Step terminal failure locks nonessential controls and stops the share
   assert.match(built,/done\|\|locked\);setDisabled\('#resetPuzzle'/);
   assert.match(built,/snapoki:game-lock/);
   assert.match(built,/if\(state\.engineLocked\)stopTimer\(\)/);
+  assert.match(built,/function tick\(\)\{if\(state\.engineLocked\|\|state\.completed\)return;/);
 });
 
 test('Echo Step failure keeps Retry, Reset and New Puzzle available while Hint and Guide are locked',()=>{
@@ -38,6 +39,19 @@ test('Echo Step failure keeps Retry, Reset and New Puzzle available while Hint a
   assert.match(built,/setDisabled\('#resetPuzzle',!ready\|\|\(done&&!state\.practiceComplete\)\)/);
   const source=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8');
   assert.match(source,/data-echo-reset>Retry/);
+});
+
+test('Echo Step failure banner sits above the rule bar and uses plain-language cause copy',()=>{
+  const built=fs.readFileSync('dist/assets/js/games/echo-step-ui-v32.js','utf8');
+  const bannerIndex=built.indexOf('<div class="echo-state-banner" role="status"');
+  const ruleIndex=built.indexOf('<div class="echo-compact-bar"');
+  const boardIndex=built.indexOf('<div class="echo-board-shell"><div class="echo-grid"');
+  assert.ok(bannerIndex>=0&&ruleIndex>bannerIndex&&boardIndex>ruleIndex,'failure banner should appear above rules and board');
+  assert.doesNotMatch(built,/Timeline failed/);
+  assert.match(built,/Try a different route\./);
+  assert.match(built,/Echo hit a cyan wall\./);
+  assert.match(built,/Echo hit a dark wall\./);
+  assert.match(built,/data-echo-reset>Retry/);
 });
 
 test('Echo Step result modal removes redundant guest actions and uses Guide terminology',()=>{
