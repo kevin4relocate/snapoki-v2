@@ -35,12 +35,12 @@ test('release shell keeps header footer and content pages inside one 1280px boun
   assert.doesNotMatch(css,/100vw/);
 });
 
-test('guide detail uses a 1180px visual canvas and a 900px reading column',()=>{
+test('all guide detail visual and prose content uses the shared 1080px measure',()=>{
   const css=fs.readFileSync(path.join(dist,'assets','styles','launch.css'),'utf8');
-  assert.match(css,/--guide-visual-max:1180px/);
-  assert.match(css,/--reading-max:900px/);
-  assert.match(css,/\.guide-page \.breadcrumbs,\.guide-page \.content-hero,\.guide-page article\{width:100%;max-width:var\(--guide-visual-max\);margin-left:auto;margin-right:auto\}/);
-  assert.match(css,/\.guide-page article>h2,[^\n]*max-width:var\(--reading-max\)/);
+  assert.match(css,/--content-max:1080px/);
+  assert.doesNotMatch(css,/--guide-visual-max|--reading-max|--reference-max|--blog-summary-max/);
+  assert.match(css,/\.guide-page \.breadcrumbs,\.guide-page \.content-hero,\.guide-page article\{width:100%;max-width:var\(--content-max\);margin-left:auto;margin-right:auto\}/);
+  assert.match(css,/\.guide-page article>h2,[^\n]*max-width:var\(--content-max\)/);
   assert.match(css,/\.guide-figure\{width:100%;max-width:100%/);
   assert.match(css,/\.article-cta\{[^\n]*width:100%;max-width:100%/);
 });
