@@ -24,27 +24,30 @@ test('Echo Step stays deterministic and solvable across difficulties',()=>{
 });
 
 test('Echo Step striped cells keep actor-specific rules and plain public copy',()=>{
-  const core=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8'),config=fs.readFileSync('src/js/games-config.js','utf8'),social=fs.readFileSync('src/js/social-game-board.js','utf8');
-  assert.match(core,/playerPhaseSet\(puzzle\).*playerBarriers/s);assert.match(core,/echoPhaseSet\(puzzle\).*echoBarriers/s);assert.match(core,/barrier-player/);assert.match(core,/barrier-echo/);
+  const core=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),ui=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8'),config=fs.readFileSync('src/js/games-config.js','utf8'),social=fs.readFileSync('src/js/social-game-board.js','utf8');
+  assert.match(core,/playerPhaseSet\(puzzle\).*playerBarriers/s);assert.match(core,/echoPhaseSet\(puzzle\).*echoBarriers/s);
+  assert.match(ui,/barrier-player/);assert.match(ui,/barrier-echo/);
   assert.match(css,/\.echo-cell\.barrier-player/);assert.match(css,/\.echo-cell\.barrier-echo/);
   assert.match(config,/Purple striped cells block YOU only/);assert.match(config,/Cyan striped cells block Echo only/);assert.match(config,/Dark striped cells block both/);assert.doesNotMatch(config,/phase walls marked/);
   assert.match(social,/playerBarriers=new Set\(puzzle\.playerBarriers/);assert.match(social,/echoBarriers=new Set\(puzzle\.echoBarriers/);
 });
 
 test('Echo Step finishes only when YOU and Echo reach their goals together',()=>{
-  const core=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),config=fs.readFileSync('src/js/games-config.js','utf8');
-  assert.doesNotMatch(core,/settleAnimated|catching up|settleEchoState/);assert.match(core,/bothHome\(puzzle,state\)/);assert.match(core,/token\.textContent='YOU'/);assert.match(core,/token\.textContent='E'/);
+  const core=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),ui=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),config=fs.readFileSync('src/js/games-config.js','utf8');
+  assert.doesNotMatch(core,/settleAnimated|catching up|settleEchoState/);assert.match(core,/bothHome\(puzzle,state\)/);
+  assert.match(ui,/token\.textContent='YOU'/);assert.match(ui,/token\.textContent='E'/);
   assert.match(config,/Reach YOU → P and Echo → E on the same turn/);assert.match(config,/Reaching one goal alone does not finish the puzzle/);assert.doesNotMatch(config,/Player locks in place|automatically replays every move still pending/);
 });
 
-test('Echo Step Guide follows the delayed route',()=>{
-  const core=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8');
-  assert.match(core,/echoPracticeActions=puzzle\.solution\.slice/);assert.match(core,/solutionPlayerGuide=routeGuide/);assert.match(core,/solutionEchoGuide=routeGuide/);assert.match(core,/marker\.goal\?'SYNC'/);assert.match(css,/\.echo-route-arrow-player/);assert.match(css,/\.echo-route-arrow-echo/);
+test('Echo replay row highlights the next move and waiting goals',()=>{
+  const ui=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8');
+  assert.match(ui,/function nextEchoPreview\(\)/);assert.match(ui,/'is-next'/);assert.match(ui,/'goal-waiting'/);assert.match(ui,/'echo-next-target'/);assert.match(css,/\.echo-queue b\.is-next/);assert.match(css,/goal-waiting/);
 });
 
-test('Echo replay row highlights the next move and waiting goals',()=>{
-  const core=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8');
-  assert.match(core,/function nextEchoPreview\(\)/);assert.match(core,/'is-next'/);assert.match(core,/'goal-waiting'/);assert.match(core,/'echo-next-target'/);assert.match(css,/\.echo-queue b\.is-next/);assert.match(css,/goal-waiting/);
+test('Echo Step core stays engine-only with no obsolete renderer',()=>{
+  const core=fs.readFileSync('src/js/games/echo-step-core.js','utf8');
+  assert.doesNotMatch(core,/export function createGame|echo-controls|echo-phase-legend|solutionPlayerGuide|echo-route-arrow/);
+  assert.doesNotMatch(core,/scoreFromPerformance|scoreTimeDivisor|HINT_LOOKAHEAD/);
 });
 
 test('Echo generation is bounded and avoids DFS search',()=>{
@@ -58,4 +61,4 @@ test('Echo Step server verifier accepts a valid completion and rejects an altere
   assert.equal(verifyAndScoreResult({game:'echo-step',difficulty,mode:'normal',time_ms:45000,hints_used:0,metadata:{...metadata,actions:[...metadata.actions,'u'],moves:metadata.moves+1}}).ok,false);
 });
 
-test('Echo Step engine files are valid JavaScript',()=>{for(const file of ['src/js/games/echo-step.js','src/js/games/echo-step-core.js','src/js/social-game-board.js'])execFileSync(process.execPath,['--check',file],{stdio:'pipe'});});
+test('Echo Step engine files are valid JavaScript',()=>{for(const file of ['src/js/games/echo-step.js','src/js/games/echo-step-core.js','src/js/games/echo-step-ui-v32.js','src/js/social-game-board.js'])execFileSync(process.execPath,['--check',file],{stdio:'pipe'});});
