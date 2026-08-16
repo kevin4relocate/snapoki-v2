@@ -8,13 +8,16 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dist=path.join(root,'dist');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 function walk(dir){const out=[];for(const e of fs.readdirSync(dir,{withFileTypes:true})){const f=path.join(dir,e.name);if(e.isDirectory())out.push(...walk(f));else out.push(f);}return out;}
+function isAdmin(file){return file===path.join(dist,'admin','index.html')||file.startsWith(path.join(dist,'admin')+path.sep);}
 
-test('Google Analytics is installed exactly once on every built HTML page',()=>{
-  for(const file of walk(dist).filter(f=>f.endsWith('.html'))){
+test('Google Analytics is installed exactly once on every public built HTML page',()=>{
+  for(const file of walk(dist).filter(f=>f.endsWith('.html')&&!isAdmin(f))){
     const html=fs.readFileSync(file,'utf8'),rel=path.relative(dist,file);
     assert.equal((html.match(/googletagmanager\.com\/gtag\/js\?id=G-ED1P696TW8/g)||[]).length,1,`${rel}: GA loader`);
     assert.equal((html.match(/gtag\('config', 'G-ED1P696TW8'\)/g)||[]).length,1,`${rel}: GA config`);
   }
+  const admin=read('dist/admin/index.html');
+  assert.doesNotMatch(admin,/googletagmanager\.com\/gtag\/js/,'admin should not load public analytics');
 });
 
 test('homepage FAQ uses the shared 1080px measure and covers launch questions',()=>{
@@ -27,8 +30,8 @@ test('homepage FAQ uses the shared 1080px measure and covers launch questions',(
   assert.match(css,/\.home-page \.faq\{width:100%;max-width:calc\(var\(--content-max\) \+ \(var\(--site-shell-gutter\) \* 2\)\);margin-left:auto;margin-right:auto\}/);
 });
 
-test('footer exposes the requested LinkedIn and X social destinations',()=>{
-  for(const file of walk(dist).filter(f=>f.endsWith('.html'))){
+test('public footers expose the requested LinkedIn and X social destinations',()=>{
+  for(const file of walk(dist).filter(f=>f.endsWith('.html')&&!isAdmin(f))){
     const html=fs.readFileSync(file,'utf8'),rel=path.relative(dist,file);
     assert.match(html,/class="footer-social"/,`${rel}: social group`);
     assert.match(html,/https:\/\/www\.linkedin\.com\/company\/snapoki\//,`${rel}: LinkedIn`);
