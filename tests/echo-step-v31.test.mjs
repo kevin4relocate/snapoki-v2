@@ -35,20 +35,22 @@ test('Echo Step V3.1 Hint is a short route guide rather than one highlighted squ
   assert.match(polish,/\.echo-hint-step-echo/);
 });
 
-test('Echo Step homepage and blog release content is prepared but remains hidden while staging flag is false',()=>{
+test('Echo Step homepage, blog and guide are visible in the launch preview',()=>{
   const integration=fs.readFileSync('scripts/echo-step-integration.mjs','utf8');
-  assert.match(integration,/const ECHO_STEP_PUBLIC=false/);
+  const finalPass=fs.readFileSync('scripts/echo-launch-final.mjs','utf8');
   assert.match(integration,/data-echo-step-spotlight/);
   assert.match(integration,/data-echo-guide-v31/);
+  assert.match(finalPass,/Echo Step launch pass complete/);
 
   const home=fs.readFileSync('dist/index.html','utf8'),blog=fs.readFileSync('dist/blog/index.html','utf8'),guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8'),echoPage=fs.readFileSync('dist/echo-step/index.html','utf8'),headers=fs.readFileSync('dist/_headers','utf8');
-  assert.doesNotMatch(home,/href="\/echo-step\/"/);
-  assert.doesNotMatch(home,/data-echo-step-spotlight/);
-  assert.doesNotMatch(blog,/href="\/blog\/how-to-play-echo-step\/"/);
+  assert.match(home,/href="\/echo-step\/"/);
+  assert.match(home,/data-echo-step-spotlight/);
+  assert.match(blog,/href="\/blog\/how-to-play-echo-step\/"/);
   assert.match(guide,/data-echo-guide-v31/);
   assert.match(guide,/How (?:the )?Hint works/);
   assert.match(guide,/How Guide works/);
-  assert.match(headers,/\/echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
-  assert.match(headers,/\/blog\/how-to-play-echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
+  assert.doesNotMatch(headers,/\/echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
+  assert.doesNotMatch(headers,/\/blog\/how-to-play-echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
   assert.match(echoPage,/\/assets\/styles\/echo-step-polish\.css/);
+  assert.match(echoPage,/\/assets\/styles\/echo-step-launch\.css/);
 });
