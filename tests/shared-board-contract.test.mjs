@@ -22,9 +22,17 @@ test('Echo chrome cannot widen the grid track or pull the square board off cente
   const css=await read('src/styles/board-contract.css'),rules=await read('src/styles/echo-step-rulebar.css');
   assert.match(css,/\.echo-compact-bar\{overflow:visible;justify-content:center\}/);
   assert.doesNotMatch(css,/overflow-x:auto/);
-  assert.match(rules,/grid-template-areas:"you arrow echo" "goal goal goal" "rules rules rules"/);
+  assert.match(rules,/grid-template-areas:"you arrow echo goal" "rules rules rules rules"/);
   assert.match(rules,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css,/\.echo-stage>\.echo-state-banner\{[^}]*left:50%;right:auto[^}]*width:min\(100%,var\(--board-square-max\)\)[^}]*transform:translateX\(-50%\)/);
+  assert.match(css,/\.echo-stage>\.echo-state-banner\{[^}]*left:50%;right:auto[^}]*width:min\(100%,var\(--echo-square-max\)\)[^}]*transform:translateX\(-50%\)/);
+});
+
+test('Echo board can shrink by viewport height so HUD, board and replay remain visible on desktop',async()=>{
+  const css=await read('src/styles/board-contract.css');
+  assert.match(css,/--echo-square-max:var\(--board-square-max\)/);
+  assert.match(css,/@media\(min-width:781px\)/);
+  assert.match(css,/--echo-square-max:clamp\(400px,calc\(100dvh - 300px\),var\(--board-square-max\)\)/);
+  assert.match(css,/\.echo-stage>\.echo-board-shell\{width:min\(100%,var\(--echo-square-max\)\);aspect-ratio:1\/1;margin-inline:auto\}/);
 });
 
 test('every built game page loads the shared board contract last',async()=>{
