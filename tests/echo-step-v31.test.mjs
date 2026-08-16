@@ -46,7 +46,8 @@ test('Echo Step homepage and blog release content is prepared but remains hidden
   assert.doesNotMatch(home,/data-echo-step-spotlight/);
   assert.doesNotMatch(blog,/href="\/blog\/how-to-play-echo-step\/"/);
   assert.match(guide,/data-echo-guide-v31/);
-  assert.match(guide,/How the Hint works/);
+  assert.match(guide,/How (?:the )?Hint works/);
+  assert.match(guide,/How Guide works/);
   assert.match(headers,/\/echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
   assert.match(headers,/\/blog\/how-to-play-echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
   assert.match(echoPage,/\/assets\/styles\/echo-step-polish\.css/);
