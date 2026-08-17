@@ -83,14 +83,15 @@ test('Echo Step NEXT danger preview only marks fixed Echo hazards before the nex
 test('Echo Step launch help is goal-first, compact and plain-language',()=>{
   const page=fs.readFileSync('dist/echo-step/index.html','utf8');
   const guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8');
-  assert.match(page,/class="echo-howto"/);
+  assert.match(page,/class="game-howto game-howto--echo-step"/);
   assert.match(page,/YOU → P/);
   assert.match(page,/Echo → E/);
   assert.match(page,/Same turn/);
   assert.match(page,/<strong>Walls<\/strong>/);
-  assert.match(page,/Purple<\/b> blocks YOU · <b class="echo-howto-cyan">Cyan<\/b> blocks Echo · <b>Dark<\/b> blocks both/);
+  assert.match(page,/Purple<\/b> blocks YOU · <b class="howto-cyan">Cyan<\/b> blocks Echo · <b>Dark<\/b> blocks both/);
   assert.match(page,/<strong>Avoid<\/strong>/);
   assert.match(page,/use <b>Retry<\/b>/);
+  assert.match(page,/\/assets\/styles\/how-to-card\.css/);
   assert.doesNotMatch(page,/marked Y|marked E|Purple phase walls|Cyan phase walls|not synced|timeline failed/i);
   assert.match(guide,/How to Play Echo Step/);
   assert.match(guide,/Purple:<\/strong> YOU cannot enter; Echo can pass through/);
