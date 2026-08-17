@@ -37,23 +37,26 @@ test('Echo Step Hint is a short route guide rather than one highlighted square',
   assert.match(polish,/\.echo-hint-step-echo/);
 });
 
-test('Echo Step homepage, blog and guide are visible in the launch preview',()=>{
-  const integration=fs.readFileSync('scripts/echo-step-integration.mjs','utf8');
-  const finalPass=fs.readFileSync('scripts/echo-launch-final.mjs','utf8');
-  assert.match(integration,/data-echo-guide-v31/);
-  assert.doesNotMatch(integration,/ECHO_STEP_PUBLIC|hideEchoNavigation/);
-  assert.match(finalPass,/data-echo-step-spotlight/);
-  assert.match(finalPass,/shared How to Play cards/);
+test('Echo Step launch surfaces come from shared registries instead of Echo-only build passes',()=>{
+  const presentation=fs.readFileSync('src/js/game-presentation.js','utf8');
+  const launch=fs.readFileSync('scripts/launch-readiness.mjs','utf8');
+  assert.match(presentation,/'echo-step'/);
+  assert.match(presentation,/styles:\['echo-step\.css','echo-step-polish\.css','echo-step-rulebar\.css'\]/);
+  assert.match(presentation,/spotlight:/);
+  assert.match(launch,/key==='echo-step'/);
+  assert.match(launch,/'echo-step':\{focus:/);
+  assert.equal(fs.existsSync('scripts/echo-step-integration.mjs'),false);
+  assert.equal(fs.existsSync('scripts/echo-launch-final.mjs'),false);
 
   const home=fs.readFileSync('dist/index.html','utf8'),blog=fs.readFileSync('dist/blog/index.html','utf8'),guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8'),echoPage=fs.readFileSync('dist/echo-step/index.html','utf8'),headers=fs.readFileSync('dist/_headers','utf8');
   assert.match(home,/href="\/echo-step\/"/);
-  assert.match(home,/data-echo-step-spotlight/);
+  assert.match(home,/data-game-spotlight="echo-step"/);
   assert.match(blog,/href="\/blog\/how-to-play-echo-step\/"/);
-  assert.match(guide,/data-echo-guide-v31/);
-  assert.match(guide,/How (?:the )?Hint works/);
-  assert.match(guide,/How Guide works/);
-  assert.doesNotMatch(headers,/\/echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
-  assert.doesNotMatch(headers,/\/blog\/how-to-play-echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
+  assert.match(guide,/Every move matters twice|plan one command sequence for two moments/i);
+  assert.match(guide,/three-move Hint|Hint/);
+  assert.match(guide,/Guide/);
+  assert.doesNotMatch(headers,/\/echo-step\/\*[\s\S]*X-Robots-Tag: noindex/i);
+  assert.doesNotMatch(headers,/\/blog\/how-to-play-echo-step\/\*[\s\S]*X-Robots-Tag: noindex/i);
   assert.match(echoPage,/\/assets\/styles\/echo-step-polish\.css/);
   assert.match(echoPage,/\/assets\/styles\/how-to-card\.css/);
   assert.doesNotMatch(echoPage,/echo-step-launch\.css/);
