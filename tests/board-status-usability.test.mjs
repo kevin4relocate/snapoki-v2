@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {GAMES} from '../src/js/games-config.js';
-import {presentGameStatus} from '../src/js/game-status.js';
+import {presentGameStatus,renderGameStatus} from '../src/js/game-status.js';
 
 test('Maze and Number Path suppress duplicate static instructions below the board',()=>{
   assert.equal(presentGameStatus('maze','Reach the green finish. Hard boards hide the correct route behind deeper branch traps and tighter decisions.').hidden,true);
@@ -24,6 +24,23 @@ test('Number Path live progress becomes a compact highlighted HUD',()=>{
   assert.match(css,/\.board-feedback\.is-progress/);
   assert.match(css,/\.board-progress-next/);
   assert.match(css,/border-radius:999px/);
+});
+
+test('Number Path backtracking keeps the same progress HUD instead of falling back to plain text',()=>{
+  const classes=new Set();
+  const element={
+    hidden:false,
+    innerHTML:'',
+    textContent:'',
+    classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}}
+  };
+  renderGameStatus(element,'number-path','Step 7 of 36. Next checkpoint: 11.');
+  renderGameStatus(element,'number-path','Step 8 of 36. Next checkpoint: 11.');
+  renderGameStatus(element,'number-path','Backtracked to step 7.');
+  assert.equal(classes.has('is-progress'),true);
+  assert.match(element.innerHTML,/Step <b>7<\/b> \/ 36/);
+  assert.match(element.innerHTML,/Next checkpoint <b>11<\/b>/);
+  assert.doesNotMatch(element.innerHTML,/Backtracked/);
 });
 
 test('shared game runtime delegates status rendering to game-status instead of inline per-game patches',()=>{
