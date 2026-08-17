@@ -1,6 +1,6 @@
 # Snapoki V2
 
-A browser puzzle platform with six current games and a registry-first architecture designed to add future games without duplicating the surrounding product stack.
+A browser puzzle platform with six current games and a registry-first architecture designed to scale toward a much larger game library without duplicating the surrounding product stack.
 
 ## Current games
 
@@ -11,7 +11,7 @@ A browser puzzle platform with six current games and a registry-first architectu
 - Lights Out
 - Loop Puzzle
 
-Every game reuses the same site shell, account system, difficulty rail, Regular Play / Daily Challenge lifecycle, board-status area, How to Play card, result modal, Rankings, profile and Daily progress UI. Game engines only own their mechanic, rendering, hint/practice behavior and compact completion proof.
+Every game reuses the same site shell, account system, difficulty rail, Regular Play / Daily Challenge lifecycle, board-status area, How to Play card, result modal, Rankings, profile and Daily progress UI. A game plugin owns only its mechanic, deterministic generation, rendering, hint/practice behavior, social-board renderer and compact completion proof.
 
 ## Core product rules
 
@@ -19,13 +19,13 @@ Every game reuses the same site shell, account system, difficulty rail, Regular 
 - **Hints are limited guidance.** They may remain ranked but reduce the reward.
 - **Full Solution / Guide is practice.** Once opened, that board stays practice-only. Hiding the guide or resetting the same board does not restore ranking eligibility; start a New Puzzle for a fresh verified attempt.
 - **Difficulty is structural.** Harder boards change route pressure, clues, dead ends, bottlenecks, delayed consequences, deduction depth or minimum logical actions rather than relying only on larger grids.
-- **Shared behavior stays shared.** New games must not create a second header, account flow, ranking UI, Daily shell, result modal, sitemap process or generic How to Play component.
+- **Shared behavior stays shared.** New games must not create a second header, account flow, ranking UI, Daily shell, result modal, sitemap process, generic How to Play component or Content Desk branch.
 
 ## Architecture
 
 Canonical registries:
 
-- `src/js/games-config.js` — game ids, slugs, navigation metadata, difficulty, metrics, capabilities, SEO and baseline rules.
+- `src/js/games-config.js` — game ids, slugs, navigation metadata, difficulty, metrics, capabilities, SEO, baseline rules and optional social insight.
 - `src/js/game-presentation.js` — optional presentation overrides such as special How to Play wording, `Guide` vs `Solution`, game-specific CSS, social hook and optional spotlight.
 - `functions/_lib/scoring.js` → `RESULT_VERIFIERS` — one mechanic-specific ranked proof verifier per registered game.
 
@@ -34,18 +34,26 @@ Shared runtime:
 - `src/js/site.js` — navigation and optional Google account UI.
 - `src/js/game-page.js` — shared game lifecycle, timer, practice, Daily, Result, Rankings and Profile.
 - `src/js/game-status.js` — shared board feedback/progress presentation.
-- `src/js/games/*.js` — game-specific engines only.
+- `src/js/games/<slug>.js` — stable public game entries. Each exports `createGame()` plus `generate<PascalCaseSlug>()`.
+
+Content Desk plugin layer:
+
+- `src/js/social-game-board.js` — generic dynamic plugin loader; no game-id switch/map.
+- `src/js/social-renderers/<slug>.js` — game-owned unsolved-board renderer for 1080×1080 social artwork.
+- `functions/_lib/social-content.js` — registry-driven social copy rotation.
+- `CONTENT_DESK_PLUGIN_CONTRACT.md` — contract for scaling the admin system without editing admin core per game.
 
 Shared build/content:
 
 - `scripts/build.mjs` — registry-driven site shell, game pages and homepage.
 - `scripts/enrich-content.mjs` — About/Help/legal/reference content from the registry.
-- `scripts/post-build-platform.mjs` — shared styles and narrow content polish; never patches runtime JavaScript.
-- `scripts/launch-readiness.mjs` — registry-driven guides, guide artwork, structured data, internal links, sitemap and robots.
+- `scripts/post-build-platform.mjs` — shared style wiring and narrow legacy content polish; never patches runtime JavaScript.
+- `scripts/launch-readiness.mjs` — registry-driven guides, guide artwork, structured data, related links, sitemap and robots.
 - `scripts/release-integrations.mjs` — analytics/social release metadata.
-- `scripts/platform-audit.mjs` — final build gate for SEO, dead links, content depth, registry/verifier parity and private-admin isolation.
+- `scripts/admin-plugin-audit.mjs` — verifies unique game ids/slugs, stable engine/generator exports, social renderers and game-agnostic Content Desk core.
+- `scripts/platform-audit.mjs` — final built-site gate for SEO, dead links, guide coverage, registry/verifier parity and private-admin isolation.
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for ownership details and [`docs/LAUNCH_AND_GAME_EXPANSION.md`](docs/LAUNCH_AND_GAME_EXPANSION.md) for the short Game #7+ checklist.
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for ownership details, [`CONTENT_DESK_PLUGIN_CONTRACT.md`](CONTENT_DESK_PLUGIN_CONTRACT.md) for the 100-game admin contract and [`docs/LAUNCH_AND_GAME_EXPANSION.md`](docs/LAUNCH_AND_GAME_EXPANSION.md) for the short new-game checklist.
 
 ## Shared UI/CSS contracts
 
@@ -68,7 +76,7 @@ npm run build
 npm test
 ```
 
-`npm run build` ends with `scripts/platform-audit.mjs`. A build fails if public output has problems such as missing canonical/meta/H1, dead internal links, missing game/guide/verifier coverage, thin content, sitemap gaps, accidental noindex or exposure of the private Content Desk.
+`npm run build` performs the Content Desk plugin audit and then the final platform audit. A build fails for contract problems such as duplicate game ids/slugs, missing engine/generator/social-renderer coverage, missing canonical/meta/H1, dead internal links, missing guide/verifier coverage, thin guide content, sitemap gaps, accidental noindex or exposure of the private Content Desk.
 
 Generated public output is written to `dist/` and should not be hand-edited.
 
@@ -77,18 +85,19 @@ Generated public output is written to `dist/` and should not be hand-edited.
 Required:
 
 1. Add the game to `src/js/games-config.js`.
-2. Add `src/js/games/<slug>.js` exporting `createGame()`.
-3. Add its proof verifier to `RESULT_VERIFIERS` in `functions/_lib/scoring.js`.
-4. Add mechanic-specific generator/gameplay/verifier tests.
-5. Run build and tests.
+2. Add `src/js/games/<slug>.js` exporting `createGame()` and `generate<PascalCaseSlug>()`.
+3. Add `src/js/social-renderers/<slug>.js` exporting `drawSocialBoard()`.
+4. Add its proof verifier to `RESULT_VERIFIERS` in `functions/_lib/scoring.js`.
+5. Add mechanic-specific generator/gameplay/verifier tests.
+6. Run build and tests.
 
 Optional:
 
 - presentation override in `game-presentation.js`
-- custom social-board renderer
+- `socialInsight` in the Game Registry
 - custom long-form strategy/guide artwork
 
-Header, footer, homepage card/count, common game page, generic How to Play, Daily UI, result modal, Blog guide route, internal links and sitemap should flow automatically.
+Header, footer, homepage card/count, common game page, generic How to Play, Daily UI, result modal, Blog guide route, related links, sitemap and Content Desk orchestration should flow automatically. Adding a normal game must not require editing the admin page, admin client, admin API, social loader or social-copy engine.
 
 ## Cloudflare D1
 
@@ -121,7 +130,7 @@ Build command: npm run build
 Build output directory: dist
 ```
 
-Production deployment is a separate manual decision from GitHub CI.
+Production deployment is a separate manual decision from GitHub validation.
 
 ## Google sign-in
 
@@ -166,7 +175,9 @@ Daily boards are deterministic per game, difficulty and UTC date. Signed-in veri
 
 ## SEO and content
 
-Every registered game automatically receives a public game route, dedicated guide, game↔guide links, structured data and sitemap coverage. Shared reference pages include:
+Every registered game automatically receives a public game route, play-first game shell, dedicated long-form guide, structured data and sitemap coverage. The game page intentionally stays focused on play; the guide owns the deeper rules, strategy, mistakes and editorial/SEO content.
+
+Shared reference pages include:
 
 - `/about/`
 - `/help/`
@@ -177,7 +188,7 @@ Every registered game automatically receives a public game route, dedicated guid
 - `/rankings-guide/`
 - `/blog/`
 
-The final platform audit checks internal links and prevents the private admin utility from entering public navigation or sitemap.
+The final platform audit checks internal references and prevents the private admin utility from entering public navigation or sitemap.
 
 ## Private Content Desk / Gemini
 
