@@ -49,12 +49,6 @@
 .article-cta h2{margin:.2rem 0 .35rem}
 .article-cta p{margin:0}
 .article-cta .button{flex:0 0 auto;white-space:nowrap}
-.game-learn-more{display:grid;grid-template-columns:1fr auto;align-items:center;gap:1rem;margin-top:1rem;padding-top:1.4rem;padding-bottom:1.4rem}
-.game-learn-more h2{font-size:1.15rem;margin:.2rem 0}
-.game-learn-more p{margin:0;color:#8f9bb4;font-size:.86rem}
-.related-games{grid-column:1/-1;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;color:#77839d;font-size:.78rem}
-.related-games a{color:#a8b4cf;text-decoration:none}
-.related-games a:hover{color:#fff}
 .not-found{min-height:52vh;display:flex;align-items:center}
 .content-page-shell .site-footer{margin-top:3rem}
 .content-page article a:not(.button){color:#68d9f6}
@@ -66,7 +60,6 @@
 }
 @media(max-width:900px){
   .difficulty-explainer{grid-template-columns:1fr}
-  .game-learn-more{grid-template-columns:1fr}
   .article-cta{align-items:flex-start;flex-direction:column}
   .article-cta .button{width:100%;text-align:center}
 }
@@ -83,5 +76,4 @@
   .guide-actions .button{width:100%;text-align:center}
   .guide-figure{border-radius:16px}
   .breadcrumbs{font-size:.74rem}
-  .game-learn-more{padding-left:1rem;padding-right:1rem}
 }
