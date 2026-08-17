@@ -58,11 +58,23 @@ function updateSharedCopy(html){
     .replaceAll('Move now. Sync with your past.','Move now. Echo follows later.');
 }
 
-const echoHowTo='<div class="echo-howto"><div class="echo-howto-goal"><strong>Goal</strong><div><b class="echo-howto-you">YOU → P</b><span>+</span><b class="echo-howto-echo">Echo → E</b><em>Same turn</em></div></div><div class="echo-howto-row"><strong>Move</strong><p>Move <b class="echo-howto-you">YOU</b>. Echo repeats each move after the delay shown above the board.</p></div><div class="echo-howto-row"><strong>Walls</strong><p><b class="echo-howto-purple">Purple</b> blocks YOU · <b class="echo-howto-cyan">Cyan</b> blocks Echo · <b>Dark</b> blocks both.</p></div><div class="echo-howto-row"><strong>Avoid</strong><p>If Echo hits a blocked cell, leaves the board, or hits YOU, use <b>Retry</b>.</p></div><div class="echo-howto-tools"><span><b>Hint</b> · next 3 moves</span><span><b>Guide</b> · step-by-step practice</span></div></div>';
+const gameHowTo={
+  'echo-step':'<div class="game-howto game-howto--echo-step"><div class="game-howto-goal"><strong>Goal</strong><div><b class="game-howto-chip">YOU → P</b><span class="game-howto-plus">+</span><b class="game-howto-chip game-howto-chip--secondary">Echo → E</b><em>Same turn</em></div></div><div class="game-howto-row"><strong>Move</strong><p>Move <b>YOU</b>. Echo repeats each move after the delay shown above the board.</p></div><div class="game-howto-row"><strong>Walls</strong><p><b class="howto-purple">Purple</b> blocks YOU · <b class="howto-cyan">Cyan</b> blocks Echo · <b>Dark</b> blocks both.</p></div><div class="game-howto-row"><strong>Avoid</strong><p>If Echo hits a blocked cell, leaves the board, or hits YOU, use <b>Retry</b>.</p></div><div class="game-howto-tools"><span><b>Hint</b> · next 3 moves</span><span><b>Guide</b> · step-by-step practice</span></div></div>',
+  'maze':'<div class="game-howto game-howto--maze"><div class="game-howto-goal"><strong>Goal</strong><div><b class="game-howto-chip">START</b><span class="game-howto-plus">→</span><b class="game-howto-chip game-howto-chip--secondary">FINISH</b><em>Find the exit</em></div></div><div class="game-howto-row"><strong>Move</strong><p>Drag or swipe through open corridors, click an adjacent cell, or use <b>Arrow / WASD</b>.</p></div><div class="game-howto-row"><strong>Watch</strong><p>False branches and dead ends cost time. Hard boards add deeper traps and later decisions.</p></div><div class="game-howto-row"><strong>Finish</strong><p>Reach the green finish marker with the shortest, cleanest route you can find.</p></div><div class="game-howto-tools"><span><b>Hint</b> · short next route</span><span><b>Solution</b> · full-route practice</span></div></div>',
+  'number-path':'<div class="game-howto game-howto--number-path"><div class="game-howto-goal"><strong>Goal</strong><div><b class="game-howto-chip">1 → LAST</b><em>Fill every open cell</em></div></div><div class="game-howto-row"><strong>Move</strong><p>Build one continuous path through orthogonally adjacent open cells.</p></div><div class="game-howto-row"><strong>Numbers</strong><p>Each numbered checkpoint is the <b>exact path step</b> that must land on that cell.</p></div><div class="game-howto-row"><strong>Rethink</strong><p>A contradictory route is allowed in Regular Play. Spot the conflict and use <b>Undo</b> to change the branch.</p></div><div class="game-howto-tools"><span><b>Hint</b> · next real action</span><span><b>Solution</b> · full-route practice</span></div></div>',
+  'color-connect':'<div class="game-howto game-howto--color-connect"><div class="game-howto-goal"><strong>Goal</strong><div><b class="game-howto-chip"><span class="howto-rainbow">PAIR → PAIR</span></b><em>Cover every open cell</em></div></div><div class="game-howto-row"><strong>Connect</strong><p>Drag from one colored endpoint to its matching endpoint.</p></div><div class="game-howto-row"><strong>Rules</strong><p>Paths cannot overlap, cross blocked cells, or pass through another color endpoint.</p></div><div class="game-howto-row"><strong>Plan</strong><p>Every open cell must be covered, so an easy-looking short route can block another color later.</p></div><div class="game-howto-tools"><span><b>Hint</b> · short route section</span><span><b>Solution</b> · all ghost routes</span></div></div>',
+  'lights-out':'<div class="game-howto game-howto--lights-out"><div class="game-howto-goal"><strong>Goal</strong><div><b class="game-howto-chip howto-light">ALL LIGHTS → OFF</b><em>Clear the board</em></div></div><div class="game-howto-row"><strong>Press</strong><p>Tap a light to toggle it plus its <b>up, down, left and right</b> neighbors.</p></div><div class="game-howto-row"><strong>Plan</strong><p>One press changes several cells, so each move can help one area while reopening another.</p></div><div class="game-howto-row"><strong>Score</strong><p>Difficulty is based on the board’s true minimum number of presses, not just board size.</p></div><div class="game-howto-tools"><span><b>Hint</b> · next useful press</span><span><b>Solution</b> · shortest press set</span></div></div>',
+  'loop-puzzle':'<div class="game-howto game-howto--loop-puzzle"><div class="game-howto-goal"><strong>Goal</strong><div><b class="game-howto-chip">ONE CLOSED LOOP</b><em>Match every clue</em></div></div><div class="game-howto-row"><strong>Draw</strong><p>Tap grid edges to build one continuous loop.</p></div><div class="game-howto-row"><strong>Clues</strong><p>A number is the <b class="howto-clue">exact count</b> of that cell’s four sides used by the loop.</p></div><div class="game-howto-row"><strong>Finish</strong><p>Any single closed loop satisfying every visible clue is accepted. Edge order does not matter.</p></div><div class="game-howto-tools"><span><b>Hint</b> · exact edge to change</span><span><b>Solution</b> · one ghost loop</span></div></div>'
+};
+
+function updateGameHowTo(html,slug){
+  const card=gameHowTo[slug];if(!card)return html;
+  html=html.replace(/(<section class="panel how-to"><div class="panel-heading"><strong>How to play<\/strong><span>[^<]+<\/span><\/div>)[\s\S]*?(<\/section><section class="panel rankings">)/,`$1${card}$2`);
+  if(!html.includes('/assets/styles/how-to-card.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/how-to-card.css"></head>');
+  return html;
+}
 
 function updateEchoPage(html){
-  html=html.replace(/(<section class="panel how-to"><div class="panel-heading"><strong>How to play<\/strong><span>Echo Step<\/span><\/div>)[\s\S]*?(<\/section><section class="panel rankings">)/,`$1${echoHowTo}$2`);
-  if(!html.includes('/assets/styles/echo-step-launch.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/echo-step-launch.css"></head>');
   return html.replaceAll('Move now. Sync with your past.','Move now. Echo follows later.').replaceAll('Asymmetric phase walls','Striped cell rules');
 }
 
@@ -102,7 +114,6 @@ function updateGeneralGuide(html){
   return html;
 }
 
-// Remove legacy staging noindex headers for the launch build.
 await patch('_headers',headers=>headers
   .replace(/\n\/echo-step\/\*\n\s+X-Robots-Tag: noindex, nofollow, noarchive\n?/g,'\n')
   .replace(/\n\/blog\/how-to-play-echo-step\/\*\n\s+X-Robots-Tag: noindex, nofollow, noarchive\n?/g,'\n'));
@@ -120,7 +131,8 @@ for(const file of htmlFiles){
   if(rel==='blog/how-to-play-echo-step/index.html')html=updateEchoGuide(html);
   if(rel==='how-to-play/index.html')html=updateGeneralGuide(html);
   if(rel==='echo-step/index.html')html=updateEchoPage(html);
+  const gameMatch=rel.match(/^([^/]+)\/index\.html$/);if(gameMatch&&gameHowTo[gameMatch[1]])html=updateGameHowTo(html,gameMatch[1]);
   await fs.writeFile(file,html);
 }
 
-console.log('Echo Step launch pass complete: public navigation, six-game surfaces, social handles and compact help.');
+console.log('Echo Step launch pass complete: public navigation, six-game surfaces, social handles and shared How to Play cards.');
