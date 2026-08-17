@@ -1,6 +1,7 @@
 const PRESENTATION={
   'echo-step':{
     styles:['echo-step.css','echo-step-polish.css','echo-step-rulebar.css'],
+    solutionLabel:'Guide',
     goal:{tokens:['YOU → P','Echo → E'],joiner:'+',note:'Same turn'},
     rows:[
       ['Move','Move YOU. Echo repeats each move after the delay shown above the board.'],
@@ -55,6 +56,7 @@ export function getGamePresentation(game){
   const fallbackRows=(game.howTo||[]).slice(0,3).map((text,index)=>[DEFAULT_ROW_LABELS[index]||'Tip',text]);
   return {
     styles:[],
+    solutionLabel:'Solution',
     goal:{tokens:[String(game.name||'PUZZLE').toUpperCase()],note:'Solve the board'},
     rows:fallbackRows,
     tools:[['Hint','next useful action'],['Solution','practice guide']],
