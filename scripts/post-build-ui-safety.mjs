@@ -43,6 +43,10 @@ try{
   let js=await fs.readFile(gamePageAsset,'utf8');
   js=js.replaceAll(' · EXPERT','');
   js=replaceRequired(js,
+    "function metricElement(k){return document.querySelector(`[data-metric-value=\"${k}\"]`);}function setMetric(k,v){const e=metricElement(k);if(e)e.textContent=String(v);}function setMetrics(v={}){Object.entries(v).forEach(([k,x])=>setMetric(k,x));}function setStatus(t){const e=$('#gameStatus');if(e)e.textContent=t||'';}function modeName()",
+    "function metricElement(k){return document.querySelector(`[data-metric-value=\"${k}\"]`);}function setMetric(k,v){const e=metricElement(k);if(e)e.textContent=String(v);}function setMetrics(v={}){Object.entries(v).forEach(([k,x])=>setMetric(k,x));}function setStatus(t){const e=$('#gameStatus');if(!e)return;let text=t||'';if((gameKey==='maze'&&text==='Reach the green finish. Hard boards hide the correct route behind deeper branch traps and tighter decisions.')||(gameKey==='number-path'&&text==='Start at 1. Checkpoints must match their exact path step. Regular Play allows contradictions so you can reason, notice them and Undo yourself.'))text='';const progress=gameKey==='number-path'?text.match(/^Step (\\d+) of (\\d+)\\. Next checkpoint: (\\d+)\\.$/):null;e.classList.toggle('is-progress',Boolean(progress));e.hidden=!text;if(progress){e.innerHTML=`<span class=\"board-progress-step\">Step <b>${progress[1]}</b> / ${progress[2]}</span><span class=\"board-progress-next\">Next checkpoint <b>${progress[3]}</b></span>`;}else e.textContent=text;}function modeName()",
+    'shared board status presentation');
+  js=replaceRequired(js,
     "const state={difficulty:game.levels[0][0],mode:'normal',seed:'',runId:'',ranked:false,unrankedReason:'',startedAt:0,timer:null,engine:null,engineFactory:null,loading:false,completed:false",
     "const state={difficulty:game.levels[0][0],mode:'normal',seed:'',runId:'',ranked:false,unrankedReason:'',startedAt:0,timer:null,engine:null,engineFactory:null,engineLocked:false,loading:false,completed:false",
     'engineLocked state');
