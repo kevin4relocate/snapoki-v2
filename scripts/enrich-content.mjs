@@ -19,7 +19,9 @@ function setMeta(html,{title,description,slug}){
     .replace(/<meta property="og:url" content="[^"]*">/,`<meta property="og:url" content="${canonical}">`)
     .replace(/<meta name="twitter:title" content="[^"]*">/,`<meta name="twitter:title" content="${esc(title)}">`)
     .replace(/<meta name="twitter:description" content="[^"]*">/,`<meta name="twitter:description" content="${esc(description)}">`);
+  if(!html.includes('name="robots"'))html=html.replace('</head>','<meta name="robots" content="index,follow,max-image-preview:large"></head>');
   if(!html.includes('/assets/styles/content.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/content.css"></head>');
+  if(!html.includes('/assets/styles/launch.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/launch.css"></head>');
   return html;
 }
 function contentPage({eyebrow,title,intro,body}){return `<section class="content-page"><div class="content-hero"><span class="eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${esc(intro)}</p></div><article>${body}</article></section>`;}
