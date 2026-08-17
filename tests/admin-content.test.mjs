@@ -12,6 +12,7 @@ test('daily social content is deterministic per date and variant',()=>{
   assert.ok(a.linkedIn.includes('https://snapoki.com/'));
   assert.ok(a.instagram.includes('#Snapoki'));
   assert.ok(a.x.length<=280,'X copy must stay within 280 characters');
+  assert.ok(a.x.includes(a.url),'template X copy must retain the exact game URL');
 });
 
 test('content date follows Vietnam local day',()=>{
@@ -27,6 +28,7 @@ test('content desk storage is a singleton and predictable admin routes are gone'
   assert.match(migration,/PRIMARY KEY CHECK \(id = 1\)/);
   assert.match(api,/ON CONFLICT\(id\) DO UPDATE/);
   assert.match(api,/DELETE FROM admin_social_content/);
+  assert.doesNotMatch(api,/CREATE TABLE IF NOT EXISTS/,'runtime requests should rely on the checked-in D1 migration');
   assert.match(page,/name="robots" content="noindex,nofollow,noarchive"/);
   assert.match(page,/data-private-utility="true"/);
   assert.match(page,/id="deleteTodayBtn"/);
@@ -34,23 +36,32 @@ test('content desk storage is a singleton and predictable admin routes are gone'
   assert.match(page,/data-copy="linkedIn"/);
   assert.match(page,/data-copy="x"/);
   assert.match(page,/data-copy="instagram"/);
+  assert.match(page,/id="generatorStatus"/);
+  assert.match(page,/id="xText"[^>]*maxlength="280"/);
   assert.match(client,/\/api\/snapdesk-74kq\/content/);
   await assert.rejects(fs.access('public/admin/index.html'));
   await assert.rejects(fs.access('functions/api/admin/content.js'));
 });
 
-test('Gemini generation stays server-side and falls back when no key is configured',async()=>{
+test('Gemini generation stays server-side, uses current Flash defaults, and exposes safe fallback status',async()=>{
   const api=await fs.readFile('functions/api/snapdesk-74kq/content.js','utf8');
   const client=await fs.readFile('src/js/admin-content.js','utf8');
   assert.match(api,/env\.GEMINI_API_KEY/);
   assert.match(api,/generativelanguage\.googleapis\.com\/v1beta\/models/);
-  assert.match(api,/gemini-2\.5-flash/);
+  assert.match(api,/gemini-3\.6-flash/);
   assert.match(api,/x-goog-api-key/);
   assert.match(api,/responseMimeType:'application\/json'/);
-  assert.match(api,/thinkingBudget:0/);
+  assert.match(api,/responseSchema/);
+  assert.match(api,/thinkingConfig:\{thinkingLevel:'low'\}/);
+  assert.doesNotMatch(api,/thinkingBudget|temperature:/);
   assert.match(api,/generator:'template'/);
   assert.match(api,/generator:'template-fallback'/);
-  assert.doesNotMatch(api,/OPENAI_API_KEY|api\.openai\.com|gpt-5\.6-luna/);
+  assert.match(api,/generationError:safeGenerationError/);
+  assert.match(api,/payload\.x=xCopy\(body\.x,payload\.url\)/,'manual X edits must be revalidated server-side');
+  assert.match(api,/payload\.linkedIn=includeUrl\(body\.linkedIn,payload\.url/);
+  assert.match(api,/payload\.instagram=instagramCopy\(body\.instagram,payload\.url\)/);
+  assert.match(client,/Template fallback/);
+  assert.match(client,/Gemini · \$\{model\}/);
   assert.doesNotMatch(client,/GEMINI_API_KEY/);
   assert.doesNotMatch(client,/generativelanguage\.googleapis\.com/);
 });
@@ -66,6 +77,7 @@ test('social image is one square image-first card with a short hook and subtle w
   assert.match(client,/canvas\.width=1080;canvas\.height=1080/);
   assert.match(client,/const boardSize=900/,'square card should devote most of its canvas to the game board');
   assert.match(client,/function imageHook/);
+  assert.match(client,/echo-step':'Can YOU and Echo finish together\?'/);
   assert.match(client,/first\.length>=8&&first\.length<=42/,'image headline should stay short');
   assert.match(client,/globalAlpha=\.34/);
   assert.match(client,/fillText\('snapoki\.com'/);
