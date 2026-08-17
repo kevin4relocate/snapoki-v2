@@ -18,12 +18,13 @@ test('Echo Step is public in header, footer, homepage and Guides',()=>{
   assert.match(blog,/Echo Step, Maze, Number Path, Color Connect, Lights Out and Loop Puzzle/);
 });
 
-test('Echo Step and its guide are indexable launch routes with dedicated styles',()=>{
+test('Echo Step and its guide are indexable launch routes with shared How to Play styles',()=>{
   const html=fs.readFileSync('dist/echo-step/index.html','utf8');
   assert.match(html,/data-game="echo-step"/);
   assert.match(html,/\/assets\/styles\/echo-step\.css/);
-  assert.match(html,/\/assets\/styles\/echo-step-launch\.css/);
-  assert.ok(fs.existsSync('dist/assets/styles/echo-step-launch.css'));
+  assert.match(html,/\/assets\/styles\/how-to-card\.css/);
+  assert.ok(fs.existsSync('dist/assets/styles/how-to-card.css'));
+  assert.equal(fs.existsSync('dist/assets/styles/echo-step-launch.css'),false);
   assert.ok(fs.existsSync('dist/blog/how-to-play-echo-step/index.html'));
   const headers=fs.readFileSync('dist/_headers','utf8');
   assert.doesNotMatch(headers,/\/echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
