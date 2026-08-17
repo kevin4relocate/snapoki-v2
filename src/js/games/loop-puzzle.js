@@ -1,5 +1,5 @@
 import {scoreFromPerformance,scoreTimeDivisor} from './utils.js';
-import {generateLoopPuzzle,loopComplexity,orderLoopEdges,isSingleLoop,cluesSatisfied,clueConflicts,isValidLoopSolution,hKey,vKey,clueEdges} from './loop-puzzle-v4-final-engine.js';
+import {generateLoopPuzzle,loopComplexity,orderLoopEdges,isSingleLoop,cluesSatisfied,clueConflicts,isValidLoopSolution,hKey,vKey,clueEdges} from './loop-puzzle-v4-production-engine.js';
 export {generateLoopPuzzle,loopComplexity,orderLoopEdges,isSingleLoop,cluesSatisfied,clueConflicts,isValidLoopSolution};
 
 const PRACTICE_ARIA_HINT='Ghost edges show one valid solution. Draw them in any order.';
