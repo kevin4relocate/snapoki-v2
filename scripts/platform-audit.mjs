@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {GAMES} from '../src/js/games-config.js';
+import {RESULT_VERIFIERS} from '../functions/_lib/scoring.js';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dist=path.join(root,'dist');
@@ -33,7 +34,7 @@ function routeTarget(raw){
   if(clean==='/')return path.join(dist,'index.html');
   const local=path.join(dist,clean.replace(/^\//,''));
   if(path.extname(clean))return local;
-  return clean.endsWith('/')?path.join(local,'index.html'):path.join(local,'index.html');
+  return path.join(local,'index.html');
 }
 async function exists(file){try{await fs.access(file);return true;}catch{return false;}}
 
@@ -66,6 +67,7 @@ for(const file of htmlFiles){
       if(canonicals.has(canonical))fail(`${name}: duplicate canonical also used by ${canonicals.get(canonical)}`);
       else canonicals.set(canonical,name);
     }
+    if(/href="\/snapdesk-74kq\//.test(html))fail(`${name}: public page links to private Content Desk`);
   }
 
   for(const raw of [...captures(html,/href="([^"]+)"/gi),...captures(html,/src="([^"]+)"/gi)]){
@@ -74,6 +76,8 @@ for(const file of htmlFiles){
   }
 }
 
+const registeredKeys=new Set(GAMES.map(game=>game.key));
+const verifierKeys=new Set(Object.keys(RESULT_VERIFIERS));
 for(const game of GAMES){
   const page=path.join(dist,game.slug,'index.html');
   const guide=path.join(dist,'blog',`how-to-play-${game.slug}`,'index.html');
@@ -81,6 +85,7 @@ for(const game of GAMES){
   if(!await exists(page))fail(`${game.key}: missing built game page`);
   if(!await exists(guide))fail(`${game.key}: missing dedicated guide page`);
   if(!await exists(engine))fail(`${game.key}: missing engine entry ${game.slug}.js`);
+  if(!verifierKeys.has(game.key))fail(`${game.key}: missing server result verifier`);
   if(await exists(page)){
     const html=await fs.readFile(page,'utf8');
     if(!html.includes('class="game-howto '))fail(`${game.key}: missing shared How to Play component`);
@@ -97,6 +102,7 @@ for(const game of GAMES){
     if(!html.includes(`href="/${game.slug}/"`))fail(`${game.key}: guide does not link back to the game`);
   }
 }
+for(const key of verifierKeys)if(!registeredKeys.has(key))fail(`${key}: server verifier has no matching game registry entry`);
 
 const home=await fs.readFile(path.join(dist,'index.html'),'utf8');
 const homeCards=(home.match(/class="game-card" href="\/[^"]+\/"/g)||[]).length;
@@ -109,7 +115,7 @@ if(!await exists(sitemapFile))fail('sitemap.xml is missing');
 else{
   const sitemap=await fs.readFile(sitemapFile,'utf8');
   for(const [canonical,name] of canonicals){if(!sitemap.includes(`<loc>${canonical}</loc>`))fail(`${name}: canonical missing from sitemap`);}
-  if(/snapdesk-74kq/.test(sitemap))fail('sitemap.xml exposes the private content desk');
+  if(/snapdesk-74kq/.test(sitemap))fail('sitemap.xml exposes the private Content Desk');
 }
 const robotsFile=path.join(dist,'robots.txt');
 if(!await exists(robotsFile))fail('robots.txt is missing');
@@ -117,7 +123,18 @@ else{
   const robots=await fs.readFile(robotsFile,'utf8');
   if(!robots.includes(`Sitemap: ${siteUrl}/sitemap.xml`))fail('robots.txt does not declare sitemap.xml');
   if(!robots.includes('Disallow: /api/'))fail('robots.txt does not exclude API routes');
+  if(!robots.includes('Disallow: /snapdesk-74kq/'))fail('robots.txt does not exclude private Content Desk');
 }
+
+const adminPage=path.join(dist,'snapdesk-74kq','index.html');
+if(!await exists(adminPage))fail('private Content Desk page is missing');
+else{
+  const html=await fs.readFile(adminPage,'utf8');
+  if(!html.includes('data-private-utility="true"'))fail('Content Desk is not marked as a private utility');
+  if(!/name="robots" content="noindex,nofollow,noarchive"/i.test(html))fail('Content Desk is missing noindex/nofollow/noarchive');
+  if(!html.includes('id="generatorStatus"'))fail('Content Desk is missing Gemini/template status');
+}
+if(!await exists(path.join(root,'functions','api','snapdesk-74kq','content.js')))fail('Content Desk API route is missing');
 
 const headers=await fs.readFile(path.join(dist,'_headers'),'utf8').catch(()=> '');
 for(const game of GAMES){
@@ -126,6 +143,9 @@ for(const game of GAMES){
   if(pos>=0&&/X-Robots-Tag:\s*noindex/i.test(headers.slice(pos,pos+160)))fail(`${game.key}: launch route still receives X-Robots-Tag noindex`);
 }
 
+const packageJson=JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8'));
+for(const obsolete of ['echo-step-integration.mjs','echo-launch-final.mjs','apply-board-contract.mjs','post-build-ui-safety.mjs'])if(String(packageJson.scripts?.build||'').includes(obsolete))fail(`build pipeline still references obsolete ${obsolete}`);
+
 if(warnings.length){console.warn(`Platform audit warnings (${warnings.length}):`);for(const item of warnings)console.warn(`  - ${item}`);}
 if(failures.length){console.error(`Platform audit failed (${failures.length}):`);for(const item of failures)console.error(`  - ${item}`);process.exit(1);}
-console.log(`Platform audit passed: ${GAMES.length} games, ${publicHtml.length} public HTML pages, ${canonicals.size} indexable canonicals, no dead internal links.`);
+console.log(`Platform audit passed: ${GAMES.length} games, ${publicHtml.length} public HTML pages, ${canonicals.size} indexable canonicals, verifier parity and no dead internal links.`);
