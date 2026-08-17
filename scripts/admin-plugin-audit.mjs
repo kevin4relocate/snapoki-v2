@@ -16,13 +16,12 @@ const coreFiles=[
 ];
 const coreText=(await Promise.all(coreFiles.map(file=>fs.readFile(file,'utf8')))).join('\n');
 const loader=await fs.readFile(path.join(root,'src','js','social-game-board.js'),'utf8');
-if(!loader.includes('import(`./games/${key}.js`)'))fail('Content Desk social loader must discover game modules by slug convention.');
-if(!loader.includes('import(`./social-renderers/${key}.js`)'))fail('Content Desk social loader must discover social renderers by slug convention.');
-if(!loader.includes('generatorName(key)'))fail('Content Desk social loader must derive generator export names generically.');
+if(!loader.includes('import(`./games/${slug}.js`)'))fail('Content Desk social loader must discover game modules by slug convention.');
+if(!loader.includes('import(`./social-renderers/${slug}.js`)'))fail('Content Desk social loader must discover social renderers by slug convention.');
+if(!loader.includes('generatorName(slug)'))fail('Content Desk social loader must derive generator export names generically.');
 
 for(const game of GAMES){
-  const literalSingle=`'${game.key}'`,literalDouble=`"${game.key}"`;
-  if(coreText.includes(literalSingle)||coreText.includes(literalDouble))fail(`${game.key}: Content Desk core contains a game-specific literal; move it into the game plugin/registry.`);
+  for(const literal of [`'${game.key}'`,`"${game.key}"`,`'${game.slug}'`,`"${game.slug}"`])if(coreText.includes(literal))fail(`${game.key}: Content Desk core contains a game-specific literal; move it into the game plugin/registry.`);
 
   const engine=path.join(root,'src','js','games',`${game.slug}.js`);
   const renderer=path.join(root,'src','js','social-renderers',`${game.slug}.js`);
