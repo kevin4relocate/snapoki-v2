@@ -25,17 +25,18 @@ test('Easy Echo Step teaches P and E on the board until the first accepted move'
   assert.doesNotMatch(onboardingKeyframes,/transform\s*:/,'Easy goal pulse must not override the marker centering transform');
 });
 
-test('Echo Step How to Play is compact, goal-first and has no orphan numbering',()=>{
+test('Echo Step How to Play uses the shared goal-first card with no orphan numbering',()=>{
   const page=fs.readFileSync('dist/echo-step/index.html','utf8');
-  assert.match(page,/class="echo-howto"/);
-  assert.match(page,/class="echo-howto-you">YOU → P<\/b>/);
-  assert.match(page,/class="echo-howto-echo">Echo → E<\/b>/);
+  assert.match(page,/class="game-howto game-howto--echo-step"/);
+  assert.match(page,/>YOU → P<\/b>/);
+  assert.match(page,/>Echo → E<\/b>/);
   assert.match(page,/<em>Same turn<\/em>/);
   assert.match(page,/<strong>Move<\/strong>/);
   assert.match(page,/<strong>Walls<\/strong>/);
   assert.match(page,/<strong>Avoid<\/strong>/);
   assert.match(page,/<b>Hint<\/b> · next 3 moves/);
   assert.match(page,/<b>Guide<\/b> · step-by-step practice/);
+  assert.match(page,/\/assets\/styles\/how-to-card\.css/);
   assert.doesNotMatch(page,/<p><strong>1\.<\/strong>/);
   assert.doesNotMatch(page,/not synced|timeline failed|phase wall/i);
 });
