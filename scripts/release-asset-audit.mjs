@@ -17,6 +17,7 @@ async function walk(dir){
   return out;
 }
 async function exists(file){try{await fs.access(file);return true;}catch{return false;}}
+function containsUnversionedAssetRef(text){return /\/assets\/(?:js|styles)\//.test(text);}
 
 const manifestFile=path.join(dist,'asset-manifest.json');
 if(!await exists(manifestFile))fail('asset-manifest.json is missing.');
@@ -30,28 +31,26 @@ const versionRoot=version?path.join(dist,'assets',version):'';
 if(version&&!(await exists(path.join(versionRoot,'js'))))fail(`${version}: versioned js directory is missing.`);
 if(version&&!(await exists(path.join(versionRoot,'styles'))))fail(`${version}: versioned styles directory is missing.`);
 
-const staleRef=/\/assets\/(?:js|styles)\//g;
-for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
+const htmlFiles=(await walk(dist)).filter(file=>file.endsWith('.html'));
+for(const file of htmlFiles){
   const text=await fs.readFile(file,'utf8');
-  if(staleRef.test(text))fail(`${path.relative(dist,file)}: contains an unversioned JS/CSS asset reference.`);
-  staleRef.lastIndex=0;
-}
-if(version&&await exists(path.join(versionRoot,'js'))){
-  for(const file of (await walk(path.join(versionRoot,'js'))).filter(file=>file.endsWith('.js'))){
-    const text=await fs.readFile(file,'utf8');
-    if(staleRef.test(text))fail(`${path.relative(dist,file)}: contains an unversioned absolute dynamic asset reference.`);
-    staleRef.lastIndex=0;
-  }
+  if(containsUnversionedAssetRef(text))fail(`${path.relative(dist,file)}: contains an unversioned JS/CSS asset reference.`);
 }
 
-if(version){
-  const htmlFiles=(await walk(dist)).filter(file=>file.endsWith('.html'));
-  const prefix=`/assets/${version}/`;
-  if(!htmlFiles.some(async()=>false)){
-    let references=0;
-    for(const file of htmlFiles){const text=await fs.readFile(file,'utf8');references+=(text.split(prefix).length-1);}
-    if(!references)fail(`No built HTML references the versioned asset prefix ${prefix}.`);
+if(version&&await exists(versionRoot)){
+  for(const file of (await walk(versionRoot)).filter(file=>/\.(?:js|css)$/.test(file))){
+    const text=await fs.readFile(file,'utf8');
+    if(containsUnversionedAssetRef(text))fail(`${path.relative(dist,file)}: contains an unversioned absolute asset reference.`);
   }
+
+  const prefix=`/assets/${version}/`;
+  let references=0;
+  for(const file of htmlFiles){
+    const text=await fs.readFile(file,'utf8');
+    references+=text.split(prefix).length-1;
+  }
+  if(!references)fail(`No built HTML references the versioned asset prefix ${prefix}.`);
+
   const headers=await fs.readFile(path.join(dist,'_headers'),'utf8').catch(()=> '');
   if(!headers.includes(`/assets/${version}/*`))fail(`_headers is missing immutable cache rule for ${version}.`);
   if(!/Cache-Control:\s*public,\s*max-age=31536000,\s*immutable/i.test(headers))fail('_headers is missing the expected immutable cache policy.');
