@@ -2,12 +2,12 @@
 
 ## Design goal
 
-Snapoki is a puzzle platform, not a collection of unrelated pages. A new game should plug into the platform with the smallest possible game-specific surface. Navigation, page layout, How to Play, board sizing, status presentation, Daily Challenge UI, result modal, Rankings, profile, guides, sitemap, SEO checks and social-content fallbacks are shared.
+Snapoki is a puzzle platform, not a collection of unrelated pages. A new game should plug into the platform with the smallest possible game-specific surface. Navigation, page layout, How to Play, board sizing, status presentation, Daily Challenge UI, result modal, Rankings, profile, guides, sitemap, SEO checks and Content Desk orchestration are shared.
 
 The rule is simple:
 
 - **Shared behavior belongs in the platform.**
-- **Game rules, rendering and proof belong in the game.**
+- **Game rules, rendering, social-board rendering and proof belong in the game plugin.**
 - **Game-specific presentation is optional and declarative.**
 - **Build output is audited before it can pass CI.**
 
@@ -28,6 +28,7 @@ The rule is simple:
 - SEO title/description
 - capabilities
 - ranking proof/scoring labels
+- optional reusable social insight
 
 Server game validation imports the same registry through `functions/_lib/games.js`. Do not create a second hard-coded list of game ids or difficulties.
 
@@ -62,7 +63,6 @@ It owns:
 - Difficulty / Regular Play / Daily Challenge controls
 - shared How to Play card
 - shared board status container
-- rich game SEO content tail
 - base sitemap/robots/manifest
 
 Game pages automatically load shared styles. Optional game-specific styles come from the Presentation Registry. `board-contract.css` is loaded after game-specific styles so geometry stays consistent.
@@ -73,7 +73,8 @@ Other build responsibilities are separated by purpose:
 - `scripts/post-build-platform.mjs` — shared style wiring and narrowly scoped legacy content polish only; it must not patch runtime JavaScript.
 - `scripts/launch-readiness.mjs` — registry-driven Blog/Guides, guide artwork, structured data, related links, final sitemap and robots rules.
 - `scripts/release-integrations.mjs` — analytics disclosure, canonical social identity and release-level metadata.
-- `scripts/platform-audit.mjs` — final build gate.
+- `scripts/admin-plugin-audit.mjs` — verifies that Content Desk core remains game-agnostic and every registered game satisfies the social plugin convention.
+- `scripts/platform-audit.mjs` — final site/build gate.
 
 Obsolete game-specific/output-patch passes have been removed. Do not reintroduce a build script just to make one game public, patch built JavaScript or repair a stylesheet after generation.
 
@@ -116,7 +117,15 @@ Every game has one public entry module:
 
 `src/js/games/<slug>.js`
 
-It must export `createGame()` and may re-export generation/simulation helpers for tests and server verification.
+It must export `createGame()` and a deterministic generator named from the public slug in PascalCase:
+
+```text
+maze        → generateMaze()
+echo-step   → generateEchoStep()
+number-path → generateNumberPath()
+```
+
+The generator convention is used by tests, server proof regeneration where appropriate, and the Content Desk social plugin loader. Do not add a generator map to the admin system.
 
 A controller returned by `createGame()` may expose:
 
@@ -161,8 +170,25 @@ Game engines do **not** own:
 - result modal
 - sitemap/SEO shell
 - global board geometry
+- Content Desk UI/API orchestration
 
 A game may dispatch `snapoki:game-lock` when it reaches a terminal state that should freeze shared timer/score and disable nonessential controls.
+
+## Social-board plugin contract
+
+The Content Desk must scale to 100+ games without adding imports or `if/else` branches for individual games.
+
+For a game with slug `<slug>`:
+
+- engine: `src/js/games/<slug>.js`
+- social renderer: `src/js/social-renderers/<slug>.js`
+- required renderer export: `drawSocialBoard(ctx, puzzle, box)`
+
+`src/js/social-game-board.js` dynamically imports both modules by slug and derives the generator export name automatically. It contains no list of game ids. Shared canvas helpers live in `src/js/social-renderers/shared.js`.
+
+If a runtime plugin load fails, the admin renders a generic fallback card instead of crashing. Production CI is stricter: `scripts/admin-plugin-audit.mjs` requires every registered game to have a valid engine generator and social renderer before build success.
+
+The complete contract is documented in `CONTENT_DESK_PLUGIN_CONTRACT.md`.
 
 ## Ranked lifecycle
 
@@ -212,12 +238,14 @@ Every public game receives automatically:
 - canonical URL
 - Open Graph / X metadata
 - one H1
-- rich game-page explanatory content
-- dedicated How to Play guide
-- guide-to-game and game-to-guide internal links
-- related-game links
+- play-first game page shell
+- dedicated How to Play guide with the long-form editorial/SEO depth
+- guide-to-game internal links
+- related-game links where appropriate
 - Breadcrumb / WebApplication structured data
 - sitemap entry
+
+Game pages intentionally do not carry long editorial filler below the gameplay/Daily experience. The dedicated guide owns strategy, rules, common mistakes and long-form search content.
 
 `scripts/platform-audit.mjs` checks the generated site for:
 
@@ -226,7 +254,8 @@ Every public game receives automatically:
 - dead internal links and assets
 - missing game engine/page/guide
 - missing shared UI contracts
-- thin game or guide content
+- editorial filler accidentally returning to game pages
+- thin guide content
 - sitemap gaps
 - accidental public links to the private Content Desk
 - accidental noindex on launch game routes
@@ -243,20 +272,28 @@ The API lives at `functions/api/snapdesk-74kq/content.js` and requires exact `AD
 
 Generation uses structured JSON. The UI explicitly tells the admin whether the pack came from Gemini, a template because no key is configured, or a template fallback because the Gemini request failed. Manual social edits are validated again on the server, including the X character limit and required game URL.
 
+The Content Desk core is deliberately game-agnostic:
+
+- `functions/_lib/social-content.js` selects from `GAMES` and uses registry metadata/fallbacks rather than maintaining a game map.
+- `src/js/social-game-board.js` discovers engine and renderer plugins by slug.
+- `src/js/admin-content.js` only orchestrates the generic payload and canvas.
+- no admin file should gain a literal list of game ids when games are added.
+
 ## Adding a new game
 
 ### Required
 
 1. Add one entry to `src/js/games-config.js`.
-2. Add `src/js/games/<slug>.js` exporting `createGame()`.
-3. Add the game-specific ranked proof verifier to `RESULT_VERIFIERS` in `functions/_lib/scoring.js`.
-4. Add generator/interaction/verifier tests for the mechanic.
+2. Add `src/js/games/<slug>.js` exporting `createGame()` and the convention-based deterministic generator `generate<PascalCaseSlug>()`.
+3. Add `src/js/social-renderers/<slug>.js` exporting `drawSocialBoard()` for the unsolved social image.
+4. Add the game-specific ranked proof verifier to `RESULT_VERIFIERS` in `functions/_lib/scoring.js`.
+5. Add generator/interaction/verifier tests for the mechanic.
 
 ### Optional
 
-5. Add a `game-presentation.js` override only for special How to Play copy, a different Solution/Guide label, special styles or a homepage spotlight.
-6. Add a custom social-board renderer if the generic fallback is not representative enough.
-7. Add a custom long-form guide strategy block if the generic guide fallback is not deep enough.
+6. Add a `game-presentation.js` override only for special How to Play copy, a different Solution/Guide label, special styles, social hook or homepage spotlight.
+7. Add `socialInsight` to the Game Registry entry when generic description copy is not specific enough for reusable social strategy text.
+8. Add a custom long-form guide strategy block if the generic guide fallback is not deep enough.
 
 ### Do not edit manually
 
@@ -276,8 +313,13 @@ A normal new game should not require manual changes to:
 - sitemap
 - robots.txt
 - About/Help/platform How to Play game lists
+- `public/snapdesk-74kq/index.html`
+- `src/js/admin-content.js`
+- `src/js/social-game-board.js`
+- `functions/api/snapdesk-74kq/content.js`
+- `functions/_lib/social-content.js`
 
-If adding a game requires editing those surfaces, first ask whether the missing behavior belongs in the shared platform or Presentation Registry.
+If adding a game requires editing those surfaces, first ask whether the missing behavior belongs in the shared platform, Game Registry, Presentation Registry or the game plugin itself.
 
 ## Security boundaries
 
@@ -306,3 +348,4 @@ Snapoki intentionally avoids:
 - MutationObserver repair loops
 - game-specific post-build patch scripts
 - JavaScript that injects repair CSS into generated pages
+- game-specific branches inside Content Desk core
