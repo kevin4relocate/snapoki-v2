@@ -10,8 +10,10 @@ const generatorName=slug=>`generate${slug.split('-').map(part=>part.charAt(0).to
 const exists=async file=>{try{await fs.access(file);return true;}catch{return false;}};
 
 const coreFiles=[
+  path.join(root,'public','snapdesk-74kq','index.html'),
   path.join(root,'src','js','admin-content.js'),
   path.join(root,'src','js','social-game-board.js'),
+  path.join(root,'functions','api','snapdesk-74kq','content.js'),
   path.join(root,'functions','_lib','social-content.js')
 ];
 const coreText=(await Promise.all(coreFiles.map(file=>fs.readFile(file,'utf8')))).join('\n');
