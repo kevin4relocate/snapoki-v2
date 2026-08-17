@@ -66,9 +66,10 @@ test('Gemini generation stays server-side, uses current Flash defaults, and expo
   assert.doesNotMatch(client,/generativelanguage\.googleapis\.com/);
 });
 
-test('social image is one square image-first card with a short hook and subtle watermark',async()=>{
+test('social image is one square image-first card with a short presentation-driven hook and subtle watermark',async()=>{
   const page=await fs.readFile('public/snapdesk-74kq/index.html','utf8');
   const client=await fs.readFile('src/js/admin-content.js','utf8');
+  const presentation=await fs.readFile('src/js/game-presentation.js','utf8');
   const renderer=await fs.readFile('src/js/social-game-board.js','utf8');
   assert.match(page,/id="downloadSquareBtn"/);
   assert.match(page,/1080 × 1080 · use on every social platform/);
@@ -77,7 +78,8 @@ test('social image is one square image-first card with a short hook and subtle w
   assert.match(client,/canvas\.width=1080;canvas\.height=1080/);
   assert.match(client,/const boardSize=900/,'square card should devote most of its canvas to the game board');
   assert.match(client,/function imageHook/);
-  assert.match(client,/echo-step':'Can YOU and Echo finish together\?'/);
+  assert.match(client,/getGamePresentation\(game\)\.socialHook/);
+  assert.match(presentation,/socialHook:'Can YOU and Echo finish together\?'/);
   assert.match(client,/first\.length>=8&&first\.length<=42/,'image headline should stay short');
   assert.match(client,/globalAlpha=\.34/);
   assert.match(client,/fillText\('snapoki\.com'/);
