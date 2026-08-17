@@ -44,37 +44,47 @@ function drawHook(ctx,text,w){
   ctx.fillText(text,w/2,62);
 }
 function drawWatermark(ctx,w,h){ctx.save();ctx.globalAlpha=.34;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillStyle='#d9e4ff';ctx.font='700 21px system-ui,sans-serif';ctx.fillText('snapoki.com',w-42,h-28);ctx.restore();}
-function drawSquare(canvas,payload){canvas.width=1080;canvas.height=1080;const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;background(ctx,w,h);drawHook(ctx,imageHook(payload),w);const boardSize=900,boardX=(w-boardSize)/2,boardY=105;drawGameBoard(ctx,payload,{x:boardX,y:boardY,size:boardSize});drawWatermark(ctx,w,h);}
+async function drawSquare(canvas,payload){
+  canvas.width=1080;canvas.height=1080;
+  const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;background(ctx,w,h);drawHook(ctx,imageHook(payload),w);
+  const boardSize=900,boardX=(w-boardSize)/2,boardY=105;
+  return drawGameBoard(ctx,payload,{x:boardX,y:boardY,size:boardSize}).then(result=>{drawWatermark(ctx,w,h);return result;});
+}
 
-function drawPreview(payload){drawSquare($('socialCanvas'),payload);}
-function render(content){
+async function drawPreview(payload){return drawSquare($('socialCanvas'),payload);}
+async function render(content){
   state.content=content;const p=content.payload;
   $('contentDate').textContent=content.date;$('contentGame').textContent=`${p.game.name} · ${p.angle}`;$('angleBadge').textContent=p.angle.toUpperCase().replace('-', ' ');$('headlinePreview').textContent=p.headline;setGeneratorStatus(p);
   $('linkedInText').value=p.linkedIn;$('xText').value=p.x;$('instagramText').value=p.instagram;
   for(const platform of ['linkedIn','x','instagram'])setPosted(platform,Boolean(content.posted?.[platform]));
-  updateCounts();drawPreview(p);$('adminLoading').hidden=true;$('contentPanel').hidden=false;clearNotice();
+  updateCounts();await drawPreview(p);$('adminLoading').hidden=true;$('contentPanel').hidden=false;clearNotice();
   if(p.generator==='template-fallback'&&p.generationError)notice(`Gemini fallback: ${p.generationError}`,'error');
 }
 
 async function load(){
-  try{const data=await request(CONTENT_API);render(data.content);}catch(error){$('adminLoading').hidden=true;notice(`${error.message} If you are not signed in, sign in on the Snapoki homepage first. If this is the first deploy, configure ADMIN_EMAIL in Cloudflare.`, 'error');}
+  try{const data=await request(CONTENT_API);await render(data.content);}catch(error){$('adminLoading').hidden=true;notice(`${error.message} If you are not signed in, sign in on the Snapoki homepage first. If this is the first deploy, configure ADMIN_EMAIL in Cloudflare.`, 'error');}
 }
 async function save(){
-  try{const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'save',headline:$('headlinePreview').textContent,linkedIn:textValue('linkedIn'),x:textValue('x'),instagram:textValue('instagram')})});render(data.content);notice('Edits saved.');}catch(error){notice(error.message,'error');}
+  try{const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'save',headline:$('headlinePreview').textContent,linkedIn:textValue('linkedIn'),x:textValue('x'),instagram:textValue('instagram')})});await render(data.content);notice('Edits saved.');}catch(error){notice(error.message,'error');}
 }
 async function regenerate(){
   if(!confirm('Generate a different content pack for today? Your current edits will be replaced.'))return;
-  try{const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'regenerate'})});clearSocialBoardCache();render(data.content);notice(data.content.payload.generator==='gemini'?'Generated a new Gemini variation and puzzle image.':'Generated a template fallback and puzzle image.');}catch(error){notice(error.message,'error');}
+  try{const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'regenerate'})});clearSocialBoardCache();await render(data.content);notice(data.content.payload.generator==='gemini'?'Generated a new Gemini variation and puzzle image.':'Generated a template fallback and puzzle image.');}catch(error){notice(error.message,'error');}
 }
-async function togglePosted(platform,button){try{const value=button.dataset.value!=='1';const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'posted',platform,value})});render(data.content);}catch(error){notice(error.message,'error');}}
+async function togglePosted(platform,button){try{const value=button.dataset.value!=='1';const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'posted',platform,value})});await render(data.content);}catch(error){notice(error.message,'error');}}
 async function remove(all=false){
   const label=all?'all stored content':'today’s content';if(!confirm(`Delete ${label}?`))return;
   try{await request(`${CONTENT_API}${all?'?all=1':''}`,{method:'DELETE'});clearSocialBoardCache();state.content=null;$('contentPanel').hidden=true;$('contentDate').textContent='—';$('contentGame').textContent='Deleted';$('generatorStatus').textContent='Generator —';notice(all?'All content deleted. Opening this page again will create a fresh pack for the current day.':'Today’s pack deleted. Opening this page again will generate today again.');}catch(error){notice(error.message,'error');}
 }
 async function copy(platform){try{await navigator.clipboard.writeText(textValue(platform));notice(`${platform==='linkedIn'?'LinkedIn':platform==='x'?'X':'Instagram'} copied.`);}catch{notice('Could not access the clipboard. Select the text and copy manually.','error');}}
-function downloadCard(){if(!state.content?.payload)return;const canvas=$('exportCanvas');drawSquare(canvas,state.content.payload);const a=document.createElement('a');a.download=`snapoki-${state.content.payload.game?.key||'puzzle'}-${state.content.date}-1080x1080.png`;a.href=canvas.toDataURL('image/png');a.click();}
+async function downloadCard(){
+  if(!state.content?.payload)return;
+  try{
+    const canvas=$('exportCanvas');await drawSquare(canvas,state.content.payload);const a=document.createElement('a');a.download=`snapoki-${state.content.payload.game?.key||'puzzle'}-${state.content.date}-1080x1080.png`;a.href=canvas.toDataURL('image/png');a.click();
+  }catch(error){notice(`Could not render the social card: ${error.message}`,'error');}
+}
 
 for(const p of ['linkedIn','x','instagram'])$(`${p}Text`).addEventListener('input',updateCounts);
-$('saveAllBtn').addEventListener('click',save);$('regenerateBtn').addEventListener('click',regenerate);$('deleteTodayBtn').addEventListener('click',()=>remove(false));$('deleteAllBtn').addEventListener('click',()=>remove(true));$('downloadSquareBtn').addEventListener('click',downloadCard);
-document.addEventListener('click',event=>{const copyBtn=event.target.closest('[data-copy]');if(copyBtn)copy(copyBtn.dataset.copy);const postedBtn=event.target.closest('[data-posted]');if(postedBtn)togglePosted(postedBtn.dataset.posted,postedBtn);});
-load();
+$('saveAllBtn').addEventListener('click',()=>void save());$('regenerateBtn').addEventListener('click',()=>void regenerate());$('deleteTodayBtn').addEventListener('click',()=>void remove(false));$('deleteAllBtn').addEventListener('click',()=>void remove(true));$('downloadSquareBtn').addEventListener('click',()=>void downloadCard());
+document.addEventListener('click',event=>{const copyBtn=event.target.closest('[data-copy]');if(copyBtn)void copy(copyBtn.dataset.copy);const postedBtn=event.target.closest('[data-posted]');if(postedBtn)void togglePosted(postedBtn.dataset.posted,postedBtn);});
+void load();
