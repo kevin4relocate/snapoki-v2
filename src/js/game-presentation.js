@@ -19,7 +19,7 @@ const PRESENTATION={
   },
   maze:{
     goal:{tokens:['START','FINISH'],joiner:'→',note:'Find the exit'},
-    rows:[['Move','On touch, swipe anywhere to travel along the corridor to the next decision. Mouse can drag or click; keyboard uses Arrow / WASD.'],['Watch','False branches and dead ends cost time. Hard boards add deeper traps and later decisions.'],['Finish','Reach the green finish marker with the shortest, cleanest route you can find.']],
+    rows:[['Move','On touch, briefly hold the purple marker to grab it, then drag in any direction. Release to stop. Mouse can drag or click; keyboard uses Arrow / WASD.'],['Watch','False branches and dead ends cost time. Hard boards add deeper traps and later decisions.'],['Finish','Reach the green finish marker with the shortest, cleanest route you can find.']],
     tools:[['Hint','short next route'],['Solution','full-route practice']],
     socialHook:'Can you find the exit?'
   },
