@@ -54,11 +54,15 @@ test('Echo Step failure banner sits above the rule bar and uses plain-language c
   assert.match(built,/data-echo-reset>Retry/);
 });
 
-test('Echo Step result modal removes redundant guest actions and uses Guide terminology',()=>{
+test('Echo Step result modal removes redundant guest actions and Guide label comes from presentation config',()=>{
   const built=fs.readFileSync('dist/assets/js/game-page.js','utf8');
-  assert.match(built,/gameKey==='echo-step'\?\(visible\?'Exit Guide':'Guide'\)/);
+  const presentation=fs.readFileSync('src/js/game-presentation.js','utf8');
+  assert.match(presentation,/'echo-step':[\s\S]*solutionLabel:'Guide'/);
+  assert.match(built,/label=presentation\.solutionLabel\|\|'Solution'/);
+  assert.match(built,/label==='Solution'\?'Hide Solution':`Exit \$\{label\}`/);
   assert.match(built,/next\.hidden=!action;if\(!action\)return/);
   assert.match(built,/hasAccount\(\)\?'Unranked':'—'/);
+  assert.doesNotMatch(built,/gameKey==='echo-step'\?\(visible/);
 });
 
 test('Echo Step keyboard remains usable after clicking a board cell but not from toolbar buttons',()=>{
