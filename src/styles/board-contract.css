@@ -1,0 +1,22 @@
+/* Shared Snapoki board geometry contract.
+   Game-specific styles own visuals and interaction; this file owns centering and board size. */
+.game-board{--board-square-max:560px;--board-stage-max:580px}
+
+/* Square puzzle surfaces share the same geometry. */
+.number-grid,.color-board-wrap,.lights-grid,.loop-wrap,.echo-board-shell{width:min(100%,var(--board-square-max));aspect-ratio:1/1;margin-inline:auto;min-width:0;max-width:100%}
+
+/* Maze keeps the wider canvas stage convention. */
+.maze-stage{width:min(100%,var(--board-stage-max));margin-inline:auto;min-width:0;max-width:100%}
+
+/* Echo has extra chrome, but its board still uses the exact same 560px square contract.
+   Short viewports may scroll vertically; readability is preferred over shrinking the board below the shared size. */
+.echo-stage{--echo-square-max:var(--board-square-max);width:min(100%,var(--board-stage-max));max-width:100%;min-width:0;margin-inline:auto;grid-template-columns:minmax(0,1fr);justify-items:center}
+.echo-stage>*{min-width:0;max-width:100%}
+.echo-board-shell{position:relative}
+.echo-stage>.echo-board-shell{width:min(100%,var(--echo-square-max));aspect-ratio:1/1;margin-inline:auto}
+.echo-board-shell>.echo-grid{width:100%;height:100%;max-width:none;aspect-ratio:auto;margin:0}
+.echo-stage>.echo-compact-bar,.echo-stage>.echo-timeline,.echo-stage>.echo-sequence{width:min(100%,var(--echo-square-max));max-width:100%;min-width:0;margin-inline:auto}
+.echo-compact-bar{overflow:visible;justify-content:center}
+
+/* State messages occupy the same fixed chrome slot as the rules, never the board. */
+.echo-stage>.echo-state-banner{left:50%;right:auto;width:min(100%,var(--echo-square-max));max-width:100%;transform:translateX(-50%)}

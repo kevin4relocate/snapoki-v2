@@ -1,0 +1,25 @@
+/* Shared scan-first How to Play card for every Snapoki game. */
+.game-howto{--howto-accent:#9cb4ff;--howto-soft:rgba(145,127,255,.10);--howto-border:rgba(145,127,255,.28);display:grid;gap:12px}
+.game-howto--echo-step{--howto-accent:#b9adff;--howto-soft:rgba(145,127,255,.10);--howto-border:rgba(145,127,255,.28)}
+.game-howto--maze{--howto-accent:#a9a0ff;--howto-soft:rgba(145,127,255,.09);--howto-border:rgba(145,127,255,.26)}
+.game-howto--number-path{--howto-accent:#f0c67f;--howto-soft:rgba(240,198,127,.075);--howto-border:rgba(240,198,127,.22)}
+.game-howto--color-connect{--howto-accent:#91e7db;--howto-soft:rgba(84,218,202,.07);--howto-border:rgba(84,218,202,.22)}
+.game-howto--lights-out{--howto-accent:#ffd879;--howto-soft:rgba(255,216,121,.07);--howto-border:rgba(255,216,121,.22)}
+.game-howto--loop-puzzle{--howto-accent:#8cdcf4;--howto-soft:rgba(93,225,255,.065);--howto-border:rgba(93,225,255,.22)}
+.game-howto-goal{display:grid;gap:7px;padding:10px 11px;border:1px solid var(--howto-border);border-radius:10px;background:linear-gradient(135deg,var(--howto-soft),rgba(93,225,255,.025))}
+.game-howto-goal>strong,.game-howto-row>strong{font-size:12px;color:var(--howto-accent);line-height:1.15}
+.game-howto-goal>div{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.game-howto-chip{display:inline-flex;align-items:center;min-height:23px;padding:4px 7px;border:1px solid var(--howto-border);border-radius:999px;background:var(--howto-soft);color:#eef3ff;font-size:11px;font-weight:900;line-height:1;white-space:nowrap}
+.game-howto-chip--secondary{border-color:rgba(93,225,255,.27);background:rgba(93,225,255,.06);color:#c8f3ff}
+.game-howto-goal .game-howto-plus{color:var(--muted-2);font-weight:850}
+.game-howto-goal em{font-size:10px;font-style:normal;font-weight:900;letter-spacing:.045em;color:#9ee9c9;text-transform:uppercase}
+.game-howto-row{display:grid;grid-template-columns:54px minmax(0,1fr);gap:8px;align-items:start}
+.game-howto-row p{margin:0!important;font-size:12px;line-height:1.45;color:var(--muted)}
+.game-howto-row p b{color:#edf2ff;font-weight:850}
+.game-howto-tools{display:flex;gap:7px;flex-wrap:wrap;padding-top:2px}
+.game-howto-tools span{display:inline-flex;align-items:center;min-height:27px;padding:0 8px;border:1px solid rgba(113,132,181,.18);border-radius:999px;background:rgba(13,20,36,.34);font-size:10px;color:var(--muted)}
+.game-howto-tools b{color:#e8edfa}
+.game-howto--echo-step .howto-purple{color:#cfc7ff}.game-howto--echo-step .howto-cyan{color:#bfefff}
+.game-howto--color-connect .howto-rainbow{background:linear-gradient(90deg,#ff9fad,#ffd879,#91e7db,#a9a0ff);background-clip:text;-webkit-background-clip:text;color:transparent;font-weight:900}
+.game-howto--lights-out .howto-light{color:#ffe6a6}.game-howto--loop-puzzle .howto-clue{color:#bfefff}
+@media(max-width:760px){.game-howto{gap:10px}.game-howto-row{grid-template-columns:48px minmax(0,1fr)}.game-howto-row p{font-size:11px}.game-howto-goal>strong,.game-howto-row>strong{font-size:11px}.game-howto-chip{font-size:10px}}
