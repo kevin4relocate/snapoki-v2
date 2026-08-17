@@ -21,6 +21,8 @@ test('Easy Echo Step teaches P and E on the board until the first accepted move'
   assert.match(js,/echo-goal-cue-echo/);
   assert.match(css,/echo-goal-pulse-you/);
   assert.match(css,/echo-goal-pulse-echo/);
+  const onboardingKeyframes=css.slice(css.indexOf('@keyframes echo-goal-pulse-you'),css.indexOf('/* Actor-specific cells'));
+  assert.doesNotMatch(onboardingKeyframes,/transform\s*:/,'Easy goal pulse must not override the marker centering transform');
 });
 
 test('Echo Step How to Play is compact, goal-first and has no orphan numbering',()=>{
