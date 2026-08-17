@@ -91,17 +91,21 @@ Requirements:
         generationConfig:{
           maxOutputTokens:1800,
           thinkingConfig:{thinkingLevel:'low'},
-          responseMimeType:'application/json',
-          responseSchema:{
-            type:'OBJECT',
-            properties:{
-              headline:{type:'STRING'},
-              insight:{type:'STRING'},
-              linkedIn:{type:'STRING'},
-              x:{type:'STRING'},
-              instagram:{type:'STRING'}
-            },
-            required:['headline','insight','linkedIn','x','instagram']
+          responseFormat:{
+            text:{
+              mimeType:'application/json',
+              schema:{
+                type:'object',
+                properties:{
+                  headline:{type:'string'},
+                  insight:{type:'string'},
+                  linkedIn:{type:'string'},
+                  x:{type:'string'},
+                  instagram:{type:'string'}
+                },
+                required:['headline','insight','linkedIn','x','instagram']
+              }
+            }
           }
         }
       })
