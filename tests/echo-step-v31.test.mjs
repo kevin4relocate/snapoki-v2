@@ -43,7 +43,7 @@ test('Echo Step homepage, blog and guide are visible in the launch preview',()=>
   assert.match(integration,/data-echo-guide-v31/);
   assert.doesNotMatch(integration,/ECHO_STEP_PUBLIC|hideEchoNavigation/);
   assert.match(finalPass,/data-echo-step-spotlight/);
-  assert.match(finalPass,/Echo Step launch pass complete/);
+  assert.match(finalPass,/shared How to Play cards/);
 
   const home=fs.readFileSync('dist/index.html','utf8'),blog=fs.readFileSync('dist/blog/index.html','utf8'),guide=fs.readFileSync('dist/blog/how-to-play-echo-step/index.html','utf8'),echoPage=fs.readFileSync('dist/echo-step/index.html','utf8'),headers=fs.readFileSync('dist/_headers','utf8');
   assert.match(home,/href="\/echo-step\/"/);
@@ -55,5 +55,6 @@ test('Echo Step homepage, blog and guide are visible in the launch preview',()=>
   assert.doesNotMatch(headers,/\/echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
   assert.doesNotMatch(headers,/\/blog\/how-to-play-echo-step\/\*[\s\S]*X-Robots-Tag: noindex, nofollow, noarchive/);
   assert.match(echoPage,/\/assets\/styles\/echo-step-polish\.css/);
-  assert.match(echoPage,/\/assets\/styles\/echo-step-launch\.css/);
+  assert.match(echoPage,/\/assets\/styles\/how-to-card\.css/);
+  assert.doesNotMatch(echoPage,/echo-step-launch\.css/);
 });
