@@ -1,4 +1,5 @@
 import {drawGameBoard,clearSocialBoardCache} from './social-game-board.js';
+import {getGamePresentation} from './game-presentation.js';
 
 const $=id=>document.getElementById(id);
 const state={content:null};
@@ -34,15 +35,8 @@ function imageHook(payload){
   const raw=String(payload.headline||'').replace(/\s+/g,' ').trim();
   const first=raw.split(/[.!?]/)[0]?.trim()||'';
   if(first.length>=8&&first.length<=42)return `${first}${raw.includes('?')?'?':''}`;
-  const key=payload.game?.key||'';
-  return ({
-    'echo-step':'Can YOU and Echo finish together?',
-    maze:'Can you find the exit?',
-    'number-path':'Can you connect the path?',
-    'color-connect':'Can you connect them all?',
-    'lights-out':'Can you turn them all off?',
-    'loop-puzzle':'Can you close the loop?'
-  })[key]||'Can you solve this?';
+  const game={key:payload.game?.key||'',slug:payload.game?.slug||'',name:payload.game?.name||'Puzzle',howTo:[]};
+  return getGamePresentation(game).socialHook;
 }
 function drawHook(ctx,text,w){
   let size=48;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#f7f9ff';ctx.font=`850 ${size}px system-ui,sans-serif`;
