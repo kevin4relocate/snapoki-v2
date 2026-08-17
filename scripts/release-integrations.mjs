@@ -1,4 +1,4 @@
-// Shared release integrations: analytics, social identity, FAQ and privacy disclosure.
+// Shared release integrations: analytics, social identity, robots metadata, FAQ and privacy disclosure.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -27,6 +27,12 @@ function addSocialMeta(html){
   if(!html.includes('property="og:image:alt"'))html=html.replace('</head>','<meta property="og:image:alt" content="Snapoki puzzle games"><meta name="twitter:image:alt" content="Snapoki puzzle games"></head>');
   return html;
 }
+function normalizeRobots(html,file,isPrivateUtility){
+  if(isPrivateUtility)return html;
+  const value=file===path.join(dist,'404.html')?'noindex,follow':'index,follow,max-image-preview:large';
+  if(/<meta name="robots" content="[^"]*">/i.test(html))return html.replace(/<meta name="robots" content="[^"]*">/i,`<meta name="robots" content="${value}">`);
+  return html.replace('</head>',`<meta name="robots" content="${value}"></head>`);
+}
 function updateOrganization(html){
   return html.replace(/"email":"contact@snapoki\.com"/,`"sameAs":${JSON.stringify(sameAs)}`).replace(/"sameAs":\[[^\]]*\]/,`"sameAs":${JSON.stringify(sameAs)}`);
 }
@@ -41,6 +47,7 @@ function updatePrivacy(html){
 for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
   let html=await fs.readFile(file,'utf8');
   const isPrivateUtility=html.includes('data-private-utility="true"');
+  html=normalizeRobots(html,file,isPrivateUtility);
   if(!isPrivateUtility){html=addAnalytics(html);html=addSocial(html);html=addSocialMeta(html);}
   if(file===path.join(dist,'index.html')){html=html.replace(/<section class="section faq">[\s\S]*?<\/section>/,faq);html=updateOrganization(html);}
   if(file===path.join(dist,'privacy','index.html'))html=updatePrivacy(html);
@@ -49,4 +56,4 @@ for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
 
 const launchFile=path.join(dist,'assets','styles','launch.css');let css=await fs.readFile(launchFile,'utf8');if(!css.includes('/* final release integrations */'))css+=`\n\n/* final release integrations */\n.home-page .faq{width:100%;max-width:calc(var(--content-max) + (var(--site-shell-gutter) * 2));margin-left:auto;margin-right:auto}\n.home-page .faq a{color:#68d9f6;text-decoration:none}.home-page .faq a:hover{color:#fff}\n.footer-social{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:18px}\n.footer-social a{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 11px;border:1px solid #27314a;border-radius:999px;color:#aab4ca;font-size:12px;font-weight:720;transition:border-color .16s ease,color .16s ease,background .16s ease}\n.footer-social a:hover{color:#fff;border-color:#4a5d86;background:#11182a}\n.social-glyph{width:18px;height:18px;border-radius:5px;display:inline-grid;place-items:center;background:#e8eefc;color:#0a0d16;font-size:10px;font-weight:900;line-height:1}.social-glyph--x{background:transparent;color:#e8eefc;border:1px solid #55617a;font-size:9px}\n`;
 await fs.writeFile(launchFile,css);
-console.log(`Release integrations complete: GA ${GA_ID}, canonical social identity, FAQ and SEO social metadata.`);
+console.log(`Release integrations complete: GA ${GA_ID}, robots metadata, canonical social identity, FAQ and SEO social metadata.`);
