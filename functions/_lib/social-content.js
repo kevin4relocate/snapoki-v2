@@ -23,15 +23,7 @@ export function contentDate(now=new Date()) {
 }
 
 function gameInsight(game) {
-  const map={
-    'echo-step':'Every move matters twice. A step that is safe for YOU now can fail when Echo repeats it later, so plan for both positions before committing.',
-    maze:'The obvious direction is not always the shortest route. Hard boards reward players who notice when they need to move away from the finish before coming back.',
-    'number-path':'A locally correct move can ruin the entire route later. The challenge is preserving enough space for every remaining checkpoint.',
-    'color-connect':'The shortest-looking connection is often the trap. Long endpoint pairs force you to reserve space before committing to an easy-looking path.',
-    'lights-out':'Every press changes several cells at once. Strong solves come from thinking in patterns instead of chasing one lit tile at a time.',
-    'loop-puzzle':'A clue constrains several edges at once. The fastest progress often comes from combining neighboring clues instead of solving cells in isolation.'
-  };
-  return map[game.key]||game.description||'Read the full board before committing to the move that looks easiest.';
+  return game.socialInsight||game.description||`Read the full ${game.name} board before committing to the move that looks easiest.`;
 }
 
 function angleCopy(angle,game) {
