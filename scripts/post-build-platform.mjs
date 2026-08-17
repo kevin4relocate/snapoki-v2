@@ -9,6 +9,7 @@ const sharedStyles=['platform-extra.css','polish-v3.css','ui-safety.css'];
 
 async function walk(dir){const out=[];for(const entry of await fs.readdir(dir,{withFileTypes:true})){const full=path.join(dir,entry.name);if(entry.isDirectory())out.push(...await walk(full));else out.push(full);}return out;}
 function polishCopy(html){
+  html=html.replaceAll('<span class="eyebrow">Same boards for everyone</span>','');
   html=html.replace('Hiding the solution does not restore ranking eligibility; resetting from the beginning or starting a new puzzle does.','Hiding the solution or resetting the same board does not restore ranking eligibility. Start a New Puzzle to return to ranked play with a fresh verified board.');
   html=html.replace('Use Reset Puzzle to restart from the beginning and restore ranking eligibility when a server-issued ranked attempt is available.','Reset Puzzle lets you practice the same board again, but a board remains practice-only after Solution has been viewed. Use New Puzzle to return to ranked play.');
   html=html.replace('<td>Can restore ranking eligibility with a new verified attempt.</td>','<td>The same board stays practice-only after Solution; New Puzzle returns to ranked play.</td>');
