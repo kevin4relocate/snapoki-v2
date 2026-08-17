@@ -80,9 +80,6 @@ for(const g of GAMES){const guide=guideArticle(g);await writePage(guide.slug,fro
 
 for(const g of GAMES){
   const file=path.join(dist,g.slug,'index.html');let html=await fs.readFile(file,'utf8');
-  const related=GAMES.filter(x=>x.key!==g.key).slice(0,3).map(x=>`<a href="/${x.slug}/">${esc(x.name)}</a>`).join('');
-  const section=`<section class="section game-learn-more"><div><span class="eyebrow">Learn ${esc(g.name)}</span><h2>Rules, strategy and common mistakes</h2><p>Read the full guide without revealing a solved board, then return here to put the ideas into practice.</p></div><a class="button button-secondary" href="/blog/how-to-play-${g.slug}/">How to Play ${esc(g.name)}</a><div class="related-games"><span>Try next:</span>${related}</div></section>`;
-  if(!html.includes('game-learn-more'))html=html.replace('</main>',`${section}</main>`);
   html=addJsonLd(html,breadcrumbs([{name:'Snapoki',url:`${siteUrl}/`},{name:g.name,url:`${siteUrl}/${g.slug}/`} ]));
   html=addJsonLd(html,{'@context':'https://schema.org','@type':'WebApplication',name:g.name,url:`${siteUrl}/${g.slug}/`,description:g.description,applicationCategory:'GameApplication',operatingSystem:'Any',offers:{'@type':'Offer',price:'0',priceCurrency:'USD'}});
   await fs.writeFile(file,html);
