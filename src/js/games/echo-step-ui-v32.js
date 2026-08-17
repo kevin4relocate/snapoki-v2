@@ -14,7 +14,7 @@ function targetFor(index,size,action){
 }
 function bothHome(puzzle,state){return state.player===puzzle.playerGoal&&state.echo===puzzle.echoGoal;}
 function arrows(actions){return actions.map(action=>DIRS[action]?.arrow||'').filter(Boolean).join(' ');}
-function stepGuide(steps){const guide=new Map();for(const step of steps)guide.set(step.from,{arrow:DIRS[step.action]?.arrow||'',step:step.turn});return guide;}
+function stepGuide(steps){const guide=new Map();for(const step of steps)guide.set(step.to,{arrow:DIRS[step.action]?.arrow||'',step:step.turn});return guide;}
 function friendlyFailure(message){
   if(message==='Echo hit a cyan phase wall.')return'Echo hit a cyan wall.';
   if(message==='Echo hit a dark wall.')return'Echo hit a dark wall.';
