@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {buildDailyContent,contentDate} from '../functions/_lib/social-content.js';
+import {GAMES} from '../src/js/games-config.js';
 
 test('daily social content is deterministic per date and variant',()=>{
   const a=buildDailyContent('2026-08-16',0),b=buildDailyContent('2026-08-16',0),c=buildDailyContent('2026-08-16',1);
@@ -87,9 +88,27 @@ test('social image is one square image-first card with a short presentation-driv
   assert.match(client,/globalAlpha=\.34/);
   assert.match(client,/fillText\('snapoki\.com'/);
   assert.doesNotMatch(client,/drawPortrait|drawLandscape|WHY IT IS INTERESTING|NO SOLUTION SHOWN|NO HINTS/);
-  for(const name of ['generateEchoStep','generateMaze','generateNumberPath','generateColorConnect','generateLightsOut','generateLoopPuzzle'])assert.match(renderer,new RegExp(name));
-  assert.match(renderer,/generator\('hard'/);
+  assert.match(renderer,/plugin\.generator\('hard'/);
   assert.doesNotMatch(renderer,/solveMaze|solution-edge|color-solution-line/,'social renderer should show unsolved boards only');
   execFileSync(process.execPath,['--check','src/js/admin-content.js'],{stdio:'pipe'});
   execFileSync(process.execPath,['--check','src/js/social-game-board.js'],{stdio:'pipe'});
+});
+
+test('Content Desk core is game-agnostic and registered games plug in by naming convention',async()=>{
+  const client=await fs.readFile('src/js/admin-content.js','utf8');
+  const social=await fs.readFile('src/js/social-game-board.js','utf8');
+  const content=await fs.readFile('functions/_lib/social-content.js','utf8');
+  assert.match(social,/import\(`\.\/games\/\$\{key\}\.js`\)/);
+  assert.match(social,/import\(`\.\/social-renderers\/\$\{key\}\.js`\)/);
+  assert.match(social,/function generatorName\(key\)/);
+  assert.match(social,/renderer:'fallback'/,'missing custom artwork must degrade safely instead of breaking admin');
+  for(const game of GAMES){
+    const rendererFile=`src/js/social-renderers/${game.slug}.js`;
+    const rendererSource=await fs.readFile(rendererFile,'utf8');
+    assert.match(rendererSource,/export function drawSocialBoard\(/,`${game.key} must expose the social renderer convention`);
+    execFileSync(process.execPath,['--check',rendererFile],{stdio:'pipe'});
+    assert.doesNotMatch(client,new RegExp(`['\"]${game.key}['\"]`),`admin client must not hard-code ${game.key}`);
+    assert.doesNotMatch(social,new RegExp(`['\"]${game.key}['\"]`),`social plugin loader must not hard-code ${game.key}`);
+    assert.doesNotMatch(content,new RegExp(`['\"]${game.key}['\"]`),`social content generator must not hard-code ${game.key}`);
+  }
 });
