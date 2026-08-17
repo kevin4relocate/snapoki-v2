@@ -92,8 +92,8 @@ for(const game of GAMES){
     if(!html.includes('/assets/styles/how-to-card.css'))fail(`${game.key}: missing shared How to Play stylesheet`);
     if(!html.includes('/assets/styles/board-contract.css'))fail(`${game.key}: missing shared board contract`);
     if(!html.includes('/assets/styles/board-status.css'))fail(`${game.key}: missing shared board status styles`);
-    const words=countWords(html);
-    if(words<220)fail(`${game.key}: game page content is too thin (${words} words)`);
+    if(!html.includes('class="section daily-section"'))fail(`${game.key}: missing Daily section`);
+    if(/class="section game-seo"|class="section game-learn-more"/.test(html))fail(`${game.key}: game page contains editorial filler that belongs in the dedicated guide`);
   }
   if(await exists(guide)){
     const html=await fs.readFile(guide,'utf8');
@@ -103,6 +103,14 @@ for(const game of GAMES){
   }
 }
 for(const key of verifierKeys)if(!registeredKeys.has(key))fail(`${key}: server verifier has no matching game registry entry`);
+
+const contentCssFile=path.join(dist,'assets','styles','content.css');
+if(!await exists(contentCssFile))fail('shared content.css is missing');
+else{
+  const css=await fs.readFile(contentCssFile,'utf8');
+  if(!/1080px/.test(css))fail('content.css does not use the shared 1080px editorial width');
+  if(/max-width:\s*(?:760|820|980)px/.test(css))fail('content.css still contains an obsolete narrow editorial width');
+}
 
 const home=await fs.readFile(path.join(dist,'index.html'),'utf8');
 const homeCards=(home.match(/class="game-card" href="\/[^"]+\/"/g)||[]).length;
