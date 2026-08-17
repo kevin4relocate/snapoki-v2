@@ -47,8 +47,8 @@ test('guide and social systems have safe generic fallbacks for a future game',()
   const launch=read('scripts/launch-readiness.mjs'),social=read('src/js/social-game-board.js');
   assert.match(launch,/return svgShell\(name,/,'guide artwork must have a generic fallback');
   assert.match(launch,/const extra=GUIDE\[g\.key\]\|\|/,'guide copy must have a generic fallback');
-  assert.match(social,/function fallbackPuzzle/);
-  assert.match(social,/drawFallback/);
+  assert.match(social,/function drawFallback/);
+  assert.match(social,/if\(!puzzle\)\{drawFallback/);
 });
 
 test('platform audit is the final build gate',()=>{
