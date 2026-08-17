@@ -1,98 +1,111 @@
 # Snapoki Launch & Game Expansion Guide
 
-This document defines the production structure to preserve after launch. The goal is simple: adding Game #6, #7, #8 and beyond should extend the shared platform instead of creating a new one-off page stack for every game.
+This is the short operational checklist for adding Game #7 and beyond. The detailed ownership rules live in [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 
-## Source of truth
+## Principle
 
-`src/js/games-config.js` is the public game registry. A new game should be represented there with its key, slug, display name, category, tagline, description, difficulty labels, How to Play rules, capabilities and ranking contract.
+A new game extends the platform. It must not create a second header, footer, account flow, Daily shell, Rankings UI, result modal, sitemap process or generic How to Play layout.
 
-The shared build already reads this registry for the site header, footer game links, homepage game cards and game routes. Server-side validation uses the shared game registry as well.
+If a new game requires editing many shared surfaces manually, first check whether the missing concept belongs in the shared runtime or `game-presentation.js`.
 
-## Shared page shell
+## Required work for a new game
 
-Do not create a custom header/footer/account system for a new game. Game pages use the existing shared shell and lifecycle:
+1. Add one game definition to `src/js/games-config.js`.
+2. Add one public engine entry at `src/js/games/<slug>.js` exporting `createGame()`.
+3. Add the mechanic-specific result verifier to `RESULT_VERIFIERS` in `functions/_lib/scoring.js`.
+4. Add deterministic generator, gameplay and verifier tests.
+5. Run `npm run build` and `npm test`.
 
-- header and responsive navigation
-- account/login state
-- Easy / Medium / Hard selector
-- Regular Play / Daily Challenge
-- shared Hint / Solution / Reset behavior
+The final platform audit will fail if the game is missing its route, engine, guide, verifier, shared UI contracts, sitemap coverage or enough public content.
+
+## Optional game-specific work
+
+Use `src/js/game-presentation.js` only when the game needs one of these:
+
+- special compact How to Play wording
+- a control label other than `Solution`
+- genuinely mechanic-specific CSS
+- a custom social-image hook
+- an optional homepage spotlight
+
+Use `scripts/launch-readiness.mjs` only for a richer editorial strategy section or custom guide artwork when the generic fallback is not strong enough.
+
+Use `src/js/social-game-board.js` only when a custom social-board renderer materially represents the mechanic better than the generic fallback.
+
+A simple game should be able to launch without any game-specific stylesheet.
+
+## Shared surfaces that should update automatically
+
+Registering the game should flow into:
+
+- desktop/mobile navigation and More Games
+- footer game links
+- homepage game count and game card
+- game page shell
+- Difficulty / Regular Play / Daily controls
+- shared board-status container
+- shared How to Play component
 - result modal
-- Rankings neighborhood
-- profile and Difficulty Mastery
-- Daily progress and streak UI
-- footer and guide links
+- Rankings/profile rail
+- About and Help game lists
+- platform How to Play
+- Blog guide index
+- dedicated How to Play guide fallback
+- internal game/guide links
+- sitemap and structured data
+- social-content template rotation
 
-Game-specific code should stay inside its engine plus the minimum renderer/controller hooks required by the shared lifecycle.
+Do not manually patch these surfaces for one game.
 
-## Launch SEO pipeline
+## Shared CSS first
 
-The production build ends with `scripts/launch-readiness.mjs`. It runs after the normal build and UI polish and intentionally reads `GAMES` from the shared registry.
+Before creating CSS, check the shared layers:
 
-It currently handles:
+- `games.css`
+- `board-contract.css`
+- `how-to-card.css`
+- `board-status.css`
+- `platform-extra.css`
+- `polish-v3.css`
+- `ui-safety.css`
 
-- technical SEO metadata normalization
-- `robots.txt`
-- sitemap generation from the actual built canonical pages
-- Open Graph / Twitter metadata support
-- Organization, Breadcrumb, WebApplication and HowTo structured data
-- `/blog/` guide index
-- one generated How-to guide for every registered game
-- one non-solution SVG board preview for every registered game
-- compact guide/internal-link section on every game page
-- custom 404 page
-- contact cleanup so email is not displayed in the global footer
-
-Because the guide and sitemap are registry-driven, registering a future game automatically gives it baseline discovery coverage. Add a game-specific strategy entry to the `GUIDE` map in `launch-readiness.mjs` when you want richer editorial copy; if omitted, the generator has a safe fallback based on the game config.
-
-## Brand assets
-
-`scripts/generate-brand.mjs` is the only place that should generate the core Snapoki mark assets. It writes:
-
-- SVG logo mark
-- SVG wordmark
-- SVG favicon
-- PNG logo sizes
-- 32×32 favicon
-- Apple touch icon
-- social sharing card
-- web app manifest
-
-Do not hand-edit generated copies in `dist/`; `dist/` is rebuilt.
-
-## Adding Game #6
-
-Use this sequence:
-
-1. Add the game definition to `src/js/games-config.js`.
-2. Add the game engine under `src/js/games/` and register its loader in the shared game loader.
-3. Add server proof regeneration/verification before enabling ranked results.
-4. Add deterministic generator tests for Easy, Medium and Hard.
-5. Add lifecycle/interaction regressions specific to the game.
-6. Add a strategy override in the launch guide map if the generic guide is not editorially strong enough.
-7. Run `npm run build` and `npm test`.
-8. Confirm the generated game route, guide route, SVG guide preview and sitemap entry exist.
-9. Only then retry the disabled Cloudflare Pages deployment.
-
-Do not manually edit sitemap URLs, duplicate footer links, create a separate page header, or write another account/ranking implementation.
+Create game-specific CSS only for visuals unique to the mechanic, then list that file under the game’s presentation override. Never add a post-build script just to inject one game stylesheet.
 
 ## Ranking and practice invariants
 
-These platform contracts are shared and should not be weakened for a new game:
+Do not weaken these contracts for a new game:
 
 - Easy ×1 / Medium ×3 / Hard ×5
-- server-issued ranked attempts
-- server-side proof regeneration and score calculation
-- Solution makes the current attempt practice-only
-- Hint may remain ranked with a score penalty
+- account-bound server-issued ranked attempts
+- server-side deterministic proof verification
+- server-calculated ranked time and score
+- full Solution/Guide makes the current attempt practice-only
+- Hint may remain ranked with a penalty
 - Daily reward is once per account/game/date/difficulty
-- Regular fresh-puzzle rotation remains account-aware
-- client code never decides its own final Ranking Points
+- client code does not decide final Ranking Points
 
-## Contact placement
+The proof format may be game-specific; the surrounding ranked lifecycle is shared.
 
-`contact@snapoki.com` is intentionally not displayed in the global footer. Visible contact information belongs on pages where a user reasonably needs it, currently Help, Privacy and Terms.
+## SEO/content launch check
+
+The build audit checks:
+
+- title, description, canonical and one H1
+- no duplicate canonical URLs
+- no dead internal links/assets
+- game ↔ guide links
+- sufficient game-page and guide content
+- sitemap coverage
+- no accidental noindex on launch game routes
+- no public link to the private Content Desk
+- Game Registry ↔ verifier parity
+
+Do not manually maintain sitemap URL lists.
+
+## Private Content Desk
+
+`/snapdesk-74kq/` remains private/noindex and must never be added to public navigation or sitemap. Social content uses the Game Registry and Presentation Registry, so a new game receives baseline template copy and a social hook automatically. Add a custom social renderer only when needed.
 
 ## Deployment discipline
 
-Cloudflare production deployment is intentionally disabled on normal `main` pushes. Use GitHub CI for iterative work. Retry the Cloudflare Pages deployment only after the chosen launch head has a clean build and test run.
+GitHub CI is the validation gate for iterative work. Production Cloudflare deployment remains a separate manual decision after the chosen launch head is reviewed. Never use a deployment as a substitute for a clean build/test/audit run.
