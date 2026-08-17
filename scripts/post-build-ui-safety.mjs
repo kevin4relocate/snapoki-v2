@@ -7,6 +7,7 @@ const dist=path.join(root,'dist');
 const referencePages=new Set(['how-to-play/index.html','daily-challenges/index.html','rankings-guide/index.html']);
 const contentLink='<link rel="stylesheet" href="/assets/styles/content.css">';
 const launchLink='<link rel="stylesheet" href="/assets/styles/launch.css">';
+const boardStatusLink='<link rel="stylesheet" href="/assets/styles/board-status.css">';
 
 async function htmlFiles(dir){
   const out=[];
@@ -35,6 +36,7 @@ for(const file of await htmlFiles(dist)){
   if(referencePages.has(rel)&&html.includes('class="content-page"'))html=html.replace('class="content-page"','class="content-page reference-page"');
   html=ensureContentStyleOrder(html);
   if(!html.includes('/assets/styles/ui-safety.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/styles/ui-safety.css"></head>');
+  if(html.includes('id="gameBoard"')&&!html.includes('/assets/styles/board-status.css'))html=html.replace('</head>',`${boardStatusLink}</head>`);
   await fs.writeFile(file,html);
 }
 
