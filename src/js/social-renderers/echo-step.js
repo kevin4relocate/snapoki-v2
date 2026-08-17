@@ -13,7 +13,7 @@ export function drawSocialBoard(ctx,puzzle,box){
   }
   const center=index=>{const r=Math.floor(index/n),c=index%n;return[ox+(c+.5)*cell,oy+(r+.5)*cell];};
   const goal=(index,color)=>{const[cx,cy]=center(index);ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=Math.max(2,cell*.055);ctx.setLineDash([Math.max(3,cell*.10),Math.max(3,cell*.08)]);ctx.arc(cx,cy,cell*.30,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);};
-  const agent=(index,color,ghost=false,label='')=>{const[cx,cy]=center(index);ctx.save();ctx.globalAlpha=ghost?.78:1;ctx.shadowColor=color;ctx.shadowBlur=cell*.22;ctx.beginPath();ctx.fillStyle=ghost?'rgba(93,225,255,.10)':color;ctx.strokeStyle=color;ctx.lineWidth=Math.max(2,cell*.05);ctx.arc(cx,cy,ghost?cell*.18:cell*.21,0,Math.PI*2);ctx.fill();ctx.stroke();if(label){ctx.fillStyle=ghost?'#a9efff':'#fff';ctx.font=`900 ${Math.max(7,cell*.15)}px system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,cx,cy+cell*.01);}ctx.restore();};
+  const agent=(index,color,ghost=false,label='')=>{const[cx,cy]=center(index);ctx.save();ctx.globalAlpha=ghost?0.78:1;ctx.shadowColor=color;ctx.shadowBlur=cell*.22;ctx.beginPath();ctx.fillStyle=ghost?'rgba(93,225,255,.10)':color;ctx.strokeStyle=color;ctx.lineWidth=Math.max(2,cell*.05);ctx.arc(cx,cy,ghost?cell*.18:cell*.21,0,Math.PI*2);ctx.fill();ctx.stroke();if(label){ctx.fillStyle=ghost?'#a9efff':'#fff';ctx.font=`900 ${Math.max(7,cell*.15)}px system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,cx,cy+cell*.01);}ctx.restore();};
   goal(puzzle.playerGoal,'#917fff');goal(puzzle.echoGoal,'#5de1ff');agent(puzzle.playerStart,'#917fff',false,'YOU');agent(puzzle.echoStart,'#5de1ff',true,'E');
   ctx.restore();
 }
