@@ -38,7 +38,7 @@ async function generatePuzzle(payload){
   for(let attempt=0;attempt<3&&!puzzle;attempt++){
     try{puzzle=plugin.generator('hard',`${seed}:attempt:${attempt}`);}catch(error){console.warn(`Social preview ${identity} attempt ${attempt+1} failed.`,error);}
   }
-  const result=puzzle?{puzzle,draw:plugin.draw}:null;
+  const result=puzzle?{puzzle,draw:plugin.draw,identity}:null;
   puzzleCache.set(cacheKey,result);return result;
 }
 
@@ -46,8 +46,14 @@ export async function drawGameBoard(ctx,payload,box){
   const generated=await generatePuzzle(payload);
   if(!generated){drawFallback(ctx,payload,box);return{generated:false,difficulty:'hard',renderer:'fallback'};}
   if(!generated.draw){drawFallback(ctx,payload,box);return{generated:true,difficulty:generated.puzzle.difficulty||'hard',size:generated.puzzle.size,renderer:'fallback'};}
-  generated.draw(ctx,generated.puzzle,box);
-  return{generated:true,difficulty:generated.puzzle.difficulty||'hard',size:generated.puzzle.size,renderer:'game'};
+  try{
+    generated.draw(ctx,generated.puzzle,box);
+    return{generated:true,difficulty:generated.puzzle.difficulty||'hard',size:generated.puzzle.size,renderer:'game'};
+  }catch(error){
+    console.warn(`Social renderer ${generated.identity||'game'} failed; using fallback artwork.`,error);
+    drawFallback(ctx,payload,box);
+    return{generated:true,difficulty:generated.puzzle.difficulty||'hard',size:generated.puzzle.size,renderer:'fallback-error'};
+  }
 }
 
 export function clearSocialBoardCache(){puzzleCache.clear();}
