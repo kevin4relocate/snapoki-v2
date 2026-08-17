@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {generateEchoStep,simulateEchoStep} from '../src/js/games/echo-step.js';
+import {scoreTimeDivisor} from '../src/js/games/utils.js';
 
 const snapshot=puzzle=>({
   blocked:puzzle.blocked,
@@ -60,6 +61,12 @@ test('Hard V4 forces deep timing pressure instead of a direct read from Echo to 
     assert.ok(quality.lateFailureDepth>=6);
     assert.equal(quality.reentryMoves,6);
   }
+});
+
+test('V4 score pacing gives Medium and Hard enough time for deliberate solving',()=>{
+  assert.equal(scoreTimeDivisor('echo-step','easy'),50);
+  assert.equal(scoreTimeDivisor('echo-step','medium'),140);
+  assert.equal(scoreTimeDivisor('echo-step','hard'),300);
 });
 
 test('V4 generation stays bounded and does not add a runtime full-state solver',()=>{
