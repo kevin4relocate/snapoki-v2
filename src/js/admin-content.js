@@ -1,12 +1,11 @@
 import {drawGameBoard,clearSocialBoardCache} from './social-game-board.js';
 
-const $ = id => document.getElementById(id);
-const state = {content:null};
+const $=id=>document.getElementById(id);
+const state={content:null};
 const CONTENT_API='/api/snapdesk-74kq/content';
 
 function notice(message,type=''){
-  const el=$('adminNotice');
-  el.textContent=message;el.className=`admin-notice ${type}`.trim();el.hidden=false;
+  const el=$('adminNotice');el.textContent=message;el.className=`admin-notice ${type}`.trim();el.hidden=false;
 }
 function clearNotice(){$('adminNotice').hidden=true;}
 
@@ -20,6 +19,12 @@ async function request(url,options={}){
 function textValue(platform){return $(`${platform}Text`).value;}
 function updateCounts(){for(const p of ['linkedIn','x','instagram'])$(`${p}Count`).textContent=String(textValue(p).length);}
 function setPosted(platform,value){const status=$(`${platform}Status`),button=document.querySelector(`[data-posted="${platform}"]`);status.textContent=value?'Posted':'Not posted';status.style.color=value?'#69e8a8':'';button.textContent=value?'Unmark':'Mark posted';button.dataset.value=value?'1':'0';}
+function setGeneratorStatus(payload){
+  const el=$('generatorStatus'),generator=payload.generator||'template',model=payload.model||'';
+  el.className=`generator-status ${generator==='gemini'?'is-gemini':generator==='template-fallback'?'is-fallback':'is-template'}`;
+  el.textContent=generator==='gemini'?`Gemini · ${model}`:generator==='template-fallback'?`Template fallback · ${model||'Gemini unavailable'}`:'Template · Gemini key not configured';
+  el.title=payload.generationError||'';
+}
 
 function background(ctx,w,h){
   const grad=ctx.createLinearGradient(0,0,w,h);grad.addColorStop(0,'#0a1020');grad.addColorStop(1,'#131c35');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
@@ -31,6 +36,7 @@ function imageHook(payload){
   if(first.length>=8&&first.length<=42)return `${first}${raw.includes('?')?'?':''}`;
   const key=payload.game?.key||'';
   return ({
+    'echo-step':'Can YOU and Echo finish together?',
     maze:'Can you find the exit?',
     'number-path':'Can you connect the path?',
     'color-connect':'Can you connect them all?',
@@ -43,23 +49,17 @@ function drawHook(ctx,text,w){
   while(size>34&&ctx.measureText(text).width>w-150){size-=2;ctx.font=`850 ${size}px system-ui,sans-serif`;}
   ctx.fillText(text,w/2,62);
 }
-function drawWatermark(ctx,w,h){
-  ctx.save();ctx.globalAlpha=.34;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillStyle='#d9e4ff';ctx.font='700 21px system-ui,sans-serif';ctx.fillText('snapoki.com',w-42,h-28);ctx.restore();
-}
-function drawSquare(canvas,payload){
-  canvas.width=1080;canvas.height=1080;const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;background(ctx,w,h);
-  drawHook(ctx,imageHook(payload),w);
-  const boardSize=900,boardX=(w-boardSize)/2,boardY=105;drawGameBoard(ctx,payload,{x:boardX,y:boardY,size:boardSize});
-  drawWatermark(ctx,w,h);
-}
+function drawWatermark(ctx,w,h){ctx.save();ctx.globalAlpha=.34;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillStyle='#d9e4ff';ctx.font='700 21px system-ui,sans-serif';ctx.fillText('snapoki.com',w-42,h-28);ctx.restore();}
+function drawSquare(canvas,payload){canvas.width=1080;canvas.height=1080;const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;background(ctx,w,h);drawHook(ctx,imageHook(payload),w);const boardSize=900,boardX=(w-boardSize)/2,boardY=105;drawGameBoard(ctx,payload,{x:boardX,y:boardY,size:boardSize});drawWatermark(ctx,w,h);}
 
 function drawPreview(payload){drawSquare($('socialCanvas'),payload);}
 function render(content){
   state.content=content;const p=content.payload;
-  $('contentDate').textContent=content.date;$('contentGame').textContent=`${p.game.name} · ${p.angle}`;$('angleBadge').textContent=p.angle.toUpperCase().replace('-', ' ');$('headlinePreview').textContent=p.headline;
+  $('contentDate').textContent=content.date;$('contentGame').textContent=`${p.game.name} · ${p.angle}`;$('angleBadge').textContent=p.angle.toUpperCase().replace('-', ' ');$('headlinePreview').textContent=p.headline;setGeneratorStatus(p);
   $('linkedInText').value=p.linkedIn;$('xText').value=p.x;$('instagramText').value=p.instagram;
   for(const platform of ['linkedIn','x','instagram'])setPosted(platform,Boolean(content.posted?.[platform]));
   updateCounts();drawPreview(p);$('adminLoading').hidden=true;$('contentPanel').hidden=false;clearNotice();
+  if(p.generator==='template-fallback'&&p.generationError)notice(`Gemini fallback: ${p.generationError}`,'error');
 }
 
 async function load(){
@@ -70,22 +70,15 @@ async function save(){
 }
 async function regenerate(){
   if(!confirm('Generate a different content pack for today? Your current edits will be replaced.'))return;
-  try{const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'regenerate'})});clearSocialBoardCache();render(data.content);notice('Generated a new variation and a new puzzle image for today.');}catch(error){notice(error.message,'error');}
+  try{const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'regenerate'})});clearSocialBoardCache();render(data.content);notice(data.content.payload.generator==='gemini'?'Generated a new Gemini variation and puzzle image.':'Generated a template fallback and puzzle image.');}catch(error){notice(error.message,'error');}
 }
-async function togglePosted(platform,button){
-  try{const value=button.dataset.value!=='1';const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'posted',platform,value})});render(data.content);}catch(error){notice(error.message,'error');}
-}
+async function togglePosted(platform,button){try{const value=button.dataset.value!=='1';const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'posted',platform,value})});render(data.content);}catch(error){notice(error.message,'error');}}
 async function remove(all=false){
   const label=all?'all stored content':'today’s content';if(!confirm(`Delete ${label}?`))return;
-  try{await request(`${CONTENT_API}${all?'?all=1':''}`,{method:'DELETE'});clearSocialBoardCache();state.content=null;$('contentPanel').hidden=true;$('contentDate').textContent='—';$('contentGame').textContent='Deleted';notice(all?'All content deleted. Opening this page again will create a fresh pack for the current day.':'Today’s pack deleted. Opening this page again will generate today again.');}catch(error){notice(error.message,'error');}
+  try{await request(`${CONTENT_API}${all?'?all=1':''}`,{method:'DELETE'});clearSocialBoardCache();state.content=null;$('contentPanel').hidden=true;$('contentDate').textContent='—';$('contentGame').textContent='Deleted';$('generatorStatus').textContent='Generator —';notice(all?'All content deleted. Opening this page again will create a fresh pack for the current day.':'Today’s pack deleted. Opening this page again will generate today again.');}catch(error){notice(error.message,'error');}
 }
-async function copy(platform){
-  try{await navigator.clipboard.writeText(textValue(platform));notice(`${platform==='linkedIn'?'LinkedIn':platform==='x'?'X':'Instagram'} copied.`);}catch{notice('Could not access the clipboard. Select the text and copy manually.','error');}
-}
-function downloadCard(){
-  if(!state.content?.payload)return;const canvas=$('exportCanvas');drawSquare(canvas,state.content.payload);
-  const a=document.createElement('a');a.download=`snapoki-${state.content.payload.game?.key||'puzzle'}-${state.content.date}-1080x1080.png`;a.href=canvas.toDataURL('image/png');a.click();
-}
+async function copy(platform){try{await navigator.clipboard.writeText(textValue(platform));notice(`${platform==='linkedIn'?'LinkedIn':platform==='x'?'X':'Instagram'} copied.`);}catch{notice('Could not access the clipboard. Select the text and copy manually.','error');}}
+function downloadCard(){if(!state.content?.payload)return;const canvas=$('exportCanvas');drawSquare(canvas,state.content.payload);const a=document.createElement('a');a.download=`snapoki-${state.content.payload.game?.key||'puzzle'}-${state.content.date}-1080x1080.png`;a.href=canvas.toDataURL('image/png');a.click();}
 
 for(const p of ['linkedIn','x','instagram'])$(`${p}Text`).addEventListener('input',updateCounts);
 $('saveAllBtn').addEventListener('click',save);$('regenerateBtn').addEventListener('click',regenerate);$('deleteTodayBtn').addEventListener('click',()=>remove(false));$('deleteAllBtn').addEventListener('click',()=>remove(true));$('downloadSquareBtn').addEventListener('click',downloadCard);
