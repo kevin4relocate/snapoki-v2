@@ -53,7 +53,7 @@ for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
   const before=await fs.readFile(file,'utf8'),after=rewrite(before);
   if(after!==before)await fs.writeFile(file,after);
 }
-for(const file of (await walk(path.join(versionRoot,'js'))).filter(file=>file.endsWith('.js'))){
+for(const file of (await walk(versionRoot)).filter(file=>/\.(?:js|css)$/.test(file))){
   const before=await fs.readFile(file,'utf8'),after=rewrite(before);
   if(after!==before)await fs.writeFile(file,after);
 }
