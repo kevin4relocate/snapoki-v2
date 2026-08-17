@@ -98,17 +98,19 @@ test('Content Desk core is game-agnostic and registered games plug in by naming 
   const client=await fs.readFile('src/js/admin-content.js','utf8');
   const social=await fs.readFile('src/js/social-game-board.js','utf8');
   const content=await fs.readFile('functions/_lib/social-content.js','utf8');
-  assert.match(social,/import\(`\.\/games\/\$\{key\}\.js`\)/);
-  assert.match(social,/import\(`\.\/social-renderers\/\$\{key\}\.js`\)/);
-  assert.match(social,/function generatorName\(key\)/);
+  assert.match(social,/import\(`\.\/games\/\$\{slug\}\.js`\)/);
+  assert.match(social,/import\(`\.\/social-renderers\/\$\{slug\}\.js`\)/);
+  assert.match(social,/function generatorName\(slug\)/);
   assert.match(social,/renderer:'fallback'/,'missing custom artwork must degrade safely instead of breaking admin');
   for(const game of GAMES){
     const rendererFile=`src/js/social-renderers/${game.slug}.js`;
     const rendererSource=await fs.readFile(rendererFile,'utf8');
     assert.match(rendererSource,/export function drawSocialBoard\(/,`${game.key} must expose the social renderer convention`);
     execFileSync(process.execPath,['--check',rendererFile],{stdio:'pipe'});
-    assert.doesNotMatch(client,new RegExp(`['\"]${game.key}['\"]`),`admin client must not hard-code ${game.key}`);
-    assert.doesNotMatch(social,new RegExp(`['\"]${game.key}['\"]`),`social plugin loader must not hard-code ${game.key}`);
-    assert.doesNotMatch(content,new RegExp(`['\"]${game.key}['\"]`),`social content generator must not hard-code ${game.key}`);
+    for(const literal of [game.key,game.slug]){
+      assert.doesNotMatch(client,new RegExp(`['\"]${literal}['\"]`),`admin client must not hard-code ${literal}`);
+      assert.doesNotMatch(social,new RegExp(`['\"]${literal}['\"]`),`social plugin loader must not hard-code ${literal}`);
+      assert.doesNotMatch(content,new RegExp(`['\"]${literal}['\"]`),`social content generator must not hard-code ${literal}`);
+    }
   }
 });
