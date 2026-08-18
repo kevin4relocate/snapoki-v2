@@ -48,7 +48,7 @@ const PRESENTATION={
     socialHook:'Can you close the loop?'
   },
   bridges:{
-    styles:['bridges.css'],
+    styles:['bridges.css','bridges-progress-fix.css'],
     goal:{tokens:['MATCH NUMBERS'],joiner:'+',note:'One connected network'},
     rows:[
       ['Connect','Tap an island, then a glowing island to add one bridge. Repeat the same pair for a double bridge. Tap an existing bridge to remove one.'],
