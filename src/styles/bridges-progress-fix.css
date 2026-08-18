@@ -1,0 +1,3 @@
+.bridges-island-progress{opacity:0}
+.bridges-island.is-progress .bridges-island-progress{opacity:.86}
+.bridges-island.is-satisfied .bridges-island-progress{opacity:1}
