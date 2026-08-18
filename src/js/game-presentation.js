@@ -46,6 +46,17 @@ const PRESENTATION={
     rows:[['Draw','Tap grid edges to build one continuous loop.'],['Clues','A number is the exact count of that cell’s four sides used by the loop.'],['Finish','Any single closed loop satisfying every visible clue is accepted. Edge order does not matter.']],
     tools:[['Hint','exact edge to change'],['Solution','one ghost loop']],
     socialHook:'Can you close the loop?'
+  },
+  bridges:{
+    styles:['bridges.css'],
+    goal:{tokens:['MATCH NUMBERS'],joiner:'+',note:'One connected network'},
+    rows:[
+      ['Connect','Tap an island, then a glowing island to add one bridge. Repeat the same pair for a double bridge. Tap an existing bridge to remove one.'],
+      ['Count','One line counts as 1 bridge; two parallel lines count as 2. Every island must receive exactly the number shown, and a pair can share at most two bridges.'],
+      ['Finish','Bridges never cross or pass through another island. Match every number and keep every island inside one connected network.']
+    ],
+    tools:[['Hint','logic reason + Apply'],['Solution','missing + wrong links']],
+    socialHook:'Can you connect every island?'
   }
 };
 

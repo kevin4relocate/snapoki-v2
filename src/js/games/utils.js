@@ -45,6 +45,6 @@ export function directionLabel(from,to,cols){const [fr,fc]=rcOf(from,cols),[tr,t
 export function dailySeed(game,difficulty,date=new Date()){return `${game}:${date.toISOString().slice(0,10)}:${difficulty}`;}
 export function randomSeed(game,difficulty){const values=crypto.getRandomValues(new Uint32Array(3));return `${game}:${difficulty}:v2:${Date.now().toString(36)}:${Array.from(values).join('-')}`;}
 export function formatTime(ms){const seconds=Math.max(0,Math.floor(ms/1000)),minutes=Math.floor(seconds/60);return `${String(minutes).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
-const SCORE_TIME_DIVISORS={'echo-step':{easy:50,medium:140,hard:300},maze:{easy:45,medium:95,hard:170},'number-path':{easy:50,medium:120,hard:220},'color-connect':{easy:55,medium:155,hard:310},'lights-out':{easy:50,medium:105,hard:175},'loop-puzzle':{easy:65,medium:135,hard:240}};
+const SCORE_TIME_DIVISORS={'echo-step':{easy:50,medium:140,hard:300},maze:{easy:45,medium:95,hard:170},'number-path':{easy:50,medium:120,hard:220},'color-connect':{easy:55,medium:155,hard:310},'lights-out':{easy:50,medium:105,hard:175},'loop-puzzle':{easy:65,medium:135,hard:240},bridges:{easy:70,medium:160,hard:280}};
 export function scoreTimeDivisor(game,difficulty){return SCORE_TIME_DIVISORS[game]?.[difficulty]||40;}
 export function scoreFromPerformance({timeMs=0,timeDivisor=40,actionPenalty=0,mistakePenalty=0,hintPenalty=0}){return clamp(Math.round(5000-timeMs/timeDivisor-actionPenalty-mistakePenalty-hintPenalty),250,5000);}

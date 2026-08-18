@@ -69,6 +69,7 @@ Game pages automatically load shared styles. Optional game-specific styles come 
 
 Other build responsibilities are separated by purpose:
 
+- `scripts/check.mjs` — repository-wide JavaScript syntax gate across runtime, Functions, scripts and tests.
 - `scripts/enrich-content.mjs` — About, Help, Privacy, Terms, platform How to Play, Daily and Rankings reference content.
 - `scripts/post-build-platform.mjs` — shared style wiring and narrowly scoped legacy content polish only; it must not patch runtime JavaScript.
 - `scripts/launch-readiness.mjs` — registry-driven Blog/Guides, guide artwork, structured data, related links, final sitemap and robots rules.
@@ -83,7 +84,7 @@ Obsolete game-specific/output-patch passes have been removed. Do not reintroduce
 `src/js/game-page.js` owns the common lifecycle:
 
 - Difficulty and Regular/Daily mode
-- New Puzzle / Reset / Hint / Solution-or-Guide / Undo
+- New Puzzle / Reset / Hint / Solution-or-Guide
 - account-aware run lifecycle
 - timer and score refresh
 - server-issued ranked attempts
@@ -94,6 +95,8 @@ Obsolete game-specific/output-patch passes have been removed. Do not reintroduce
 - verified result submission
 - Rankings
 - profile/mastery
+
+Snapoki does not expose a platform-wide Undo control. Correction should be native to the mechanic: trim a path by tapping or dragging backward, remove a bridge, redraw a route, or toggle a state again. Shared Reset remains available when the player wants to restart the whole board.
 
 `src/js/game-status.js` owns shared board feedback presentation. It can suppress duplicate static instructions and turn structured runtime status into a common HUD without embedding game-specific DOM patches inside the build pipeline.
 
@@ -134,13 +137,13 @@ reset()
 hint()
 solution()
 hideSolution()
-undo()                 optional
 solutionStep()         optional
 previewScore()
 getResult()
 destroy()
-supportsUndo
 ```
+
+Correction/backtracking stays inside the mechanic instead of adding a generic controller API. A path game may trim its active path, a link game may remove an existing link, and a toggle game may reverse a move by toggling again. This keeps the shared control rail consistent across all games and avoids dormant per-game control capabilities.
 
 It receives shared callbacks:
 
@@ -157,6 +160,7 @@ Game engines own:
 - puzzle rules
 - board rendering
 - pointer/keyboard interaction specific to that mechanic
+- mechanic-native correction/backtracking
 - hint/solution behavior
 - compact completion proof
 
@@ -288,12 +292,13 @@ The Content Desk core is deliberately game-agnostic:
 3. Add `src/js/social-renderers/<slug>.js` exporting `drawSocialBoard()` for the unsolved social image.
 4. Add the game-specific ranked proof verifier to `RESULT_VERIFIERS` in `functions/_lib/scoring.js`.
 5. Add generator/interaction/verifier tests for the mechanic.
+6. Run `npm run check`, `npm run build` and `npm test`.
 
 ### Optional
 
-6. Add a `game-presentation.js` override only for special How to Play copy, a different Solution/Guide label, special styles, social hook or homepage spotlight.
-7. Add `socialInsight` to the Game Registry entry when generic description copy is not specific enough for reusable social strategy text.
-8. Add a custom long-form guide strategy block if the generic guide fallback is not deep enough.
+7. Add a `game-presentation.js` override only for special How to Play copy, a different Solution/Guide label, special styles, social hook or homepage spotlight.
+8. Add `socialInsight` to the Game Registry entry when generic description copy is not specific enough for reusable social strategy text.
+9. Add a custom long-form guide strategy block if the generic guide fallback is not deep enough.
 
 ### Do not edit manually
 

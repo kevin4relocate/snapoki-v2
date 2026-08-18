@@ -1,6 +1,6 @@
 # Snapoki Launch & Game Expansion Guide
 
-This is the short operational checklist for adding Game #7 through Game #100+. Detailed ownership rules live in [`ARCHITECTURE.md`](../ARCHITECTURE.md), and Content Desk integration is locked by [`CONTENT_DESK_PLUGIN_CONTRACT.md`](../CONTENT_DESK_PLUGIN_CONTRACT.md).
+This is the short operational checklist for adding Game #8 through Game #100+. Detailed ownership rules live in [`ARCHITECTURE.md`](../ARCHITECTURE.md), and Content Desk integration is locked by [`CONTENT_DESK_PLUGIN_CONTRACT.md`](../CONTENT_DESK_PLUGIN_CONTRACT.md).
 
 ## Principle
 
@@ -15,9 +15,9 @@ If adding a game requires editing many shared surfaces manually, the missing con
 3. Add `src/js/social-renderers/<slug>.js` exporting `drawSocialBoard(ctx, puzzle, box)` for the unsolved social image.
 4. Add the mechanic-specific result verifier to `RESULT_VERIFIERS` in `functions/_lib/scoring.js`.
 5. Add deterministic generator, gameplay and verifier tests.
-6. Run `npm run build` and `npm test`.
+6. Run `npm run check`, `npm run build` and `npm test`.
 
-The build audits fail if a registered game has duplicate ids/slugs, is missing its route, stable engine/generator, social renderer, guide, verifier, shared UI contracts or sitemap coverage.
+The syntax/plugin/build audits fail if a registered game has invalid JavaScript, duplicate ids/slugs, or is missing its route, stable engine/generator, social renderer, guide, verifier, shared UI contracts or sitemap coverage.
 
 ## Optional game-specific work
 
@@ -125,4 +125,4 @@ Do not manually maintain sitemap URL lists.
 
 ## Deployment discipline
 
-GitHub validation is the release gate for iterative work. Production Cloudflare deployment remains a separate manual decision after the chosen main-branch head is reviewed. Never use a deployment as a substitute for a clean build/test/audit run.
+GitHub validation is the release gate for iterative work. Production Cloudflare deployment remains a separate manual decision after the chosen main-branch head is reviewed. Never use a deployment as a substitute for a clean check/build/test/audit run.
