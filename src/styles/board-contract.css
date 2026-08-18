@@ -3,7 +3,7 @@
 .game-board{--board-square-max:560px;--board-stage-max:580px}
 
 /* Square puzzle surfaces share the same geometry. */
-.number-grid,.color-board-wrap,.lights-grid,.loop-wrap,.echo-board-shell{width:min(100%,var(--board-square-max));aspect-ratio:1/1;margin-inline:auto;min-width:0;max-width:100%}
+.number-grid,.color-board-wrap,.lights-grid,.loop-wrap,.echo-board-shell,.bridges-board-wrap{width:min(100%,var(--board-square-max));aspect-ratio:1/1;margin-inline:auto;min-width:0;max-width:100%}
 
 /* Maze keeps the wider canvas stage convention. */
 .maze-stage{width:min(100%,var(--board-stage-max));margin-inline:auto;min-width:0;max-width:100%}

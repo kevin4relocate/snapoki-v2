@@ -44,11 +44,19 @@ test('shared runtime owns status and presentation instead of game-specific build
 });
 
 test('guide and social systems have safe generic fallbacks for a future game',()=>{
-  const launch=read('scripts/launch-readiness.mjs'),social=read('src/js/social-game-board.js');
+  const launch=read('scripts/launch-readiness.mjs'),social=read('src/js/social-game-board.js'),shared=read('src/js/social-renderers/shared.js');
   assert.match(launch,/return svgShell\(name,/,'guide artwork must have a generic fallback');
   assert.match(launch,/const extra=GUIDE\[g\.key\]\|\|/,'guide copy must have a generic fallback');
-  assert.match(social,/function drawFallback/);
-  assert.match(social,/if\(!puzzle\)\{drawFallback/);
+  assert.match(social,/import \{drawFallback\} from '\.\/social-renderers\/shared\.js'/);
+  assert.match(shared,/export function drawFallback/);
+  assert.match(social,/if\(!generated\)\{drawFallback/);
+});
+
+test('repository syntax check is generic instead of hard-coded to one game',()=>{
+  const pkg=JSON.parse(read('package.json')),check=read('scripts/check.mjs');
+  assert.equal(pkg.scripts.check,'node scripts/check.mjs && node scripts/admin-plugin-audit.mjs');
+  for(const root of ['src/js','functions','scripts','tests'])assert.ok(check.includes(`'${root}'`),`${root} must be syntax checked`);
+  assert.doesNotMatch(check,/bridges|echo-step|number-path|color-connect|lights-out|loop-puzzle/);
 });
 
 test('platform audit is the final build gate',()=>{

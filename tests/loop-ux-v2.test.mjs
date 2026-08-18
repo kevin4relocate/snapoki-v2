@@ -24,8 +24,8 @@ test('Loop Puzzle Hint points to an exact edge from the first hint',()=>{
   assert.match(css,/\.loop-hint-marker/);
 });
 
-test('Loop Puzzle V4 uses direct-cycle shape gates strategic clue mixing and order-free solution',()=>{
-  assert.match(loop,/loop-puzzle-v4-final-engine/);
+test('Loop Puzzle V4 uses the production shape-gated engine strategic clue mixing and order-free solution',()=>{
+  assert.match(loop,/loop-puzzle-v4-production-engine/);
   for(const token of ['earOptions','grow','shapeGate','perimeterRatio','longestStraight','chooseClues','clueScore','necessity','zeroAdj','longOneRuns'])assert.match(engine,new RegExp(token));
   assert.match(loop,/solution-edge/);
   assert.doesNotMatch(loop,/solutionStep\(/);

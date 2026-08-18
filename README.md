@@ -1,6 +1,6 @@
 # Snapoki V2
 
-A browser puzzle platform with six current games and a registry-first architecture designed to scale toward a much larger game library without duplicating the surrounding product stack.
+A browser puzzle platform with seven current games and a registry-first architecture designed to scale toward a much larger game library without duplicating the surrounding product stack.
 
 ## Current games
 
@@ -10,6 +10,7 @@ A browser puzzle platform with six current games and a registry-first architectu
 - Color Connect
 - Lights Out
 - Loop Puzzle
+- Bridges
 
 Every game reuses the same site shell, account system, difficulty rail, Regular Play / Daily Challenge lifecycle, board-status area, How to Play card, result modal, Rankings, profile and Daily progress UI. A game plugin owns only its mechanic, deterministic generation, rendering, hint/practice behavior, social-board renderer and compact completion proof.
 
@@ -45,6 +46,7 @@ Content Desk plugin layer:
 
 Shared build/content:
 
+- `scripts/check.mjs` — repository-wide JavaScript syntax gate across runtime, Functions, scripts and tests.
 - `scripts/build.mjs` — registry-driven site shell, game pages and homepage.
 - `scripts/enrich-content.mjs` — About/Help/legal/reference content from the registry.
 - `scripts/post-build-platform.mjs` — shared style wiring and narrow legacy content polish; never patches runtime JavaScript.
@@ -72,11 +74,12 @@ A new game does not need its own stylesheet by default. If unique mechanic visua
 ## Local validation
 
 ```bash
+npm run check
 npm run build
 npm test
 ```
 
-`npm run build` performs the Content Desk plugin audit and then the final platform audit. A build fails for contract problems such as duplicate game ids/slugs, missing engine/generator/social-renderer coverage, missing canonical/meta/H1, dead internal links, missing guide/verifier coverage, thin guide content, sitemap gaps, accidental noindex or exposure of the private Content Desk.
+`npm run check` syntax-checks every JavaScript module under the shared runtime, Functions, scripts and tests, then runs the Content Desk plugin audit. `npm run build` performs the full generated-site pipeline and final platform audit. Validation fails for contract problems such as duplicate game ids/slugs, missing engine/generator/social-renderer coverage, missing canonical/meta/H1, dead internal links, missing guide/verifier coverage, thin guide content, sitemap gaps, accidental noindex or exposure of the private Content Desk.
 
 Generated public output is written to `dist/` and should not be hand-edited.
 
@@ -89,7 +92,7 @@ Required:
 3. Add `src/js/social-renderers/<slug>.js` exporting `drawSocialBoard()`.
 4. Add its proof verifier to `RESULT_VERIFIERS` in `functions/_lib/scoring.js`.
 5. Add mechanic-specific generator/gameplay/verifier tests.
-6. Run build and tests.
+6. Run check, build and tests.
 
 Optional:
 
@@ -166,6 +169,7 @@ Current proof types include:
 - Color Connect: non-overlapping color routes covering the open board
 - Lights Out: actual press sequence that clears the board
 - Loop Puzzle: a single valid loop satisfying clues
+- Bridges: replayable bridge actions producing exact island totals and one connected non-crossing network
 
 Attempts expire, are single-use and cannot add points twice through duplicate `run_id` submissions.
 

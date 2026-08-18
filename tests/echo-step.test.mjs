@@ -29,7 +29,7 @@ test('Echo Step stays deterministic and solvable across difficulties',()=>{
 });
 
 test('Echo Step striped cells keep actor-specific rules and plain public copy',()=>{
-  const core=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),ui=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8'),config=fs.readFileSync('src/js/games-config.js','utf8'),social=fs.readFileSync('src/js/social-game-board.js','utf8');
+  const core=fs.readFileSync('src/js/games/echo-step-core.js','utf8'),ui=fs.readFileSync('src/js/games/echo-step-ui-v32.js','utf8'),css=fs.readFileSync('src/styles/echo-step.css','utf8'),config=fs.readFileSync('src/js/games-config.js','utf8'),social=fs.readFileSync('src/js/social-renderers/echo-step.js','utf8');
   assert.match(core,/playerPhaseSet\(puzzle\).*playerBarriers/s);assert.match(core,/echoPhaseSet\(puzzle\).*echoBarriers/s);
   assert.match(ui,/barrier-player/);assert.match(ui,/barrier-echo/);
   assert.match(css,/\.echo-cell\.barrier-player/);assert.match(css,/\.echo-cell\.barrier-echo/);
@@ -66,4 +66,4 @@ test('Echo Step server verifier accepts a valid completion and rejects an altere
   assert.equal(verifyAndScoreResult({game:'echo-step',difficulty,mode:'normal',time_ms:45000,hints_used:0,metadata:{...metadata,actions:[...metadata.actions,'u'],moves:metadata.moves+1}}).ok,false);
 });
 
-test('Echo Step engine files are valid JavaScript',()=>{for(const file of ['src/js/games/echo-step.js','src/js/games/echo-step-core.js','src/js/games/echo-step-ui-v32.js','src/js/social-game-board.js'])execFileSync(process.execPath,['--check',file],{stdio:'pipe'});});
+test('Echo Step engine files are valid JavaScript',()=>{for(const file of ['src/js/games/echo-step.js','src/js/games/echo-step-core.js','src/js/games/echo-step-ui-v32.js','src/js/social-game-board.js','src/js/social-renderers/echo-step.js'])execFileSync(process.execPath,['--check',file],{stdio:'pipe'});});
