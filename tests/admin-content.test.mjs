@@ -44,18 +44,18 @@ test('content desk storage is a singleton and predictable admin routes are gone'
   await assert.rejects(fs.access('functions/api/admin/content.js'));
 });
 
-test('Gemini generation stays server-side, uses current 3.6 Flash contracts, and exposes safe fallback status',async()=>{
+test('Gemini generation stays server-side, uses compatible 3.6 Flash JSON output, and exposes safe fallback status',async()=>{
   const api=await fs.readFile('functions/api/snapdesk-74kq/content.js','utf8');
   const client=await fs.readFile('src/js/admin-content.js','utf8');
   assert.match(api,/env\.GEMINI_API_KEY/);
   assert.match(api,/generativelanguage\.googleapis\.com\/v1beta\/models/);
   assert.match(api,/gemini-3\.6-flash/);
   assert.match(api,/x-goog-api-key/);
-  assert.match(api,/responseFormat:\{/);
-  assert.match(api,/text:\{/);
-  assert.match(api,/mimeType:'application\/json'/);
-  assert.match(api,/schema:\{/);
-  assert.doesNotMatch(api,/responseMimeType|responseSchema/,'Gemini 3.6 should use responseFormat rather than legacy structured-output fields');
+  assert.match(api,/responseMimeType:'application\/json'/);
+  assert.match(api,/responseSchema:\{/);
+  assert.match(api,/type:'OBJECT'/);
+  assert.match(api,/headline:\{type:'STRING'\}/);
+  assert.doesNotMatch(api,/responseFormat:\{|mimeType:'application\/json'/,'generateContent must not use responseFormat.text.mimeType for JSON output');
   assert.match(api,/thinkingConfig:\{thinkingLevel:'low'\}/);
   assert.doesNotMatch(api,/thinkingBudget|temperature:/);
   assert.match(api,/generator:'template'/);
