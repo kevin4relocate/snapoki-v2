@@ -50,6 +50,6 @@ export function masteryFromRow(row={}){
 
 export function rankingBoardFields(board='overall'){
   const value=['easy','medium','hard'].includes(board)?board:'overall';
-  if(value==='overall')return{board:value,rank:'overall_rank_score',score:'overall_best_score',time:'overall_best_time_ms',achieved:'overall_achieved_at'};
-  return{board:value,rank:`${value}_rank_score`,score:`${value}_best_score`,time:`${value}_best_time_ms`,achieved:`${value}_achieved_at`};
+  if(value==='overall')return{board:value,rank:'overall_rank_score',score:'overall_best_score',time:'overall_best_time_ms',achieved:'overall_achieved_at',runs:'games_completed'};
+  return{board:value,rank:`${value}_rank_score`,score:`${value}_best_score`,time:`${value}_best_time_ms`,achieved:`${value}_achieved_at`,runs:`${value}_clears`};
 }

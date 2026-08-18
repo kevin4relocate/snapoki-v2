@@ -388,8 +388,8 @@ function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 function rankingRow(row,{targetGap=null}={}){
   const medal={1:'🥇',2:'🥈',3:'🥉'}[row.position]||`#${row.position}`;
   const avatar=row.avatar_url?`<img src="${escapeHtml(row.avatar_url)}" alt="">`:'<span class="rank-avatar-fallback">S</span>';
-  const name=row.is_me?'YOU':escapeHtml(row.display_name||'Player');
-  const sub=targetGap!=null?'<small class="ranking-target">Beat the player above</small>':`<small>${Number(row.games||0)} verified completes</small>`;
+  const name=row.is_me?'YOU':escapeHtml(row.display_name||'Player'),runs=Math.max(0,Number(row.games||0));
+  const sub=targetGap!=null?'<small class="ranking-target">Beat the player above</small>':`<small>${runs} ${runs===1?'run':'runs'}</small>`;
   return `<div class="ranking-row${row.is_me?' is-me':''}${targetGap!=null?' is-target':''}"><span class="ranking-position">${medal}</span>${avatar}<span class="ranking-player"><b>${name}</b>${sub}</span><strong>${Number(row.ranking_points||0).toLocaleString()} PB</strong></div>`;
 }
 function cacheRail(kind,data){try{sessionStorage.setItem(railKey(kind),JSON.stringify({at:Date.now(),data}));}catch{}}
@@ -419,13 +419,11 @@ function ensureRankingTabs(){
       if(state.rankingBoard===board)return;
       state.rankingBoard=board;
       $$('.ranking-board-tab').forEach(item=>{const active=item.dataset.rankingBoard===board;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active));});
-      const caption=$('#rankingBoardCaption');if(caption)caption.textContent=board==='overall'?'Best performance across Easy, Medium and Hard.':`Best ${button.textContent} Regular Play performance.`;
       await refreshRankings();
     });
     tabs.appendChild(button);
   }
-  const caption=document.createElement('p');caption.id='rankingBoardCaption';caption.className='ranking-board-caption';caption.textContent='Best performance across Easy, Medium and Hard.';
-  host.insertAdjacentElement('beforebegin',caption);caption.insertAdjacentElement('beforebegin',tabs);
+  host.insertAdjacentElement('beforebegin',tabs);
 }
 async function refreshRankings(){
   const host=$('#rankingList');if(!host)return;

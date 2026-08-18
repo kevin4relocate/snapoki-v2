@@ -51,7 +51,7 @@ export async function rankSnapshot(env,userId,game,board='overall'){
   const fields=rankingBoardFields(board);
   const row=await env.DB.prepare(`
     SELECT s.user_id,u.display_name,u.avatar_url,
-           s.games_completed AS games,
+           s.${fields.runs} AS games,
            s.${fields.rank} AS rank_score,
            s.${fields.score} AS best_score,
            s.${fields.time} AS best_time_ms,
@@ -86,7 +86,7 @@ export async function rankSnapshot(env,userId,game,board='overall'){
   if(me.position>1){
     const above=await env.DB.prepare(`
       SELECT s.user_id,u.display_name,u.avatar_url,
-             s.games_completed AS games,
+             s.${fields.runs} AS games,
              s.${fields.rank} AS rank_score,
              s.${fields.score} AS best_score,
              s.${fields.time} AS best_time_ms,
@@ -120,7 +120,7 @@ export async function topRankingRows(env,game,board='overall',limit=8,currentUse
   const fields=rankingBoardFields(board);
   const query=await env.DB.prepare(`
     SELECT s.user_id,u.display_name,u.avatar_url,
-           s.games_completed AS games,
+           s.${fields.runs} AS games,
            s.${fields.rank} AS ranking_points,
            s.${fields.rank} AS rank_score,
            s.${fields.score} AS best,
