@@ -1,6 +1,6 @@
 # Snapoki V2
 
-A browser puzzle platform with seven current games and a registry-first architecture designed to scale toward a much larger game library without duplicating the surrounding product stack.
+Snapoki is a browser puzzle platform with seven current games and a registry-first architecture designed to scale toward a much larger game library without duplicating the surrounding product stack.
 
 ## Current games
 
@@ -16,60 +16,115 @@ Every game reuses the same site shell, account system, difficulty rail, Regular 
 
 ## Core product rules
 
-- **Guest play is free and unranked.** Guest finishes never write Ranking Points or account Daily counters.
-- **Hints are limited guidance.** They may remain ranked but reduce the reward.
-- **Full Solution / Guide is practice.** Once opened, that board stays practice-only. Hiding the guide or resetting the same board does not restore ranking eligibility; start a New Puzzle for a fresh verified attempt.
-- **Difficulty is structural.** Harder boards change route pressure, clues, dead ends, bottlenecks, delayed consequences, deduction depth or minimum logical actions rather than relying only on larger grids.
+- **Guest play is free and local.** Guest finishes never write account data.
+- **Regular Play owns Rankings.** Each account has one personal-best ranking record per game. Repeating a game does not farm cumulative Ranking Points.
+- **Overall / Easy / Medium / Hard use the same row.** Easy ×1, Medium ×3 and Hard ×5 remain performance multipliers; the strongest Regular Play PB becomes Overall.
+- **Progression grows with verified completions.** Completion counters and XP are updated in the same bounded user/game row. Level is derived from XP.
+- **Daily Challenge is streak-only.** Daily does not affect the leaderboard. Only today's Easy/Medium/Hard completion mask, current streak and longest streak are retained.
+- **Hints are limited guidance.** Regular Play hints reduce the performance score; a full Solution / Guide makes the current board practice-only.
 - **Shared behavior stays shared.** New games must not create a second header, account flow, ranking UI, Daily shell, result modal, sitemap process, generic How to Play component or Content Desk branch.
 
 ## Architecture
 
 Canonical registries:
 
-- `src/js/games-config.js` — game ids, slugs, navigation metadata, difficulty, metrics, capabilities, SEO, baseline rules and optional social insight.
-- `src/js/game-presentation.js` — optional presentation overrides such as special How to Play wording, `Guide` vs `Solution`, game-specific CSS, social hook and optional spotlight.
-- `functions/_lib/scoring.js` → `RESULT_VERIFIERS` — one mechanic-specific ranked proof verifier per registered game.
+- `src/js/games-config.js` — game ids, slugs, navigation metadata, difficulty, metrics, capabilities, SEO and baseline rules.
+- `src/js/game-presentation.js` — optional presentation overrides and game-specific CSS registration.
+- `functions/_lib/scoring.js` → `RESULT_VERIFIERS` — one mechanic-specific proof verifier per registered game.
 
 Shared runtime:
 
 - `src/js/site.js` — navigation and optional Google account UI.
-- `src/js/game-page.js` — shared game lifecycle, timer, practice, Daily, Result, Rankings and Profile.
-- `src/js/game-status.js` — shared board feedback/progress presentation.
+- `src/js/game-page.js` — shared game lifecycle, verification, PB Rankings, progression, Daily streaks and Profile.
+- `src/js/game-status.js` — shared board feedback/progress.
 - `src/js/games/<slug>.js` — stable public game entries. Each exports `createGame()` plus `generate<PascalCaseSlug>()`.
 
-Content Desk plugin layer:
+Server state helpers:
 
-- `src/js/social-game-board.js` — generic dynamic plugin loader; no game-id switch/map.
-- `src/js/social-renderers/<slug>.js` — game-owned unsolved-board renderer for 1080×1080 social artwork.
-- `functions/_lib/social-content.js` — registry-driven social copy rotation.
-- `CONTENT_DESK_PLUGIN_CONTRACT.md` — contract for scaling the admin system without editing admin core per game.
+- `functions/_lib/progression.js` — Daily bitmask, PB comparison, XP/Level and ranking-board field contracts.
+- `functions/_lib/player-stats.js` — bounded profile payloads and indexed leaderboard reads.
+- `functions/api/results.js` — verifies a completion and updates the bounded user/game state; it no longer appends immutable gameplay history.
 
-Shared build/content:
+Content Desk remains plugin-driven through `src/js/social-game-board.js`, `src/js/social-renderers/<slug>.js`, `functions/_lib/social-content.js` and `CONTENT_DESK_PLUGIN_CONTRACT.md`.
 
-- `scripts/check.mjs` — repository-wide JavaScript syntax gate across runtime, Functions, scripts and tests.
-- `scripts/build.mjs` — registry-driven site shell, game pages and homepage.
-- `scripts/enrich-content.mjs` — About/Help/legal/reference content from the registry.
-- `scripts/post-build-platform.mjs` — shared style wiring and narrow legacy content polish; never patches runtime JavaScript.
-- `scripts/launch-readiness.mjs` — registry-driven guides, guide artwork, structured data, related links, sitemap and robots.
-- `scripts/release-integrations.mjs` — analytics/social release metadata.
-- `scripts/admin-plugin-audit.mjs` — verifies unique game ids/slugs, stable engine/generator exports, social renderers and game-agnostic Content Desk core.
-- `scripts/platform-audit.mjs` — final built-site gate for SEO, dead links, guide coverage, registry/verifier parity and private-admin isolation.
+## D1 Free-Tier Scalability V1
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for ownership details, [`CONTENT_DESK_PLUGIN_CONTRACT.md`](CONTENT_DESK_PLUGIN_CONTRACT.md) for the 100-game admin contract and [`docs/LAUNCH_AND_GAME_EXPANSION.md`](docs/LAUNCH_AND_GAME_EXPANSION.md) for the short new-game checklist.
+The durable gameplay model is intentionally bounded:
 
-## Shared UI/CSS contracts
+```text
+users
+└── 1 row / account
 
-Reuse these before adding game-specific CSS:
+user_game_stats
+└── 1 row / user / game
+    ├── Overall ranking PB
+    ├── Easy / Medium / Hard PB
+    ├── verified completion counters
+    ├── XP (Level derived at read time)
+    └── today's Daily mask + streak
 
-- `src/styles/games.css`
-- `src/styles/board-contract.css`
-- `src/styles/how-to-card.css`
-- `src/styles/board-status.css`
-- `src/styles/platform-extra.css`
-- `src/styles/polish-v3.css`
-- `src/styles/ui-safety.css`
+ranked_attempts
+└── 1 temporary slot / user / game / difficulty / mode
 
-A new game does not need its own stylesheet by default. If unique mechanic visuals are required, register the stylesheet in `game-presentation.js`.
+sessions
+└── temporary account sessions
+
+results
+└── legacy read-only archive after migration 0005
+```
+
+A player can complete the same game ten times or one million times without creating new durable gameplay rows. `user_game_stats` updates in place. `ranked_attempts` is also bounded by a unique slot, so starting puzzles does not create unbounded attempt history.
+
+The legacy `results` table is deliberately retained by migration `0005_free_tier_scalability.sql` for rollback/audit. Runtime APIs stop reading and writing it. Once the new model has been observed safely in production, a later migration may remove that archive.
+
+### Ranking
+
+Regular Play calculates a verified performance score using the existing difficulty multiplier contract. A PB is replaced only when the new performance is better by:
+
+1. ranking score
+2. raw verified game score
+3. lower verified time
+
+Leaderboard boards:
+
+```text
+Overall | Easy | Medium | Hard
+```
+
+Overall uses the strongest PB across difficulties. Daily Challenge never changes any ranking PB.
+
+### Daily streak
+
+Daily state is a 3-bit mask:
+
+```text
+Easy   = 1
+Medium = 2
+Hard   = 4
+3/3    = 7
+```
+
+The row stores only today's mask, today’s practice-blocked mask, current streak, longest streak and last completed UTC date. Historical Daily rows are not appended.
+
+## Cloudflare D1 migrations
+
+Database configuration lives in `wrangler.toml`. Runtime Functions never create or alter tables.
+
+```text
+0001_initial.sql
+0002_ranked_attempts.sql
+0003_scalable_game_ids.sql
+0004_admin_social_content.sql
+0005_free_tier_scalability.sql
+```
+
+Apply pending migrations when deployment is approved:
+
+```bash
+npx wrangler d1 migrations apply snapoki-v2-db --remote
+```
+
+**Do not apply migration 0005 to production merely to review the GitHub preview code.** The production migration is a separate release decision.
 
 ## Local validation
 
@@ -79,9 +134,7 @@ npm run build
 npm test
 ```
 
-`npm run check` syntax-checks every JavaScript module under the shared runtime, Functions, scripts and tests, then runs the Content Desk plugin audit. `npm run build` performs the full generated-site pipeline and final platform audit. Validation fails for contract problems such as duplicate game ids/slugs, missing engine/generator/social-renderer coverage, missing canonical/meta/H1, dead internal links, missing guide/verifier coverage, thin guide content, sitemap gaps, accidental noindex or exposure of the private Content Desk.
-
-Generated public output is written to `dist/` and should not be hand-edited.
+`npm run check` syntax-checks runtime, Functions, scripts and tests, then runs the Content Desk plugin audit. `npm run build` performs the generated-site pipeline and final platform audit. Generated public output is written to `dist/` and should not be hand-edited.
 
 ## Adding a game
 
@@ -94,56 +147,7 @@ Required:
 5. Add mechanic-specific generator/gameplay/verifier tests.
 6. Run check, build and tests.
 
-Optional:
-
-- presentation override in `game-presentation.js`
-- `socialInsight` in the Game Registry
-- custom long-form strategy/guide artwork
-
-Header, footer, homepage card/count, common game page, generic How to Play, Daily UI, result modal, Blog guide route, related links, sitemap and Content Desk orchestration should flow automatically. Adding a normal game must not require editing the admin page, admin client, admin API, social loader or social-copy engine.
-
-## Cloudflare D1
-
-Database configuration lives in `wrangler.toml`. Migrations are the only supported production schema changes; runtime Functions do not create or alter tables.
-
-Current migrations:
-
-```text
-0001_initial.sql              users, sessions, results
-0002_ranked_attempts.sql      server-issued ranked attempts
-0003_scalable_game_ids.sql    removes fixed game-id constraints
-0004_admin_social_content.sql singleton private Content Desk storage
-```
-
-Apply pending migrations when needed:
-
-```bash
-npx wrangler d1 migrations apply snapoki-v2-db --remote
-```
-
-The D1 binding name is `DB`.
-
-## Cloudflare Pages
-
-Expected project configuration:
-
-```text
-Production branch: main
-Build command: npm run build
-Build output directory: dist
-```
-
-Production deployment is a separate manual decision from GitHub validation.
-
-## Google sign-in
-
-Set the Functions environment value:
-
-```text
-GOOGLE_CLIENT_ID=<Google OAuth Web Client ID>
-```
-
-Sessions use a random token in a Secure, HttpOnly, SameSite cookie; D1 stores only its SHA-256 hash.
+A normal new game must not require editing the header, footer, account flow, generic Ranking/Profile/Daily UI, Content Desk core, sitemap process or other game plugins.
 
 ## Core API
 
@@ -155,55 +159,30 @@ POST /api/logout
 POST /api/runs/start
 POST /api/runs/reveal
 POST /api/results
-GET  /api/rankings?game=maze
+GET  /api/rankings?game=maze&board=overall
 GET  /api/profile?game=maze
 ```
 
-A signed-in ranked puzzle receives a server-issued `run_id`, seed and server start time. The server regenerates the expected puzzle and validates the completion proof before calculating the authoritative ranked time, score and Ranking Points.
+A signed-in verified puzzle receives a server-issued `run_id`, seed and server start time. The server regenerates the expected puzzle and validates the completion proof before calculating authoritative time/score. Regular Play may update PB Ranking state; Daily may update only Daily/progression state.
 
-Current proof types include:
+## Cloudflare Pages
 
-- Echo Step: accepted move sequence producing a same-turn YOU/Echo finish
-- Maze: legal corridor movement trace
-- Number Path: complete path satisfying exact-step checkpoints
-- Color Connect: non-overlapping color routes covering the open board
-- Lights Out: actual press sequence that clears the board
-- Loop Puzzle: a single valid loop satisfying clues
-- Bridges: replayable bridge actions producing exact island totals and one connected non-crossing network
-
-Attempts expire, are single-use and cannot add points twice through duplicate `run_id` submissions.
-
-## Daily Challenges
-
-Daily boards are deterministic per game, difficulty and UTC date. Signed-in verified Easy / Medium / Hard Daily finishes are saved through results. Completing all three difficulties for one game on the same UTC date completes that game’s Daily set and can extend its streak.
-
-## SEO and content
-
-Every registered game automatically receives a public game route, play-first game shell, dedicated long-form guide, structured data and sitemap coverage. The game page intentionally stays focused on play; the guide owns the deeper rules, strategy, mistakes and editorial/SEO content.
-
-Shared reference pages include:
-
-- `/about/`
-- `/help/`
-- `/privacy/`
-- `/terms/`
-- `/how-to-play/`
-- `/daily-challenges/`
-- `/rankings-guide/`
-- `/blog/`
-
-The final platform audit checks internal references and prevents the private admin utility from entering public navigation or sitemap.
-
-## Private Content Desk / Gemini
-
-The private utility is `/snapdesk-74kq/` and is marked `noindex,nofollow,noarchive`. Public pages never link to it and robots.txt disallows it.
-
-Required/optional Functions environment values:
+Expected project configuration:
 
 ```text
-ADMIN_EMAIL=<exact allowed account email list>
-GEMINI_API_KEY=<Google Gemini API key>
-GEMINI_MODEL=gemini-3.6-flash   # optional override
+Production branch: main
+Build command: npm run build
+Build output directory: dist
 ```
 
-The desk stores one daily content pack, supports regenerate/edit/copy/posted-state/delete actions, produces a 1080×1080 game image, and shows whether copy came from Gemini, a no-key template, or a Gemini-error template fallback. Gemini credentials never reach the browser.
+Production deployment remains a separate manual decision from GitHub validation.
+
+## Google sign-in
+
+Set:
+
+```text
+GOOGLE_CLIENT_ID=<Google OAuth Web Client ID>
+```
+
+Sessions use a random token in a Secure, HttpOnly, SameSite cookie; D1 stores only its SHA-256 hash.

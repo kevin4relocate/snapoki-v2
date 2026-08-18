@@ -4,43 +4,534 @@ import {renderGameStatus} from './game-status.js';
 import {api,post,makeRunId,ApiError,consumeRankedAttempt,prefetchRankedAttempt} from './api.js';
 import {dailySeed,randomSeed,formatTime} from './games/utils.js';
 import {resolveColorConnectReview,COLOR_CONNECT_REVIEW_SAMPLES,COLOR_CONNECT_REVIEW_BANDS,colorConnectReviewUrl} from './games/color-connect-review.js';
-const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)],gameKey=document.body.dataset.game,game=getGame(gameKey);if(!game)throw new Error(`Unknown Snapoki game: ${gameKey}`);const presentation=getGamePresentation(game);
-const queryParams=new URLSearchParams(location.search),review=gameKey==='color-connect'?resolveColorConnectReview(queryParams):null;
-const state={difficulty:game.levels[0][0],mode:'normal',seed:'',runId:'',ranked:false,unrankedReason:'',startedAt:0,timer:null,engine:null,engineFactory:null,engineLocked:false,loading:false,completed:false,practiceComplete:false,hints:0,solutionUsed:false,solutionVisible:false,lastFocused:null,dailyCompleted:[],dailyStreak:0,smartNext:null,startToken:0};
-const capability=name=>game.capabilities?.[name]!==false,railKey=kind=>`snapoki:rail:v2:${kind}:${game.key}`;
-function metricElement(k){return document.querySelector(`[data-metric-value="${k}"]`);}function setMetric(k,v){const e=metricElement(k);if(e)e.textContent=String(v);}function setMetrics(v={}){Object.entries(v).forEach(([k,x])=>setMetric(k,x));updateControlAvailability();}function setStatus(t){renderGameStatus($('#gameStatus'),gameKey,t);}function modeName(){return state.mode==='daily'?'Daily Challenge':'Regular Play';}function hasAccount(){return Boolean(window.SnapokiAuth?.user);}function runLabel(){if(review)return`Review · ${review.score}`;if(state.solutionUsed)return state.practiceComplete?'Practice Complete':'Practice';if(state.ranked)return modeName();if(state.unrankedReason==='recent_replay')return'Replay · 0 pts';if(state.unrankedReason==='daily_solution_viewed')return'Daily Practice';return hasAccount()?`${modeName()} · Unranked`:`${modeName()} · Guest`;}
-function setDisabled(selector,value){const element=$(selector);if(element)element.disabled=Boolean(value);}function updateControlAvailability(){const ready=Boolean(state.engine)&&!state.loading,done=state.completed,locked=Boolean(state.engineLocked),reviewLocked=Boolean(review);setDisabled('#newPuzzle',state.loading);setDisabled('#hint',!capability('hint')||!ready||done||locked||state.solutionVisible);setDisabled('#solution',!capability('solution')||!ready||done||locked);setDisabled('#resetPuzzle',!ready||(done&&!state.practiceComplete));$$('.difficulty-button,.mode-button,.daily-level').forEach(button=>button.disabled=state.loading||reviewLocked);$$('[data-review-band],[data-review-seed]').forEach(button=>button.disabled=state.loading);}function updateActiveControls(){$$('.difficulty-button').forEach(b=>b.classList.toggle('active',b.dataset.difficulty===state.difficulty));$$('.mode-button').forEach(b=>b.classList.toggle('active',b.dataset.mode===state.mode));const label=$('#boardModeLabel');if(label)label.textContent=runLabel();updateControlAvailability();}
-function decorateRewards(){for(const button of $$('.difficulty-button')){if(button.querySelector('.difficulty-reward'))continue;const mult=DIFFICULTY_REWARDS[button.dataset.difficulty]||1,reward=document.createElement('em');reward.className='difficulty-reward';reward.textContent=`×${mult} RANK PTS`;button.appendChild(reward);}for(const button of $$('.daily-level')){if(button.querySelector('.daily-reward'))continue;const reward=document.createElement('em');reward.className='daily-reward';reward.textContent=`×${DIFFICULTY_REWARDS[button.dataset.difficulty]||1}`;button.appendChild(reward);}}
-function applyCapabilities(){const hint=$('#hint'),solution=$('#solution'),dailyMode=$('.mode-button[data-mode="daily"]'),dailySection=$('.daily-section'),normalMode=$('.mode-button[data-mode="normal"]');if(hint)hint.hidden=!capability('hint');if(solution)solution.hidden=!capability('solution');if(dailyMode)dailyMode.hidden=!capability('daily')||Boolean(review);if(dailySection)dailySection.hidden=!capability('daily')||Boolean(review);if(review&&normalMode)normalMode.textContent='Calibration Review';}
-function stopTimer(){if(state.timer)clearInterval(state.timer);state.timer=null;}function elapsed(){return state.startedAt?Math.max(0,Date.now()-state.startedAt):0;}function tick(){if(state.engineLocked||state.completed)return;const ms=elapsed();setMetric('time',formatTime(ms));if(state.engine?.previewScore&&metricElement('score'))setMetric('score',Number(state.engine.previewScore(ms,state.hints)).toLocaleString());}function beginTimer(){stopTimer();state.startedAt=Date.now();tick();state.timer=setInterval(tick,250);}function guestSeed(reuseSeed=false,previousSeed=''){if(review)return review.seed;if(reuseSeed&&previousSeed)return previousSeed;return state.mode==='daily'?dailySeed(game.key,state.difficulty):randomSeed(game.key,state.difficulty);}
-async function waitForAuth(){if(window.SnapokiAuth?.ready)return window.SnapokiAuth;try{if(window.SnapokiAuthReady)await window.SnapokiAuthReady;}catch{}if(window.SnapokiAuth?.ready)return window.SnapokiAuth;await new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;window.removeEventListener('snapoki:auth-changed',finish);resolve();};window.addEventListener('snapoki:auth-changed',finish,{once:true});setTimeout(finish,900);});return window.SnapokiAuth||{user:null,ready:false};}
-async function rankedAttempt(cloneRunId=''){if(review)return null;await waitForAuth();if(!hasAccount()||!capability('ranking')||game.ranking?.enabled===false)return null;try{if(cloneRunId)return await post('/api/runs/start',{game:game.key,difficulty:state.difficulty,mode:state.mode,clone_run_id:cloneRunId});const cached=consumeRankedAttempt(game.key,state.difficulty,state.mode);if(cached)return cached;const warmed=await prefetchRankedAttempt(game.key,state.difficulty,state.mode);return consumeRankedAttempt(game.key,state.difficulty,state.mode)||warmed;}catch(error){console.warn('Ranked attempt unavailable',error);return null;}}
-function warmNextAttempt(){if(review||!hasAccount()||state.mode!=='normal'||!capability('ranking'))return;const work=()=>prefetchRankedAttempt(game.key,state.difficulty,state.mode).catch(()=>{});if('requestIdleCallback'in window)requestIdleCallback(work,{timeout:1500});else setTimeout(work,500);}
-async function loadEngineFactory(){if(state.engineFactory)return state.engineFactory;const module=await import(`/assets/js/games/${game.slug}.js`);if(typeof module.createGame!=='function')throw new Error(`${game.name} engine is missing createGame().`);state.engineFactory=module.createGame;return state.engineFactory;}
-function resetMetricDefaults(){for(const[key]of game.metrics)setMetric(key,key==='time'?'00:00':'0');setMetric('hints','0');if(metricElement('score'))setMetric('score','5,000');}
-function ensurePracticeNotice(){let notice=$('#practiceCompleteNotice');if(notice)return notice;notice=document.createElement('div');notice.id='practiceCompleteNotice';notice.className='practice-complete-notice';notice.hidden=true;notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');notice.innerHTML='<span class="practice-complete-icon">✓</span><div><strong>Practice Complete</strong><small>You completed the guided puzzle.</small></div>';$('.board-panel')?.appendChild(notice);return notice;}function hidePracticeNotice(){const notice=$('#practiceCompleteNotice');if(notice)notice.hidden=true;$('.board-panel')?.classList.remove('practice-complete');}function showPracticeNotice(message){const notice=ensurePracticeNotice(),text=notice?.querySelector('small');if(text)text.textContent=message||'Guided run complete. Reset to practice again or start a New Puzzle.';if(notice)notice.hidden=false;$('.board-panel')?.classList.add('practice-complete');}
-function ensureSolutionNavigator(){let nav=$('#solutionNavigator');if(nav)return nav;nav=document.createElement('div');nav.id='solutionNavigator';nav.className='solution-navigator';nav.hidden=true;nav.innerHTML='<button type="button" data-solution-nav="prev" aria-label="Previous solution step">←</button><span><b>Step</b><small id="solutionProgress">—</small></span><button type="button" data-solution-nav="next" aria-label="Next solution step">→</button>';nav.addEventListener('click',e=>{const button=e.target.closest('[data-solution-nav]');if(!button||!state.solutionVisible)return;renderSolutionProgress(state.engine?.solutionStep?.(button.dataset.solutionNav==='prev'?-1:1));});$('.board-toolbar')?.insertAdjacentElement('afterend',nav);return nav;}function renderSolutionProgress(info){if(!capability('solutionSteps'))return;const nav=ensureSolutionNavigator();if(!info){nav.hidden=true;return;}nav.hidden=false;const text=$('#solutionProgress',nav);if(text)text.textContent=`${info.current} / ${info.total}${info.label?` · ${info.label}`:''}`;const prev=$('[data-solution-nav="prev"]',nav),next=$('[data-solution-nav="next"]',nav);if(prev)prev.disabled=Number(info.current)<=1;if(next)next.disabled=Number(info.current)>=Number(info.total);}function hideSolutionNavigator(){const nav=$('#solutionNavigator');if(nav)nav.hidden=true;}function setPracticeUi(used=state.solutionUsed,visible=state.solutionVisible){$('.board-panel')?.classList.toggle('practice-mode',used);const b=$('#solution'),label=presentation.solutionLabel||'Solution';if(b){b.textContent=visible?(label==='Solution'?'Hide Solution':`Exit ${label}`):label;b.setAttribute('aria-pressed',String(visible));}if(!visible)hideSolutionNavigator();updateActiveControls();}
-function ensureReviewPanel(){if(!review)return;document.body.classList.add('calibration-review-mode');if(!$('#colorReviewStyle')){const style=document.createElement('style');style.id='colorReviewStyle';style.textContent='.color-review-panel{margin:12px 0 6px;padding:14px;border:1px solid rgba(124,139,255,.3);border-radius:14px;background:rgba(124,139,255,.07)}.color-review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}.color-review-head b{display:block;font-size:14px}.color-review-head small{display:block;margin-top:3px;opacity:.72}.color-review-exit{font-size:12px;text-decoration:none;white-space:nowrap}.color-review-bands,.color-review-samples{display:flex;gap:7px;flex-wrap:wrap}.color-review-bands{margin-bottom:8px}.color-review-panel button{border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.045);color:inherit;border-radius:999px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer}.color-review-panel button.active{border-color:rgba(124,139,255,.75);background:rgba(124,139,255,.18)}.color-review-metrics{margin-top:10px;font-size:12px;line-height:1.55;opacity:.82}.calibration-review-mode .daily-section{display:none!important}@media(max-width:640px){.color-review-head{display:block}.color-review-exit{display:inline-block;margin-top:7px}.color-review-panel button{padding:7px 9px}}';document.head.appendChild(style);}let panel=$('#colorReviewPanel');if(panel)return panel;panel=document.createElement('div');panel.id='colorReviewPanel';panel.className='color-review-panel';panel.setAttribute('aria-label','Color Connect calibration review');const bandButtons=COLOR_CONNECT_REVIEW_BANDS.map(band=>`<button type="button" data-review-band="${band}" class="${band===review.band?'active':''}">${band}</button>`).join(''),samples=COLOR_CONNECT_REVIEW_SAMPLES.filter(sample=>sample.band===review.band),sampleButtons=samples.map((sample,index)=>`<button type="button" data-review-seed="${sample.seed}" class="${sample.seed===review.seed?'active':''}">Sample ${index+1} · ${sample.score}</button>`).join('');panel.innerHTML=`<div class="color-review-head"><div><b>Calibration Review · Score ${review.score}</b><small>Practice-only. No ranked attempt, Ranking Points, or Daily progress writes.</small></div><a class="color-review-exit" href="/color-connect/">Exit Review</a></div><div class="color-review-bands">${bandButtons}</div><div class="color-review-samples">${sampleButtons}</div><div class="color-review-metrics">${review.backtracks} backtracks · ${review.deadEnds} dead ends · ${review.decisions} decisions · ${review.greedyTraps} greedy traps · ${review.temptingRoutes} tempting routes · ${review.shortcutVictims} shortcut victims</div>`;panel.addEventListener('click',event=>{const seedButton=event.target.closest('[data-review-seed]'),bandButton=event.target.closest('[data-review-band]');if(seedButton){const sample=COLOR_CONNECT_REVIEW_SAMPLES.find(item=>item.seed===seedButton.dataset.reviewSeed);if(sample)location.href=colorConnectReviewUrl(sample);return;}if(bandButton){const sample=COLOR_CONNECT_REVIEW_SAMPLES.find(item=>item.band===bandButton.dataset.reviewBand);if(sample)location.href=colorConnectReviewUrl(sample);}});$('.board-toolbar')?.insertAdjacentElement('afterend',panel);const newButton=$('#newPuzzle'),resetButton=$('#resetPuzzle');if(newButton)newButton.textContent='Restart Sample';if(resetButton)resetButton.textContent='Reset Sample';return panel;}
-async function startPuzzle({reuseSeed=false}={}){const token=++state.startToken,previousSeed=state.seed,previousRunId=state.runId;closeResult(false);hidePracticeNotice();hideSolutionNavigator();state.engine?.destroy?.();state.engine=null;state.engineLocked=false;state.loading=true;state.completed=false;state.practiceComplete=false;state.hints=0;state.solutionUsed=false;state.solutionVisible=false;state.ranked=false;state.unrankedReason=review?'review_mode':'';state.smartNext=null;stopTimer();setPracticeUi(false,false);resetMetricDefaults();setStatus(review?`Loading calibration sample ${review.score}…`:'Preparing puzzle…');$('#gameBoard')?.setAttribute('aria-busy','true');updateActiveControls();try{const enginePromise=loadEngineFactory(),attemptPromise=rankedAttempt(reuseSeed?previousRunId:''),[createGame,attempt]=await Promise.all([enginePromise,attemptPromise]);if(token!==state.startToken)return;if(attempt?.seed&&!review){state.seed=attempt.seed;state.runId=attempt.run_id||makeRunId(game.key);state.ranked=Boolean(attempt.run_id&&attempt.ranked!==false);state.unrankedReason=attempt.reason||'';}else{state.seed=guestSeed(reuseSeed,previousSeed);state.runId=makeRunId(game.key);state.ranked=false;if(review)state.unrankedReason='review_mode';}state.engine=createGame({host:$('#gameBoard'),difficulty:state.difficulty,mode:state.mode,seed:state.seed,onMetrics:setMetrics,onStatus:setStatus,onComplete:finishPuzzle,onPracticeComplete:message=>finishPractice(review?`Review sample ${review.score} complete. Reset this sample or choose another calibration board.`:message)});state.loading=false;updateActiveControls();beginTimer();if(review)setStatus(`Review ${review.band} · score ${review.score} · practice-only.`);else if(state.unrankedReason==='recent_replay')setStatus('Replay mode: this recent board is playable, but awards +0 Ranking Points. New Puzzle gives a fresh ranked board.');else if(state.unrankedReason==='daily_solution_viewed')setStatus('Daily Practice: Solution was viewed for this level today, so it no longer awards Ranking Points today.');else if(!state.ranked&&hasAccount()&&capability('ranking'))setStatus('Puzzle ready. Ranked verification is temporarily unavailable; this attempt will not affect Rankings.');warmNextAttempt();}catch(error){if(token!==state.startToken)return;console.error(error);state.loading=false;setStatus('This puzzle could not start. Please try New Puzzle.');updateActiveControls();}finally{if(token===state.startToken)$('#gameBoard')?.removeAttribute('aria-busy');}}
-async function resetAttempt(){if(!state.engine||state.loading)return;if(review){++state.startToken;state.loading=true;state.completed=false;state.practiceComplete=false;state.hints=0;state.solutionUsed=false;state.solutionVisible=false;state.ranked=false;state.unrankedReason='review_mode';state.smartNext=null;stopTimer();hidePracticeNotice();hideSolutionNavigator();state.engine.reset?.();setMetric('hints','0');state.loading=false;setPracticeUi(false,false);beginTimer();setStatus(`Review ${review.band} · score ${review.score} · reset from the beginning.`);return;}const token=++state.startToken,previousRunId=state.runId,practiceLocked=state.solutionUsed;state.loading=true;state.completed=false;state.practiceComplete=false;state.hints=0;state.solutionVisible=false;state.smartNext=null;stopTimer();hidePracticeNotice();hideSolutionNavigator();if(!practiceLocked){state.solutionUsed=false;state.ranked=false;state.unrankedReason='';setPracticeUi(false,false);updateActiveControls();if(hasAccount()&&previousRunId&&capability('ranking')){const attempt=await rankedAttempt(previousRunId);if(token!==state.startToken)return;if(attempt?.run_id&&attempt.seed===state.seed){state.runId=attempt.run_id;state.ranked=true;}else{state.runId=makeRunId(game.key);state.unrankedReason=attempt?.reason||'';}}else state.runId=makeRunId(game.key);}else{state.ranked=false;state.unrankedReason='solution_viewed';setPracticeUi(true,false);updateActiveControls();}state.engine.reset?.();setMetric('hints','0');state.loading=false;setPracticeUi(practiceLocked,false);beginTimer();setStatus(practiceLocked?'Practice reset. This same board remains unranked after viewing Solution; New Puzzle returns to ranked play.':state.ranked?'Puzzle reset from the beginning. Ranking eligibility is active.':'Puzzle reset. This attempt is unranked.');}
-function setDifficulty(d,start=true){if(review||state.loading||!game.levels.some(([k])=>k===d))return;state.difficulty=d;updateActiveControls();if(start)startPuzzle();}function setMode(m,start=true){if(review||state.loading||!['normal','daily'].includes(m)||m==='daily'&&!capability('daily'))return;state.mode=m;updateActiveControls();if(start)startPuzzle();}function difficultyLabel(key=state.difficulty){return game.levels.find(([k])=>k===key)?.[1]||key;}
-function resultFocusables(){const modal=$('#resultModal');return modal?$$('button,[href],[tabindex]:not([tabindex="-1"])',modal).filter(el=>!el.hidden&&!el.disabled):[];}function ensureResultInsights(){let host=$('#resultInsights');if(host)return host;host=document.createElement('div');host.id='resultInsights';host.className='result-insights';host.hidden=true;$('#resultSaveStatus')?.insertAdjacentElement('beforebegin',host);return host;}function clearResultInsights(){const host=ensureResultInsights();host.hidden=true;host.innerHTML='';}
-function renderResultInsights(saved){const host=ensureResultInsights(),items=[];if(saved.new_personal_best)items.push('<div class="result-insight is-best"><b>★ New Personal Best</b><small>Highest eligible verified score for this game</small></div>');else if(Number(saved.best_score||0)>0)items.push(`<div class="result-insight"><b>Best ${Number(saved.best_score).toLocaleString()}</b><small>${Math.max(0,Number(saved.best_score)-Number(saved.score||0)).toLocaleString()} pts from your best</small></div>`);if(saved.reward_multiplier)items.push(`<div class="result-insight is-reward"><b>${difficultyLabel()} ×${Number(saved.reward_multiplier)}</b><small>Difficulty Ranking multiplier</small></div>`);if(saved.rank_after){const before=Number(saved.rank_before||0),after=Number(saved.rank_after);items.push(`<div class="result-insight${Number(saved.rank_change)>0?' is-rank-up':''}"><b>${before?before===after?`Rank #${after}`:`↑ #${before} → #${after}`:`Entered #${after}`}</b><small>${Number(saved.rank_change)>0?'You moved up the leaderboard':'Current game ranking'}</small></div>`);}if(saved.next_target)items.push(`<div class="result-insight is-target"><b>+${Number(saved.next_target.points_to_pass||0).toLocaleString()} pts to #${Math.max(1,Number(saved.rank_after||1)-1)}</b><small>Pass ${escapeHtml(saved.next_target.display_name||'the player above')}</small></div>`);if(Number(saved.daily_complete_bonus||0)>0)items.push(`<div class="result-insight is-daily"><b>+${Number(saved.daily_complete_bonus).toLocaleString()} Daily Bonus</b><small>Easy + Medium + Hard complete today</small></div>`);if(saved.milestone)items.push(`<div class="result-insight is-milestone"><b>🏆 ${Number(saved.milestone)===1?'#1 reached':`Top ${Number(saved.milestone)} reached`}</b><small>A new ranking milestone</small></div>`);if(saved.repeat_daily)items.push('<div class="result-insight is-policy"><b>Daily replay · +0 Rank Pts</b><small>This difficulty already awarded points today</small></div>');if(saved.replay_regular)items.push('<div class="result-insight is-policy"><b>Recent replay · +0 Rank Pts</b><small>New Puzzle gives a fresh ranked board</small></div>');if(saved.ranking_excluded)items.push('<div class="result-insight is-policy"><b>Verified · Not ranked</b><small>This pace triggered an automated fair-play check</small></div>');host.innerHTML=items.join('');host.hidden=!items.length;}
-function setSmartNext(action){state.smartNext=action||null;const next=$('#resultNext');if(!next)return;next.hidden=!action;if(!action)return;next.textContent=action.label?`${action.label} →`:'Next Challenge →';}function openResult(result){const modal=$('#resultModal');if(!modal)return;clearResultInsights();setSmartNext(null);state.lastFocused=document.activeElement;$('#resultGameName').textContent=`${game.name} Complete!`;$('#resultScore').textContent=Number(result.score||0).toLocaleString();$('#resultDifficulty').textContent=`${difficultyLabel()} · ${modeName()} · ×${DIFFICULTY_REWARDS[state.difficulty]||1}`;$('#resultTime').textContent=formatTime(result.time_ms);$('#resultHints').textContent=String(state.hints);$('#resultMode').textContent=modeName();const replay=state.unrankedReason==='recent_replay'||state.unrankedReason==='daily_solution_viewed';$('#resultRankPoints').textContent=state.ranked?'Saving…':replay?'+0 pts':hasAccount()?'Unranked':'—';const status=$('#resultSaveStatus');status.className='result-save-status';status.textContent=state.ranked?'Verifying this account-bound ranked attempt…':state.unrankedReason==='recent_replay'?'Recent replay complete. Start a New Puzzle to earn Ranking Points again.':state.unrankedReason==='daily_solution_viewed'?'Daily practice complete. This level no longer awards points today because Solution was viewed.':hasAccount()?'This attempt is not eligible for Rankings.':'Guest finish. Sign in, then start a new puzzle to join Rankings.';modal.hidden=false;document.body.classList.add('modal-open');$('#resultClose')?.focus();}function closeResult(restore=true){const modal=$('#resultModal');if(!modal||modal.hidden)return;modal.hidden=true;document.body.classList.remove('modal-open');if(restore)state.lastFocused?.focus?.();}
-async function saveResult(result){const status=$('#resultSaveStatus');if(!state.ranked)return;try{const saved=await post('/api/results',result);$('#resultScore').textContent=Number(saved.score||0).toLocaleString();$('#resultRankPoints').textContent=saved.ranking_excluded?'Not ranked':`+${Number(saved.ranking_points||0).toLocaleString()} pts`;renderResultInsights(saved);if(Array.isArray(saved.daily_completed))state.dailyCompleted=saved.daily_completed;setSmartNext(saved.smart_next||null);renderDaily();if(saved.ranking_excluded){status.classList.add('muted');status.textContent='Gameplay was verified, but this result was excluded from public Rankings by an automated fair-play check.';}else if(saved.repeat_daily){status.classList.add('success');status.textContent=`Daily ${difficultyLabel()} verified. Ranking Points for this level were already earned today.`;}else if(saved.replay_regular){status.classList.add('success');status.textContent='Replay verified. This recent puzzle does not award Ranking Points again.';}else{status.classList.add('success');status.textContent=saved.duplicate?'This verified result was already saved.':'Verified ranked result saved to your account.';}await refreshRail();}catch(error){if(error instanceof ApiError&&error.status===401){$('#resultRankPoints').textContent='Sign in';status.classList.add('muted');status.textContent='Your session ended. Sign in and start a new puzzle to rank.';}else if(error instanceof ApiError&&[409,410,422].includes(error.status)){$('#resultRankPoints').textContent='Not ranked';status.classList.add('error');status.textContent='This attempt could not be verified for Rankings. Start a new puzzle and try again.';}else{$('#resultRankPoints').textContent='Not saved';status.classList.add('error');status.textContent='Online verification is temporarily unavailable. Your game can continue.';console.warn(error);}}}
-function renderDaily(){const done=state.dailyCompleted,progress=$('#dailyProgress'),wrap=$('.daily-progress'),remaining=Math.max(0,3-done.length);if(progress){if(done.length===3)progress.textContent=`✓ Daily Complete · ${state.dailyStreak?`🔥 ${state.dailyStreak}-day streak · `:''}+250 bonus earned`;else progress.textContent=`${done.length}/3 complete · ${remaining} ${remaining===1?'level':'levels'} left · +250 pts at 3/3${state.dailyStreak?` · 🔥 ${state.dailyStreak}-day streak`:''}`;}wrap?.classList.toggle('is-complete',done.length===3);$$('.daily-level').forEach(b=>{const complete=done.includes(b.dataset.difficulty);b.classList.toggle('complete',complete);const mark=b.querySelector('i');if(mark)mark.textContent=complete?'✓ DONE':'✓';});}function updateCountdown(){const now=new Date(),next=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1),seconds=Math.max(0,Math.floor((next-Date.now())/1000));$('#dailyCountdown').textContent=`${String(Math.floor(seconds/3600)).padStart(2,'0')}:${String(Math.floor((seconds%3600)/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
-function finishPractice(message){if(state.completed||!state.engine)return;state.completed=true;state.practiceComplete=true;stopTimer();hideSolutionNavigator();setStatus(message||'Practice complete.');showPracticeNotice(message||'Guided run complete. Reset to practice again or start a New Puzzle.');updateActiveControls();}async function finishPuzzle(){if(state.completed||!state.engine)return;if(review){finishPractice(`Review sample ${review.score} complete. Reset this sample or choose another calibration board.`);return;}if(state.solutionUsed){finishPractice('Practice complete. Start a New Puzzle to return to ranked play.');return;}state.completed=true;state.practiceComplete=false;stopTimer();hideSolutionNavigator();updateActiveControls();const timeMs=elapsed(),engineResult=state.engine.getResult?.(timeMs,state.hints)||{score:0,metadata:{}},result={run_id:state.runId,game:game.key,difficulty:state.difficulty,mode:state.mode,score:Math.max(0,Math.min(5000,Math.round(engineResult.score||0))),time_ms:Math.round(timeMs),hints_used:state.hints,solution_used:false,metadata:{...(engineResult.metadata||{}),seed:state.seed}};openResult(result);await saveResult(result);}
-function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));}function rankingRow(row,{targetGap=null}={}){const medal={1:'🥇',2:'🥈',3:'🥉'}[row.position]||`#${row.position}`,avatar=row.avatar_url?`<img src="${escapeHtml(row.avatar_url)}" alt="">`:'<span class="rank-avatar-fallback">S</span>',name=row.is_me?'YOU':escapeHtml(row.display_name||'Player'),sub=targetGap!=null?`<small class="ranking-target">+${Number(targetGap).toLocaleString()} pts to pass</small>`:`<small>${Number(row.games||0)} ranked games</small>`;return `<div class="ranking-row${row.is_me?' is-me':''}${targetGap!=null?' is-target':''}"><span class="ranking-position">${medal}</span>${avatar}<span class="ranking-player"><b>${name}</b>${sub}</span><strong>${Number(row.ranking_points||0).toLocaleString()} pts</strong></div>`;}
-function cacheRail(kind,data){try{sessionStorage.setItem(railKey(kind),JSON.stringify({at:Date.now(),data}));}catch{}}function readRail(kind){try{const parsed=JSON.parse(sessionStorage.getItem(railKey(kind))||'null');return parsed&&Date.now()-parsed.at<5*60*1000?parsed.data:null;}catch{return null;}}
-function renderRankingData(data){const host=$('#rankingList');if(!host)return;const rows=(data?.rows||[]).sort((a,b)=>Number(a.position)-Number(b.position));if(!rows.length){host.className='ranking-state';host.textContent='No ranked account finishes yet. Be the first.';return;}host.className='ranking-list';let html='',previous=0;const me=data.me,mePosition=Number(me?.position||0),mePoints=Number(me?.ranking_points||0);for(const row of rows){const pos=Number(row.position);if(previous&&pos>previous+1)html+='<div class="ranking-gap" aria-hidden="true">•••</div>';const targetGap=mePosition>1&&pos===mePosition-1?Math.max(1,Number(row.ranking_points||0)-mePoints+1):null;html+=rankingRow(row,{targetGap});previous=pos;}host.innerHTML=html;}
-async function refreshRankings(){const host=$('#rankingList');if(!host)return;const cached=readRail('ranking');if(cached)renderRankingData(cached);else{host.className='ranking-state';host.textContent='Loading rankings…';}try{const data=await api(`/api/rankings?game=${encodeURIComponent(game.key)}&limit=8`);cacheRail('ranking',data);renderRankingData(data);}catch(error){if(!cached)host.textContent='Rankings are temporarily unavailable.';console.warn(error);}}
-function masteryMarkup(mastery={}){return `<div class="mastery"><div class="mastery-heading"><b>Difficulty Mastery</b><small>Best eligible score</small></div><div class="mastery-levels">${game.levels.map(([key,label])=>{const item=mastery[key]||{},done=Boolean(item.complete);return `<div class="mastery-level${done?' complete':''}"><span>${done?'✓':'○'} ${escapeHtml(label)} · ×${DIFFICULTY_REWARDS[key]||1}</span><b>${done?Number(item.best||0).toLocaleString():'—'}</b></div>`;}).join('')}</div></div>`;}
-function renderProfileData(data){const body=$('#profileBody');if(!body)return;state.dailyCompleted=data?.user?(data.daily_completed||[]):[];state.dailyStreak=Number(data?.streak||0);renderDaily();if(!data?.user){body.innerHTML='<p class="profile-signed-out">Guest play is never ranked. Sign in before starting a puzzle to save verified scores, Daily progress and Ranking Points.</p><button class="button button-secondary profile-login" type="button">Sign in</button>';body.querySelector('.profile-login')?.addEventListener('click',()=>$('#loginButton')?.click());return;}body.innerHTML=`<div class="profile-stats"><div><b>${Number(data.games||0)}</b><small>GAMES</small></div><div><b>${Number(data.best||0).toLocaleString()}</b><small>BEST</small></div><div><b>${Number(data.ranking_points||0).toLocaleString()}</b><small>RANK PTS</small></div><div><b>${Number(data.streak||0)}</b><small>DAILY STREAK</small></div></div>${masteryMarkup(data.mastery||{})}`;}
-async function refreshProfile(){const body=$('#profileBody');if(!body)return;const cached=readRail('profile');if(cached)renderProfileData(cached);else body.innerHTML='<div class="profile-loading">Loading profile…</div>';try{const data=await api(`/api/profile?game=${encodeURIComponent(game.key)}`);cacheRail('profile',data);renderProfileData(data);}catch(error){if(!cached)body.innerHTML='<div class="profile-loading">Profile is temporarily unavailable.</div>';console.warn(error);}}async function refreshRail(){await Promise.all([refreshRankings(),refreshProfile()]);}
-function scrollBoardIntoView(){requestAnimationFrame(()=>$('.board-panel')?.scrollIntoView({behavior:'smooth',block:'start'}));}async function runSmartNext(){const action=state.smartNext;closeResult(false);if(action){if(action.mode==='daily'&&capability('daily'))state.mode='daily';else if(action.mode==='normal')state.mode='normal';if(game.levels.some(([key])=>key===action.difficulty))state.difficulty=action.difficulty;updateActiveControls();}await startPuzzle();scrollBoardIntoView();}
-async function recordSolutionReveal(runId){if(!runId||!hasAccount())return;for(let attempt=0;attempt<2;attempt++){try{await post('/api/runs/reveal',{run_id:runId});return;}catch(error){if(attempt===1)console.warn('Solution practice state could not be synced',error);else await new Promise(resolve=>setTimeout(resolve,350));}}}
-function setupControls(){$$('.difficulty-button').forEach(b=>b.addEventListener('click',()=>setDifficulty(b.dataset.difficulty)));$$('.mode-button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));$('#newPuzzle')?.addEventListener('click',()=>review?resetAttempt():startPuzzle());$('#resetPuzzle')?.addEventListener('click',()=>resetAttempt());$('#hint')?.addEventListener('click',()=>{if(state.loading||state.completed||state.engineLocked||!state.engine||state.solutionVisible||!capability('hint'))return;const used=state.engine.hint?.();if(used!==false){state.hints++;setMetric('hints',state.hints);}});$('#solution')?.addEventListener('click',()=>{if(state.loading||state.completed||state.engineLocked||!state.engine||!capability('solution'))return;if(state.solutionVisible){state.solutionVisible=false;state.engine.hideSolution?.();setPracticeUi(true,false);setStatus(review?'Solution hidden. Calibration Review remains practice-only.':'Solution hidden. This same board remains practice-only; New Puzzle returns to ranked play.');return;}const rankedRun=state.ranked?state.runId:'';state.solutionUsed=true;state.solutionVisible=true;state.ranked=false;state.unrankedReason=review?'review_mode':'solution_viewed';stopTimer();state.engine.solution?.();setPracticeUi(true,true);if(capability('solutionSteps'))renderSolutionProgress(state.engine.solutionStep?.(0)||null);if(rankedRun&&!review)recordSolutionReveal(rankedRun);});$$('.daily-level').forEach(b=>b.addEventListener('click',async()=>{if(review||state.loading||!capability('daily'))return;state.mode='daily';state.difficulty=b.dataset.difficulty;updateActiveControls();await startPuzzle();scrollBoardIntoView();}));$('#resultClose')?.addEventListener('click',()=>startPuzzle());$('#resultNew')?.addEventListener('click',()=>startPuzzle());$('#resultAgain')?.addEventListener('click',()=>startPuzzle({reuseSeed:true}));$('#resultNext')?.addEventListener('click',runSmartNext);document.addEventListener('keydown',e=>{const modal=$('#resultModal');if(!modal||modal.hidden)return;if(e.key==='Escape'){e.preventDefault();startPuzzle();return;}if(e.key==='Tab'){const items=resultFocusables();if(!items.length)return;const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});window.addEventListener('snapoki:auth-changed',()=>{state.dailyCompleted=[];state.dailyStreak=0;renderDaily();refreshRail();updateActiveControls();});}
-function applyQueryState(){if(review){state.difficulty='hard';state.mode='normal';return;}const difficulty=queryParams.get('difficulty'),mode=queryParams.get('mode');if(game.levels.some(([k])=>k===difficulty))state.difficulty=difficulty;if(mode==='daily'&&capability('daily'))state.mode='daily';}
-window.addEventListener('snapoki:game-lock',event=>{if(event.detail?.game!==game.key)return;state.engineLocked=Boolean(event.detail?.locked);if(state.engineLocked)stopTimer();updateControlAvailability();});
-async function init(){decorateRewards();applyCapabilities();applyQueryState();ensureReviewPanel();setupControls();updateActiveControls();renderDaily();updateCountdown();setInterval(updateCountdown,1000);const rail=waitForAuth().then(()=>refreshRail());await startPuzzle();rail.catch(()=>{});}
+
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const gameKey=document.body.dataset.game,game=getGame(gameKey);
+if(!game)throw new Error(`Unknown Snapoki game: ${gameKey}`);
+const presentation=getGamePresentation(game);
+const queryParams=new URLSearchParams(location.search);
+const review=gameKey==='color-connect'?resolveColorConnectReview(queryParams):null;
+const state={
+  difficulty:game.levels[0][0],
+  mode:'normal',
+  seed:'',
+  runId:'',
+  ranked:false,
+  unrankedReason:'',
+  startedAt:0,
+  timer:null,
+  engine:null,
+  engineFactory:null,
+  engineLocked:false,
+  loading:false,
+  completed:false,
+  practiceComplete:false,
+  hints:0,
+  solutionUsed:false,
+  solutionVisible:false,
+  lastFocused:null,
+  dailyCompleted:[],
+  dailyStreak:0,
+  smartNext:null,
+  startToken:0,
+  rankingBoard:'overall'
+};
+
+const capability=name=>game.capabilities?.[name]!==false;
+const railKey=kind=>`snapoki:rail:v3:${kind}:${game.key}`;
+
+function metricElement(k){return document.querySelector(`[data-metric-value="${k}"]`);}
+function setMetric(k,v){const e=metricElement(k);if(e)e.textContent=String(v);}
+function setMetrics(v={}){Object.entries(v).forEach(([k,x])=>setMetric(k,x));updateControlAvailability();}
+function setStatus(t){renderGameStatus($('#gameStatus'),gameKey,t);}
+function modeName(){return state.mode==='daily'?'Daily Challenge':'Regular Play';}
+function hasAccount(){return Boolean(window.SnapokiAuth?.user);}
+function runLabel(){
+  if(review)return`Review · ${review.score}`;
+  if(state.solutionUsed)return state.practiceComplete?'Practice Complete':'Practice';
+  if(state.ranked)return modeName();
+  if(state.unrankedReason==='recent_replay')return'Replay · No PB';
+  if(state.unrankedReason==='daily_solution_viewed')return'Daily Practice';
+  return hasAccount()?`${modeName()} · Unverified`:`${modeName()} · Guest`;
+}
+function setDisabled(selector,value){const element=$(selector);if(element)element.disabled=Boolean(value);}
+function updateControlAvailability(){
+  const ready=Boolean(state.engine)&&!state.loading,done=state.completed,locked=Boolean(state.engineLocked),reviewLocked=Boolean(review);
+  setDisabled('#newPuzzle',state.loading);
+  setDisabled('#hint',!capability('hint')||!ready||done||locked||state.solutionVisible);
+  setDisabled('#solution',!capability('solution')||!ready||done||locked);
+  setDisabled('#resetPuzzle',!ready||(done&&!state.practiceComplete));
+  $$('.difficulty-button,.mode-button,.daily-level').forEach(button=>button.disabled=state.loading||reviewLocked);
+  $$('[data-review-band],[data-review-seed]').forEach(button=>button.disabled=state.loading);
+}
+function updateActiveControls(){
+  $$('.difficulty-button').forEach(b=>b.classList.toggle('active',b.dataset.difficulty===state.difficulty));
+  $$('.mode-button').forEach(b=>b.classList.toggle('active',b.dataset.mode===state.mode));
+  const label=$('#boardModeLabel');if(label)label.textContent=runLabel();
+  updateControlAvailability();
+}
+
+function decorateRewards(){
+  for(const button of $$('.difficulty-button')){
+    if(button.querySelector('.difficulty-reward'))continue;
+    const mult=DIFFICULTY_REWARDS[button.dataset.difficulty]||1,reward=document.createElement('em');
+    reward.className='difficulty-reward';
+    reward.textContent=`×${mult} PB`;
+    button.appendChild(reward);
+  }
+  for(const button of $$('.daily-level')){
+    if(button.querySelector('.daily-reward'))continue;
+    const reward=document.createElement('em');
+    reward.className='daily-reward';
+    reward.textContent='STREAK';
+    button.appendChild(reward);
+  }
+}
+function applyCapabilities(){
+  const hint=$('#hint'),solution=$('#solution'),dailyMode=$('.mode-button[data-mode="daily"]'),dailySection=$('.daily-section'),normalMode=$('.mode-button[data-mode="normal"]');
+  if(hint)hint.hidden=!capability('hint');
+  if(solution)solution.hidden=!capability('solution');
+  if(dailyMode)dailyMode.hidden=!capability('daily')||Boolean(review);
+  if(dailySection)dailySection.hidden=!capability('daily')||Boolean(review);
+  if(review&&normalMode)normalMode.textContent='Calibration Review';
+}
+
+function stopTimer(){if(state.timer)clearInterval(state.timer);state.timer=null;}
+function elapsed(){return state.startedAt?Math.max(0,Date.now()-state.startedAt):0;}
+function tick(){
+  if(state.engineLocked||state.completed)return;
+  const ms=elapsed();
+  setMetric('time',formatTime(ms));
+  if(state.engine?.previewScore&&metricElement('score'))setMetric('score',Number(state.engine.previewScore(ms,state.hints)).toLocaleString());
+}
+function beginTimer(){stopTimer();state.startedAt=Date.now();tick();state.timer=setInterval(tick,250);}
+function guestSeed(reuseSeed=false,previousSeed=''){
+  if(review)return review.seed;
+  if(reuseSeed&&previousSeed)return previousSeed;
+  return state.mode==='daily'?dailySeed(game.key,state.difficulty):randomSeed(game.key,state.difficulty);
+}
+async function waitForAuth(){
+  if(window.SnapokiAuth?.ready)return window.SnapokiAuth;
+  try{if(window.SnapokiAuthReady)await window.SnapokiAuthReady;}catch{}
+  if(window.SnapokiAuth?.ready)return window.SnapokiAuth;
+  await new Promise(resolve=>{
+    let done=false;
+    const finish=()=>{if(done)return;done=true;window.removeEventListener('snapoki:auth-changed',finish);resolve();};
+    window.addEventListener('snapoki:auth-changed',finish,{once:true});
+    setTimeout(finish,900);
+  });
+  return window.SnapokiAuth||{user:null,ready:false};
+}
+async function rankedAttempt(cloneRunId=''){
+  if(review)return null;
+  await waitForAuth();
+  if(!hasAccount()||!capability('ranking')||game.ranking?.enabled===false)return null;
+  try{
+    if(cloneRunId)return await post('/api/runs/start',{game:game.key,difficulty:state.difficulty,mode:state.mode,clone_run_id:cloneRunId});
+    const cached=consumeRankedAttempt(game.key,state.difficulty,state.mode);
+    if(cached)return cached;
+    const warmed=await prefetchRankedAttempt(game.key,state.difficulty,state.mode);
+    return consumeRankedAttempt(game.key,state.difficulty,state.mode)||warmed;
+  }catch(error){console.warn('Verified attempt unavailable',error);return null;}
+}
+async function loadEngineFactory(){
+  if(state.engineFactory)return state.engineFactory;
+  const module=await import(`/assets/js/games/${game.slug}.js`);
+  if(typeof module.createGame!=='function')throw new Error(`${game.name} engine is missing createGame().`);
+  state.engineFactory=module.createGame;
+  return state.engineFactory;
+}
+function resetMetricDefaults(){
+  for(const[key]of game.metrics)setMetric(key,key==='time'?'00:00':'0');
+  setMetric('hints','0');
+  if(metricElement('score'))setMetric('score','5,000');
+}
+
+function ensurePracticeNotice(){
+  let notice=$('#practiceCompleteNotice');if(notice)return notice;
+  notice=document.createElement('div');
+  notice.id='practiceCompleteNotice';notice.className='practice-complete-notice';notice.hidden=true;
+  notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
+  notice.innerHTML='<span class="practice-complete-icon">✓</span><div><strong>Practice Complete</strong><small>You completed the guided puzzle.</small></div>';
+  $('.board-panel')?.appendChild(notice);
+  return notice;
+}
+function hidePracticeNotice(){const notice=$('#practiceCompleteNotice');if(notice)notice.hidden=true;$('.board-panel')?.classList.remove('practice-complete');}
+function showPracticeNotice(message){
+  const notice=ensurePracticeNotice(),text=notice?.querySelector('small');
+  if(text)text.textContent=message||'Guided run complete. Reset to practice again or start a New Puzzle.';
+  if(notice)notice.hidden=false;
+  $('.board-panel')?.classList.add('practice-complete');
+}
+function ensureSolutionNavigator(){
+  let nav=$('#solutionNavigator');if(nav)return nav;
+  nav=document.createElement('div');nav.id='solutionNavigator';nav.className='solution-navigator';nav.hidden=true;
+  nav.innerHTML='<button type="button" data-solution-nav="prev" aria-label="Previous solution step">←</button><span><b>Step</b><small id="solutionProgress">—</small></span><button type="button" data-solution-nav="next" aria-label="Next solution step">→</button>';
+  nav.addEventListener('click',e=>{
+    const button=e.target.closest('[data-solution-nav]');
+    if(!button||!state.solutionVisible)return;
+    renderSolutionProgress(state.engine?.solutionStep?.(button.dataset.solutionNav==='prev'?-1:1));
+  });
+  $('.board-toolbar')?.insertAdjacentElement('afterend',nav);
+  return nav;
+}
+function renderSolutionProgress(info){
+  if(!capability('solutionSteps'))return;
+  const nav=ensureSolutionNavigator();
+  if(!info){nav.hidden=true;return;}
+  nav.hidden=false;
+  const text=$('#solutionProgress',nav);if(text)text.textContent=`${info.current} / ${info.total}${info.label?` · ${info.label}`:''}`;
+  const prev=$('[data-solution-nav="prev"]',nav),next=$('[data-solution-nav="next"]',nav);
+  if(prev)prev.disabled=Number(info.current)<=1;
+  if(next)next.disabled=Number(info.current)>=Number(info.total);
+}
+function hideSolutionNavigator(){const nav=$('#solutionNavigator');if(nav)nav.hidden=true;}
+function setPracticeUi(used=state.solutionUsed,visible=state.solutionVisible){
+  $('.board-panel')?.classList.toggle('practice-mode',used);
+  const b=$('#solution'),label=presentation.solutionLabel||'Solution';
+  if(b){b.textContent=visible?(label==='Solution'?'Hide Solution':`Exit ${label}`):label;b.setAttribute('aria-pressed',String(visible));}
+  if(!visible)hideSolutionNavigator();
+  updateActiveControls();
+}
+
+function ensureReviewPanel(){
+  if(!review)return;
+  document.body.classList.add('calibration-review-mode');
+  if(!$('#colorReviewStyle')){
+    const style=document.createElement('style');style.id='colorReviewStyle';
+    style.textContent='.color-review-panel{margin:12px 0 6px;padding:14px;border:1px solid rgba(124,139,255,.3);border-radius:14px;background:rgba(124,139,255,.07)}.color-review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}.color-review-head b{display:block;font-size:14px}.color-review-head small{display:block;margin-top:3px;opacity:.72}.color-review-exit{font-size:12px;text-decoration:none;white-space:nowrap}.color-review-bands,.color-review-samples{display:flex;gap:7px;flex-wrap:wrap}.color-review-bands{margin-bottom:8px}.color-review-panel button{border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.045);color:inherit;border-radius:999px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer}.color-review-panel button.active{border-color:rgba(124,139,255,.75);background:rgba(124,139,255,.18)}.color-review-metrics{margin-top:10px;font-size:12px;line-height:1.55;opacity:.82}.calibration-review-mode .daily-section{display:none!important}@media(max-width:640px){.color-review-head{display:block}.color-review-exit{display:inline-block;margin-top:7px}.color-review-panel button{padding:7px 9px}}';
+    document.head.appendChild(style);
+  }
+  let panel=$('#colorReviewPanel');if(panel)return panel;
+  panel=document.createElement('div');panel.id='colorReviewPanel';panel.className='color-review-panel';panel.setAttribute('aria-label','Color Connect calibration review');
+  const bandButtons=COLOR_CONNECT_REVIEW_BANDS.map(band=>`<button type="button" data-review-band="${band}" class="${band===review.band?'active':''}">${band}</button>`).join('');
+  const samples=COLOR_CONNECT_REVIEW_SAMPLES.filter(sample=>sample.band===review.band);
+  const sampleButtons=samples.map((sample,index)=>`<button type="button" data-review-seed="${sample.seed}" class="${sample.seed===review.seed?'active':''}">Sample ${index+1} · ${sample.score}</button>`).join('');
+  panel.innerHTML=`<div class="color-review-head"><div><b>Calibration Review · Score ${review.score}</b><small>Practice-only. No ranking or Daily progress writes.</small></div><a class="color-review-exit" href="/color-connect/">Exit Review</a></div><div class="color-review-bands">${bandButtons}</div><div class="color-review-samples">${sampleButtons}</div><div class="color-review-metrics">${review.backtracks} backtracks · ${review.deadEnds} dead ends · ${review.decisions} decisions · ${review.greedyTraps} greedy traps · ${review.temptingRoutes} tempting routes · ${review.shortcutVictims} shortcut victims</div>`;
+  panel.addEventListener('click',event=>{
+    const seedButton=event.target.closest('[data-review-seed]'),bandButton=event.target.closest('[data-review-band]');
+    if(seedButton){const sample=COLOR_CONNECT_REVIEW_SAMPLES.find(item=>item.seed===seedButton.dataset.reviewSeed);if(sample)location.href=colorConnectReviewUrl(sample);return;}
+    if(bandButton){const sample=COLOR_CONNECT_REVIEW_SAMPLES.find(item=>item.band===bandButton.dataset.reviewBand);if(sample)location.href=colorConnectReviewUrl(sample);}
+  });
+  $('.board-toolbar')?.insertAdjacentElement('afterend',panel);
+  const newButton=$('#newPuzzle'),resetButton=$('#resetPuzzle');
+  if(newButton)newButton.textContent='Restart Sample';
+  if(resetButton)resetButton.textContent='Reset Sample';
+  return panel;
+}
+
+async function startPuzzle({reuseSeed=false}={}){
+  const token=++state.startToken,previousSeed=state.seed,previousRunId=state.runId;
+  closeResult(false);hidePracticeNotice();hideSolutionNavigator();
+  state.engine?.destroy?.();state.engine=null;state.engineLocked=false;state.loading=true;state.completed=false;state.practiceComplete=false;state.hints=0;state.solutionUsed=false;state.solutionVisible=false;state.ranked=false;state.unrankedReason=review?'review_mode':'';state.smartNext=null;
+  stopTimer();setPracticeUi(false,false);resetMetricDefaults();setStatus(review?`Loading calibration sample ${review.score}…`:'Preparing puzzle…');
+  $('#gameBoard')?.setAttribute('aria-busy','true');updateActiveControls();
+  try{
+    const enginePromise=loadEngineFactory(),attemptPromise=rankedAttempt(reuseSeed?previousRunId:'');
+    const[createGame,attempt]=await Promise.all([enginePromise,attemptPromise]);
+    if(token!==state.startToken)return;
+    if(attempt?.seed&&!review){
+      state.seed=attempt.seed;state.runId=attempt.run_id||makeRunId(game.key);state.ranked=Boolean(attempt.run_id&&attempt.ranked!==false);state.unrankedReason=attempt.reason||'';
+    }else{
+      state.seed=guestSeed(reuseSeed,previousSeed);state.runId=makeRunId(game.key);state.ranked=false;
+      if(review)state.unrankedReason='review_mode';
+    }
+    state.engine=createGame({host:$('#gameBoard'),difficulty:state.difficulty,mode:state.mode,seed:state.seed,onMetrics:setMetrics,onStatus:setStatus,onComplete:finishPuzzle,onPracticeComplete:message=>finishPractice(review?`Review sample ${review.score} complete. Reset this sample or choose another calibration board.`:message)});
+    state.loading=false;updateActiveControls();beginTimer();
+    if(review)setStatus(`Review ${review.band} · score ${review.score} · practice-only.`);
+    else if(state.unrankedReason==='recent_replay')setStatus('Replay mode: enjoy the same board again, but only a fresh Regular Play puzzle can improve your PB.');
+    else if(state.unrankedReason==='daily_solution_viewed')setStatus('Daily Practice: Solution was viewed for this level today, so it cannot count toward today’s streak.');
+    else if(!state.ranked&&hasAccount()&&capability('ranking'))setStatus('Puzzle ready. Verification is temporarily unavailable; this attempt will not update account progress.');
+  }catch(error){
+    if(token!==state.startToken)return;
+    console.error(error);state.loading=false;setStatus('This puzzle could not start. Please try New Puzzle.');updateActiveControls();
+  }finally{if(token===state.startToken)$('#gameBoard')?.removeAttribute('aria-busy');}
+}
+
+async function resetAttempt(){
+  if(!state.engine||state.loading)return;
+  if(review){
+    ++state.startToken;state.loading=true;state.completed=false;state.practiceComplete=false;state.hints=0;state.solutionUsed=false;state.solutionVisible=false;state.ranked=false;state.unrankedReason='review_mode';state.smartNext=null;
+    stopTimer();hidePracticeNotice();hideSolutionNavigator();state.engine.reset?.();setMetric('hints','0');state.loading=false;setPracticeUi(false,false);beginTimer();setStatus(`Review ${review.band} · score ${review.score} · reset from the beginning.`);return;
+  }
+  const token=++state.startToken,previousRunId=state.runId,practiceLocked=state.solutionUsed;
+  state.loading=true;state.completed=false;state.practiceComplete=false;state.hints=0;state.solutionVisible=false;state.smartNext=null;stopTimer();hidePracticeNotice();hideSolutionNavigator();
+  if(!practiceLocked){
+    state.solutionUsed=false;state.ranked=false;state.unrankedReason='';setPracticeUi(false,false);updateActiveControls();
+    if(hasAccount()&&previousRunId&&capability('ranking')){
+      const attempt=await rankedAttempt(previousRunId);
+      if(token!==state.startToken)return;
+      if(attempt?.run_id&&attempt.seed===state.seed){state.runId=attempt.run_id;state.ranked=true;}
+      else{state.runId=makeRunId(game.key);state.unrankedReason=attempt?.reason||'';}
+    }else state.runId=makeRunId(game.key);
+  }else{
+    state.ranked=false;state.unrankedReason='solution_viewed';setPracticeUi(true,false);updateActiveControls();
+  }
+  state.engine.reset?.();setMetric('hints','0');state.loading=false;setPracticeUi(practiceLocked,false);beginTimer();
+  setStatus(practiceLocked?'Practice reset. This same board remains practice-only after viewing Solution; New Puzzle returns to verified play.':state.ranked?'Puzzle reset from the beginning. Verification is active.':'Puzzle reset. This attempt is unverified.');
+}
+function setDifficulty(d,start=true){if(review||state.loading||!game.levels.some(([k])=>k===d))return;state.difficulty=d;updateActiveControls();if(start)startPuzzle();}
+function setMode(m,start=true){if(review||state.loading||!['normal','daily'].includes(m)||m==='daily'&&!capability('daily'))return;state.mode=m;updateActiveControls();if(start)startPuzzle();}
+function difficultyLabel(key=state.difficulty){return game.levels.find(([k])=>k===key)?.[1]||key;}
+
+function resultFocusables(){const modal=$('#resultModal');return modal?$$('button,[href],[tabindex]:not([tabindex="-1"])',modal).filter(el=>!el.hidden&&!el.disabled):[];}
+function ensureResultInsights(){
+  let host=$('#resultInsights');if(host)return host;
+  host=document.createElement('div');host.id='resultInsights';host.className='result-insights';host.hidden=true;$('#resultSaveStatus')?.insertAdjacentElement('beforebegin',host);return host;
+}
+function clearResultInsights(){const host=ensureResultInsights();host.hidden=true;host.innerHTML='';}
+function renderResultInsights(saved){
+  const host=ensureResultInsights(),items=[];
+  if(state.mode==='normal'){
+    if(saved.new_personal_best)items.push(`<div class="result-insight is-best"><b>★ New Ranking PB · ${Number(saved.ranking_score||0).toLocaleString()}</b><small>Your strongest verified Regular Play performance</small></div>`);
+    else if(Number(saved.ranking_score||0)>0)items.push(`<div class="result-insight"><b>Ranking PB ${Number(saved.ranking_score).toLocaleString()}</b><small>${Number(saved.ranking_gain||0)>0?`+${Number(saved.ranking_gain).toLocaleString()} PB improvement`:'This run did not beat your current PB'}</small></div>`);
+    if(saved.reward_multiplier)items.push(`<div class="result-insight is-reward"><b>${difficultyLabel()} ×${Number(saved.reward_multiplier)}</b><small>Difficulty multiplier for this performance</small></div>`);
+    if(saved.rank_after){
+      const before=Number(saved.rank_before||0),after=Number(saved.rank_after);
+      items.push(`<div class="result-insight${Number(saved.rank_change)>0?' is-rank-up':''}"><b>${before?before===after?`Rank #${after}`:`↑ #${before} → #${after}`:`Entered #${after}`}</b><small>${Number(saved.rank_change)>0?'You moved up the leaderboard':'Current game ranking'}</small></div>`);
+    }
+    if(saved.next_target)items.push(`<div class="result-insight is-target"><b>Next target · #${Math.max(1,Number(saved.rank_after||1)-1)}</b><small>Beat ${escapeHtml(saved.next_target.display_name||'the player above')} with a stronger PB</small></div>`);
+    if(saved.milestone)items.push(`<div class="result-insight is-milestone"><b>🏆 ${Number(saved.milestone)===1?'#1 reached':`Top ${Number(saved.milestone)} reached`}</b><small>A new ranking milestone</small></div>`);
+  }else{
+    if(saved.daily_complete)items.push(`<div class="result-insight is-daily"><b>🔥 Daily Complete · ${Number(saved.streak||0)}-day streak</b><small>Easy + Medium + Hard are complete for today</small></div>`);
+    else items.push(`<div class="result-insight is-daily"><b>Daily ${difficultyLabel()} complete</b><small>${Number(saved.daily_remaining||0)} ${Number(saved.daily_remaining||0)===1?'level':'levels'} left today</small></div>`);
+  }
+  if(Number(saved.xp_gain||0)>0)items.push(`<div class="result-insight"><b>+${Number(saved.xp_gain).toLocaleString()} XP</b><small>Progression grows with verified completions</small></div>`);
+  if(saved.ranking_excluded)items.push('<div class="result-insight is-policy"><b>Verified · Progress excluded</b><small>This pace triggered an automated fair-play check</small></div>');
+  host.innerHTML=items.join('');host.hidden=!items.length;
+}
+function setSmartNext(action){
+  state.smartNext=action||null;
+  const next=$('#resultNext');if(!next)return;
+  next.hidden=!action;if(!action)return;
+  next.textContent=action.label?`${action.label} →`:'Next Challenge →';
+}
+function openResult(result){
+  const modal=$('#resultModal');if(!modal)return;
+  clearResultInsights();setSmartNext(null);state.lastFocused=document.activeElement;
+  $('#resultGameName').textContent=`${game.name} Complete!`;
+  $('#resultScore').textContent=Number(result.score||0).toLocaleString();
+  $('#resultDifficulty').textContent=state.mode==='normal'?`${difficultyLabel()} · Regular Play · ×${DIFFICULTY_REWARDS[state.difficulty]||1}`:`${difficultyLabel()} · Daily Challenge`;
+  $('#resultTime').textContent=formatTime(result.time_ms);
+  $('#resultHints').textContent=String(state.hints);
+  $('#resultMode').textContent=modeName();
+  const replay=state.unrankedReason==='recent_replay'||state.unrankedReason==='daily_solution_viewed';
+  $('#resultRankPoints').textContent=state.ranked?'Saving…':replay?'—':hasAccount()?'Unverified':'—';
+  const status=$('#resultSaveStatus');status.className='result-save-status';
+  status.textContent=state.ranked?'Verifying this account-bound completion…':state.unrankedReason==='recent_replay'?'Replay complete. Start a New Puzzle to chase a new ranking PB.':state.unrankedReason==='daily_solution_viewed'?'Daily practice complete. This level cannot count toward today’s streak because Solution was viewed.':hasAccount()?'This attempt cannot update account progress.':'Guest finish. Sign in, then start a new puzzle to save progress.';
+  modal.hidden=false;document.body.classList.add('modal-open');$('#resultClose')?.focus();
+}
+function closeResult(restore=true){const modal=$('#resultModal');if(!modal||modal.hidden)return;modal.hidden=true;document.body.classList.remove('modal-open');if(restore)state.lastFocused?.focus?.();}
+
+async function saveResult(result){
+  const status=$('#resultSaveStatus');if(!state.ranked)return;
+  try{
+    const saved=await post('/api/results',result);
+    $('#resultScore').textContent=Number(saved.score||0).toLocaleString();
+    if(saved.ranking_excluded)$('#resultRankPoints').textContent='Excluded';
+    else if(state.mode==='daily')$('#resultRankPoints').textContent=saved.daily_complete?`🔥 ${Number(saved.streak||0)}`:'Daily ✓';
+    else $('#resultRankPoints').textContent=`PB ${Number(saved.ranking_score||0).toLocaleString()}`;
+    renderResultInsights(saved);
+    if(Array.isArray(saved.daily_completed))state.dailyCompleted=saved.daily_completed;
+    state.dailyStreak=Number(saved.streak||state.dailyStreak||0);
+    setSmartNext(saved.smart_next||null);renderDaily();
+    if(saved.ranking_excluded){
+      status.classList.add('muted');status.textContent='The puzzle proof was valid, but this completion was excluded from account progression by the fair-play check.';
+    }else if(state.mode==='daily'){
+      status.classList.add('success');status.textContent=saved.daily_complete?`Daily complete. Your streak is ${Number(saved.streak||0)} days.`:`Daily ${difficultyLabel()} saved. ${Number(saved.daily_remaining||0)} ${Number(saved.daily_remaining||0)===1?'level':'levels'} left today.`;
+    }else{
+      status.classList.add('success');status.textContent=saved.duplicate?'This verified completion was already processed.':saved.new_personal_best?'New ranking PB saved.':'Verified completion saved. Your ranking PB stays unchanged.';
+    }
+    if(state.mode==='daily')await refreshProfile();else await refreshRail();
+  }catch(error){
+    if(error instanceof ApiError&&error.status===401){
+      $('#resultRankPoints').textContent='Sign in';status.classList.add('muted');status.textContent='Your session ended. Sign in and start a new puzzle to save progress.';
+    }else if(error instanceof ApiError&&[409,410,422].includes(error.status)){
+      $('#resultRankPoints').textContent='Not saved';status.classList.add('error');status.textContent='This attempt could not be verified. Start a new puzzle and try again.';
+    }else{
+      $('#resultRankPoints').textContent='Not saved';status.classList.add('error');status.textContent='Online verification is temporarily unavailable. Your game can continue.';console.warn(error);
+    }
+  }
+}
+
+function renderDaily(){
+  const done=state.dailyCompleted,progress=$('#dailyProgress'),wrap=$('.daily-progress'),remaining=Math.max(0,3-done.length);
+  if(progress){
+    if(done.length===3)progress.textContent=`✓ Daily Complete${state.dailyStreak?` · 🔥 ${state.dailyStreak}-day streak`:''}`;
+    else progress.textContent=`${done.length}/3 complete · ${remaining} ${remaining===1?'level':'levels'} left${state.dailyStreak?` · 🔥 ${state.dailyStreak}-day streak`:''}`;
+  }
+  wrap?.classList.toggle('is-complete',done.length===3);
+  $$('.daily-level').forEach(b=>{
+    const complete=done.includes(b.dataset.difficulty);b.classList.toggle('complete',complete);
+    const mark=b.querySelector('i');if(mark)mark.textContent=complete?'✓ DONE':'✓';
+  });
+}
+function updateCountdown(){
+  const now=new Date(),next=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1),seconds=Math.max(0,Math.floor((next-Date.now())/1000));
+  $('#dailyCountdown').textContent=`${String(Math.floor(seconds/3600)).padStart(2,'0')}:${String(Math.floor((seconds%3600)/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
+}
+function finishPractice(message){
+  if(state.completed||!state.engine)return;
+  state.completed=true;state.practiceComplete=true;stopTimer();hideSolutionNavigator();setStatus(message||'Practice complete.');showPracticeNotice(message||'Guided run complete. Reset to practice again or start a New Puzzle.');updateActiveControls();
+}
+async function finishPuzzle(){
+  if(state.completed||!state.engine)return;
+  if(review){finishPractice(`Review sample ${review.score} complete. Reset this sample or choose another calibration board.`);return;}
+  if(state.solutionUsed){finishPractice('Practice complete. Start a New Puzzle to return to verified play.');return;}
+  state.completed=true;state.practiceComplete=false;stopTimer();hideSolutionNavigator();updateActiveControls();
+  const timeMs=elapsed(),engineResult=state.engine.getResult?.(timeMs,state.hints)||{score:0,metadata:{}};
+  const result={run_id:state.runId,game:game.key,difficulty:state.difficulty,mode:state.mode,score:Math.max(0,Math.min(5000,Math.round(engineResult.score||0))),time_ms:Math.round(timeMs),hints_used:state.hints,solution_used:false,metadata:{...(engineResult.metadata||{}),seed:state.seed}};
+  openResult(result);await saveResult(result);
+}
+
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function rankingRow(row,{targetGap=null}={}){
+  const medal={1:'🥇',2:'🥈',3:'🥉'}[row.position]||`#${row.position}`;
+  const avatar=row.avatar_url?`<img src="${escapeHtml(row.avatar_url)}" alt="">`:'<span class="rank-avatar-fallback">S</span>';
+  const name=row.is_me?'YOU':escapeHtml(row.display_name||'Player');
+  const sub=targetGap!=null?'<small class="ranking-target">Beat the player above</small>':`<small>${Number(row.games||0)} verified completes</small>`;
+  return `<div class="ranking-row${row.is_me?' is-me':''}${targetGap!=null?' is-target':''}"><span class="ranking-position">${medal}</span>${avatar}<span class="ranking-player"><b>${name}</b>${sub}</span><strong>${Number(row.ranking_points||0).toLocaleString()} PB</strong></div>`;
+}
+function cacheRail(kind,data){try{sessionStorage.setItem(railKey(kind),JSON.stringify({at:Date.now(),data}));}catch{}}
+function readRail(kind){try{const parsed=JSON.parse(sessionStorage.getItem(railKey(kind))||'null');return parsed&&Date.now()-parsed.at<5*60*1000?parsed.data:null;}catch{return null;}}
+function rankingCacheKind(){return`ranking:${state.rankingBoard}`;}
+function renderRankingData(data){
+  const host=$('#rankingList');if(!host)return;
+  const rows=(data?.rows||[]).sort((a,b)=>Number(a.position)-Number(b.position));
+  if(!rows.length){host.className='ranking-state';host.textContent='No Regular Play PBs yet. Be the first.';return;}
+  host.className='ranking-list';
+  let html='',previous=0;
+  const me=data.me,mePosition=Number(me?.position||0);
+  for(const row of rows){
+    const pos=Number(row.position);
+    if(previous&&pos>previous+1)html+='<div class="ranking-gap" aria-hidden="true">•••</div>';
+    const targetGap=mePosition>1&&pos===mePosition-1?1:null;
+    html+=rankingRow(row,{targetGap});previous=pos;
+  }
+  host.innerHTML=html;
+}
+function ensureRankingTabs(){
+  const host=$('#rankingList');if(!host||$('#rankingBoardTabs'))return;
+  const tabs=document.createElement('div');tabs.id='rankingBoardTabs';tabs.className='ranking-board-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Ranking board');
+  for(const board of ['overall','easy','medium','hard']){
+    const button=document.createElement('button');button.type='button';button.className=`ranking-board-tab${board===state.rankingBoard?' active':''}`;button.dataset.rankingBoard=board;button.textContent=board==='overall'?'Overall':board[0].toUpperCase()+board.slice(1);button.setAttribute('aria-pressed',String(board===state.rankingBoard));
+    button.addEventListener('click',async()=>{
+      if(state.rankingBoard===board)return;
+      state.rankingBoard=board;
+      $$('.ranking-board-tab').forEach(item=>{const active=item.dataset.rankingBoard===board;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active));});
+      const caption=$('#rankingBoardCaption');if(caption)caption.textContent=board==='overall'?'Best performance across Easy, Medium and Hard.':`Best ${button.textContent} Regular Play performance.`;
+      await refreshRankings();
+    });
+    tabs.appendChild(button);
+  }
+  const caption=document.createElement('p');caption.id='rankingBoardCaption';caption.className='ranking-board-caption';caption.textContent='Best performance across Easy, Medium and Hard.';
+  host.insertAdjacentElement('beforebegin',caption);caption.insertAdjacentElement('beforebegin',tabs);
+}
+async function refreshRankings(){
+  const host=$('#rankingList');if(!host)return;
+  const kind=rankingCacheKind(),cached=readRail(kind);
+  if(cached)renderRankingData(cached);else{host.className='ranking-state';host.textContent='Loading rankings…';}
+  try{
+    const data=await api(`/api/rankings?game=${encodeURIComponent(game.key)}&board=${encodeURIComponent(state.rankingBoard)}&limit=8`);
+    cacheRail(kind,data);renderRankingData(data);
+  }catch(error){if(!cached)host.textContent='Rankings are temporarily unavailable.';console.warn(error);}
+}
+function masteryMarkup(mastery={}){
+  return `<div class="mastery"><div class="mastery-heading"><b>Difficulty Mastery</b><small>Regular Play PB</small></div><div class="mastery-levels">${game.levels.map(([key,label])=>{
+    const item=mastery[key]||{},done=Boolean(item.complete);
+    return `<div class="mastery-level${done?' complete':''}"><span>${done?'✓':'○'} ${escapeHtml(label)} · ×${DIFFICULTY_REWARDS[key]||1}</span><b>${done?Number(item.rank_score||0).toLocaleString():'—'}</b></div>`;
+  }).join('')}</div></div>`;
+}
+function renderProfileData(data){
+  const body=$('#profileBody');if(!body)return;
+  state.dailyCompleted=data?.user?(data.daily_completed||[]):[];state.dailyStreak=Number(data?.streak||0);renderDaily();
+  if(!data?.user){
+    body.innerHTML='<p class="profile-signed-out">Guest play is never ranked. Sign in before starting a puzzle to save PBs, progression and Daily streaks.</p><button class="button button-secondary profile-login" type="button">Sign in</button>';
+    body.querySelector('.profile-login')?.addEventListener('click',()=>$('#loginButton')?.click());return;
+  }
+  body.innerHTML=`<div class="profile-stats"><div><b>${Number(data.games||0)}</b><small>COMPLETES</small></div><div><b>${Number(data.ranking_score||0).toLocaleString()}</b><small>RANK PB</small></div><div class="profile-level"><b>${Number(data.level||1)}</b><small>LEVEL</small></div><div><b>${Number(data.streak||0)}</b><small>DAILY STREAK</small></div></div>${masteryMarkup(data.mastery||{})}`;
+}
+async function refreshProfile(){
+  const body=$('#profileBody');if(!body)return;
+  const cached=readRail('profile');if(cached)renderProfileData(cached);else body.innerHTML='<div class="profile-loading">Loading profile…</div>';
+  try{const data=await api(`/api/profile?game=${encodeURIComponent(game.key)}`);cacheRail('profile',data);renderProfileData(data);}
+  catch(error){if(!cached)body.innerHTML='<div class="profile-loading">Profile is temporarily unavailable.</div>';console.warn(error);}
+}
+async function refreshRail(){await Promise.all([refreshRankings(),refreshProfile()]);}
+
+function scrollBoardIntoView(){requestAnimationFrame(()=>$('.board-panel')?.scrollIntoView({behavior:'smooth',block:'start'}));}
+async function runSmartNext(){
+  const action=state.smartNext;closeResult(false);
+  if(action){
+    if(action.mode==='daily'&&capability('daily'))state.mode='daily';else if(action.mode==='normal')state.mode='normal';
+    if(game.levels.some(([key])=>key===action.difficulty))state.difficulty=action.difficulty;
+    updateActiveControls();
+  }
+  await startPuzzle();scrollBoardIntoView();
+}
+async function recordSolutionReveal(runId){
+  if(!runId||!hasAccount())return;
+  for(let attempt=0;attempt<2;attempt++){
+    try{await post('/api/runs/reveal',{run_id:runId});return;}
+    catch(error){if(attempt===1)console.warn('Solution practice state could not be synced',error);else await new Promise(resolve=>setTimeout(resolve,350));}
+  }
+}
+function setupControls(){
+  $$('.difficulty-button').forEach(b=>b.addEventListener('click',()=>setDifficulty(b.dataset.difficulty)));
+  $$('.mode-button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+  $('#newPuzzle')?.addEventListener('click',()=>review?resetAttempt():startPuzzle());
+  $('#resetPuzzle')?.addEventListener('click',()=>resetAttempt());
+  $('#hint')?.addEventListener('click',()=>{
+    if(state.loading||state.completed||state.engineLocked||!state.engine||state.solutionVisible||!capability('hint'))return;
+    const used=state.engine.hint?.();if(used!==false){state.hints++;setMetric('hints',state.hints);}
+  });
+  $('#solution')?.addEventListener('click',()=>{
+    if(state.loading||state.completed||state.engineLocked||!state.engine||!capability('solution'))return;
+    if(state.solutionVisible){
+      state.solutionVisible=false;state.engine.hideSolution?.();setPracticeUi(true,false);setStatus(review?'Solution hidden. Calibration Review remains practice-only.':'Solution hidden. This same board remains practice-only; New Puzzle returns to verified play.');return;
+    }
+    const rankedRun=state.ranked?state.runId:'';
+    state.solutionUsed=true;state.solutionVisible=true;state.ranked=false;state.unrankedReason=review?'review_mode':'solution_viewed';stopTimer();state.engine.solution?.();setPracticeUi(true,true);
+    if(capability('solutionSteps'))renderSolutionProgress(state.engine.solutionStep?.(0)||null);
+    if(rankedRun&&!review)recordSolutionReveal(rankedRun);
+  });
+  $$('.daily-level').forEach(b=>b.addEventListener('click',async()=>{
+    if(review||state.loading||!capability('daily'))return;
+    state.mode='daily';state.difficulty=b.dataset.difficulty;updateActiveControls();await startPuzzle();scrollBoardIntoView();
+  }));
+  $('#resultClose')?.addEventListener('click',()=>startPuzzle());
+  $('#resultNew')?.addEventListener('click',()=>startPuzzle());
+  $('#resultAgain')?.addEventListener('click',()=>startPuzzle({reuseSeed:true}));
+  $('#resultNext')?.addEventListener('click',runSmartNext);
+  document.addEventListener('keydown',e=>{
+    const modal=$('#resultModal');if(!modal||modal.hidden)return;
+    if(e.key==='Escape'){e.preventDefault();startPuzzle();return;}
+    if(e.key==='Tab'){
+      const items=resultFocusables();if(!items.length)return;
+      const first=items[0],last=items.at(-1);
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    }
+  });
+  window.addEventListener('snapoki:auth-changed',()=>{state.dailyCompleted=[];state.dailyStreak=0;renderDaily();refreshRail();updateActiveControls();});
+}
+function applyQueryState(){
+  if(review){state.difficulty='hard';state.mode='normal';return;}
+  const difficulty=queryParams.get('difficulty'),mode=queryParams.get('mode');
+  if(game.levels.some(([k])=>k===difficulty))state.difficulty=difficulty;
+  if(mode==='daily'&&capability('daily'))state.mode='daily';
+}
+window.addEventListener('snapoki:game-lock',event=>{
+  if(event.detail?.game!==game.key)return;
+  state.engineLocked=Boolean(event.detail?.locked);
+  if(state.engineLocked)stopTimer();
+  updateControlAvailability();
+});
+
+async function init(){
+  decorateRewards();applyCapabilities();applyQueryState();ensureReviewPanel();ensureRankingTabs();setupControls();updateActiveControls();renderDaily();updateCountdown();setInterval(updateCountdown,1000);
+  const rail=waitForAuth().then(()=>refreshRail());
+  await startPuzzle();
+  rail.catch(()=>{});
+}
 init();

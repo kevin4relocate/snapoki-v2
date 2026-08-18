@@ -2,6 +2,8 @@ import {error, json, methodNotAllowed, readJson} from '../../_lib/http.js';
 import {newExpiry, randomToken, sessionCookie, sha256} from '../../_lib/auth.js';
 import {compactPublicName} from '../../_lib/public-name.js';
 
+const SESSION_CLEANUP_BATCH = 24;
+
 function publicFirstName(token) {
   const given = String(token?.given_name || '').replace(/[\u0000-\u001F\u007F]/g, '').replace(/\s+/g, ' ').trim();
   const fallback = String(token?.email || '').split('@')[0].replace(/[\u0000-\u001F\u007F]/g, '').trim();
@@ -46,7 +48,19 @@ export async function onRequest(context) {
     const user = await env.DB.prepare('SELECT id, email, display_name, avatar_url FROM users WHERE google_sub = ? LIMIT 1').bind(token.sub).first();
     if (!user) throw new Error('User upsert failed.');
 
-    await env.DB.prepare("DELETE FROM sessions WHERE datetime(expires_at) <= datetime('now')").run();
+    // Keep login work bounded. The expiry index makes this a small opportunistic cleanup
+    // rather than an unbounded delete spike when many old sessions have accumulated.
+    const now = new Date().toISOString();
+    await env.DB.prepare(`
+      DELETE FROM sessions
+      WHERE id IN (
+        SELECT id FROM sessions
+        WHERE expires_at <= ?
+        ORDER BY expires_at ASC
+        LIMIT ?
+      )
+    `).bind(now, SESSION_CLEANUP_BATCH).run();
+
     const rawToken = randomToken();
     const sessionId = await sha256(rawToken);
     await env.DB.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)').bind(sessionId, user.id, newExpiry()).run();

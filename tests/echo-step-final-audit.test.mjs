@@ -24,11 +24,11 @@ test('Echo Step terminal failure locks nonessential controls and freezes time pl
   assert.match(source,/signalLock\(false\)/);
   assert.match(built,/engineLocked:false/);
   assert.match(built,/locked=Boolean\(state\.engineLocked\)/);
-  assert.match(built,/done\|\|locked\|\|state\.solutionVisible/);
-  assert.match(built,/done\|\|locked\);setDisabled\('#resetPuzzle'/);
+  assert.match(built,/setDisabled\('#hint',[^;]*done\|\|locked/);
+  assert.match(built,/setDisabled\('#solution',[^;]*done\|\|locked/);
   assert.match(built,/snapoki:game-lock/);
   assert.match(built,/if\(state\.engineLocked\)stopTimer\(\)/);
-  assert.match(built,/function tick\(\)\{if\(state\.engineLocked\|\|state\.completed\)return;/);
+  assert.match(built,/function tick\(\)\{\s*if\(state\.engineLocked\|\|state\.completed\)return;/);
 });
 
 test('Echo Step failure keeps Retry, Reset and New Puzzle available while Hint and Guide are locked',()=>{
@@ -61,7 +61,7 @@ test('Echo Step result modal removes redundant guest actions and Guide label com
   assert.match(built,/label=presentation\.solutionLabel\|\|'Solution'/);
   assert.match(built,/label==='Solution'\?'Hide Solution':`Exit \$\{label\}`/);
   assert.match(built,/next\.hidden=!action;if\(!action\)return/);
-  assert.match(built,/hasAccount\(\)\?'Unranked':'—'/);
+  assert.match(built,/hasAccount\(\)\?'Unverified':'—'/);
   assert.doesNotMatch(built,/gameKey==='echo-step'\?\(visible/);
 });
 
