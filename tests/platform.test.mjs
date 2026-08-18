@@ -30,8 +30,8 @@ test('all game pages retain shared platform controls rail daily and result contr
     assert.doesNotMatch(html,/id="undoAction"/);
     assert.match(html,/class="panel left-panel"/);
     assert.match(html,/class="right-panel"/);
-    assert.match(html,/Best performance/);
-    assert.match(html,/Only your best verified Regular Play performance sets your leaderboard score/);
+    assert.match(html,/Personal Best/);
+    assert.match(html,/Your best score counts\./);
   }
 });
 
