@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "check": "node scripts/check.mjs && node scripts/admin-plugin-audit.mjs",
-    "build": "node scripts/generate-brand.mjs && node scripts/build.mjs && node scripts/enrich-content.mjs && node scripts/post-build-platform.mjs && node scripts/launch-readiness.mjs && node scripts/release-integrations.mjs && node scripts/admin-plugin-audit.mjs && node scripts/platform-audit.mjs",
+    "build": "node scripts/generate-brand.mjs && node scripts/build.mjs && node scripts/enrich-content.mjs && node scripts/post-build-platform.mjs && node scripts/launch-readiness.mjs && node scripts/release-integrations.mjs && node scripts/account-profile.mjs && node scripts/admin-plugin-audit.mjs && node scripts/platform-audit.mjs",
     "test": "node --test tests/*.test.mjs",
     "brand": "node scripts/generate-brand.mjs"
   }
