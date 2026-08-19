@@ -32,7 +32,10 @@ function removeGameProfileRail(html){
   if(!html.includes('class="game-page"'))return html;
   // Keep a zero-layout state host because the existing game runtime hydrates Daily
   // completion and streak data through the profile endpoint.
-  return html.replace(profilePanel,'<div id="profileBody" hidden></div>');
+  const next=html.replace(profilePanel,'<div id="profileBody" hidden></div>');
+  if(next.includes('class="panel profile"'))throw new Error('Visible game Profile rail survived account-profile generation.');
+  if(!next.includes('<div id="profileBody" hidden></div>'))throw new Error('Daily profile state host is missing after rail removal.');
+  return next;
 }
 
 for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
@@ -44,6 +47,7 @@ for(const file of (await walk(dist)).filter(file=>file.endsWith('.html'))){
 const aboutFile=path.join(dist,'about','index.html');
 let profile=await fs.readFile(aboutFile,'utf8');
 profile=profile
+  .replaceAll('https://snapoki.com/about/','https://snapoki.com/profile/')
   .replace(/<title>[\s\S]*?<\/title>/,'<title>Your Profile | Snapoki</title>')
   .replace(/<meta name="description" content="[^"]*">/,'<meta name="description" content="View your Snapoki runs, personal-best scores, progression and Daily streaks across every puzzle game.">')
   .replace(/<link rel="canonical" href="[^"]*">/,'<link rel="canonical" href="https://snapoki.com/profile/">')
