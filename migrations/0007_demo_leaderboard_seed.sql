@@ -75,6 +75,7 @@ SELECT
   xp,
   CURRENT_TIMESTAMP
 FROM prepared
+WHERE 1=1
 ON CONFLICT(user_id,game) DO UPDATE SET
   overall_rank_score=excluded.overall_rank_score,
   overall_best_score=excluded.overall_best_score,
