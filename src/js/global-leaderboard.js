@@ -1,11 +1,11 @@
 const tabs=[['career','Career'],['skill','Skill'],['runs','Runs']];
 const state={board:'career'};
-const root=document.querySelector('[data-global-leaderboard]');
 const list=document.getElementById('globalLeaderboardList');
 const status=document.getElementById('globalLeaderboardStatus');
 const tabsHost=document.getElementById('globalLeaderboardTabs');
 const yourRank=document.getElementById('globalLeaderboardYourRank');
 const yourRankLabel=document.getElementById('globalLeaderboardYourRankLabel');
+const signInButton=document.getElementById('leaderboardSignIn');
 
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const formatNumber=value=>new Intl.NumberFormat('en-US').format(Number(value||0));
@@ -62,6 +62,7 @@ async function load(){
     if(!response.ok)throw new Error(data?.error||'Leaderboard unavailable.');
     renderRows(data.rows||[]);
     renderMe(data.me||null);
+    if(signInButton)signInButton.hidden=Boolean(data.me);
     status.textContent=state.board==='career'?'Earn XP every verified completion. Harder puzzles reward more.':state.board==='skill'?'Mastery is the sum of your best verified performance across every game.':'Every verified completion counts. Play more to climb.';
   }catch(error){
     list.innerHTML='<div class="leaderboard-error"><strong>Leaderboard unavailable</strong><span>Try again in a moment.</span><button class="button button-secondary" id="leaderboardRetry" type="button">Retry</button></div>';
@@ -70,13 +71,17 @@ async function load(){
   }
 }
 
-tabsHost.innerHTML=tabs.map(([key,label])=>`<button class="leaderboard-tab${key===state.board?' active':''}" type="button" data-board="${key}">${label}</button>`).join('');
+tabsHost.innerHTML=tabs.map(([key,label])=>`<button class="leaderboard-tab${key===state.board?' active':''}" type="button" data-board="${key}" role="tab" aria-selected="${key===state.board?'true':'false'}">${label}</button>`).join('');
 tabsHost.addEventListener('click',event=>{
   const button=event.target.closest('[data-board]');
   if(!button)return;
   state.board=button.dataset.board;
-  tabsHost.querySelectorAll('[data-board]').forEach(item=>item.classList.toggle('active',item===button));
+  tabsHost.querySelectorAll('[data-board]').forEach(item=>{
+    item.classList.toggle('active',item===button);
+    item.setAttribute('aria-selected',item===button?'true':'false');
+  });
   load();
 });
 
+signInButton?.addEventListener('click',()=>document.getElementById('loginButton')?.click());
 load();
