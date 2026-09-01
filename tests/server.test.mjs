@@ -78,7 +78,7 @@ test('smart next prioritizes unfinished Daily then PB improvement',()=>{
 
 test('bounded progression helpers use one row state and deterministic Daily bitmask',()=>{
   assert.equal(dailyBit('easy'),1);assert.equal(dailyBit('medium'),2);assert.equal(dailyBit('hard'),4);assert.equal(DAILY_COMPLETE_MASK,7);
-  const row={daily_date:'2026-08-19',daily_complete_mask:5,daily_blocked_mask:2,daily_streak:8,longest_daily_streak:12,easy_clears:3,easy_best_score:4200,easy_rank_score:900,medium_clears:0,hard_clears:1,hard_best_score:4700,hard_rank_score:4300};
+  const row={daily_date:'2026-08-19',daily_complete_mask:5,daily_blocked_mask:2,daily_streak:8,longest_daily_streak:12,last_daily_complete_date:'2026-08-19',easy_clears:3,easy_best_score:4200,easy_rank_score:900,medium_clears:0,hard_clears:1,hard_best_score:4700,hard_rank_score:4300};
   const daily=dailyProgressFromRow(row,'2026-08-19');
   assert.deepEqual(daily.completed,['easy','hard']);assert.equal(daily.blockedMask,2);assert.equal(daily.streak,8);
   const mastery=masteryFromRow(row);assert.equal(mastery.easy.complete,true);assert.equal(mastery.medium.complete,false);assert.equal(mastery.hard.rank_score,4300);
