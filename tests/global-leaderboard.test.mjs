@@ -27,7 +27,8 @@ test('global leaderboard API exposes bounded Career, Skill and Runs boards',asyn
 test('global leaderboard page is generated after account profile generation',async()=>{
   const script=await read('scripts/global-leaderboard.mjs');
   const packageJson=await read('package.json');
-  assert.match(script,/leaderboard\/index\.html/);
+  assert.match(script,/path\.join\(dist,'leaderboard'\)/);
+  assert.match(script,/path\.join\(dir,'index\.html'\)/);
   assert.match(script,/global-leaderboard\.css/);
   assert.match(script,/global-leaderboard\.js/);
   assert.match(script,/sitemap\.xml/);
@@ -37,9 +38,9 @@ test('global leaderboard page is generated after account profile generation',asy
 test('global leaderboard UI has the three motivation paths and a persistent YOU area',async()=>{
   const ui=await read('src/js/global-leaderboard.js');
   const css=await read('src/styles/global-leaderboard.css');
-  assert.match(ui,/\['career','Career'\]/);
-  assert.match(ui,/\['skill','Skill'\]/);
-  assert.match(ui,/\['runs','Runs'\]/);
+  assert.match(ui,/\['career','Most XP'\]/);
+  assert.match(ui,/\['skill','Best Score'\]/);
+  assert.match(ui,/\['runs','Most Played'\]/);
   assert.match(ui,/YOU/);
   assert.match(ui,/leaderboardSignIn/);
   assert.match(css,/leaderboard-row\.is-me/);
