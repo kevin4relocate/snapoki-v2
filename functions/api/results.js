@@ -1,6 +1,6 @@
 import {error,json,methodNotAllowed,readJson} from '../_lib/http.js';
 import {requireSession} from '../_lib/auth.js';
-import {rankingPoints,validDifficulty,validGame,validMode,difficultyMultiplier} from '../_lib/games.js';
+import {rankingPoints,validGame,validGameDifficulty,validGameMode,difficultyMultiplier} from '../_lib/games.js';
 import {verifyAndScoreResult} from '../_lib/scoring.js';
 import {anomalyAssessment,crossedMilestone,chooseSmartNext} from '../_lib/ranking-policy.js';
 import {dailyBit,dailyProgressFromRow,isBetterPerformance,masteryFromRow,progressionXp} from '../_lib/progression.js';
@@ -25,6 +25,16 @@ function dailyPayload(row,today){
   };
 }
 function ensureStats(env,userId,game){return env.DB.prepare('INSERT OR IGNORE INTO user_game_stats (user_id,game) VALUES (?,?)').bind(userId,game);}
+function dailyDateFromSeed(seed,game,difficulty){const match=String(seed||'').match(new RegExp(`^${game}:(\\d{4}-\\d{2}-\\d{2}):${difficulty}$`));return match?.[1]||'';}
+function hourBucket(date=new Date()){return date.toISOString().slice(0,13);}
+
+async function recentHourlyFinishes(env,userId,bucket){
+  const row=await env.DB.prepare('SELECT ranked_hour_bucket,ranked_hour_count FROM users WHERE id=? LIMIT 1').bind(userId).first();
+  return row?.ranked_hour_bucket===bucket?Math.max(0,Number(row.ranked_hour_count||0)):0;
+}
+function incrementHourlyFinishes(env,userId,bucket){
+  return env.DB.prepare(`UPDATE users SET ranked_hour_count=CASE WHEN ranked_hour_bucket=? THEN ranked_hour_count+1 ELSE 1 END,ranked_hour_bucket=? WHERE id=?`).bind(bucket,bucket,userId);
+}
 
 function regularUpdate(env,{userId,game,difficulty,rankScore,score,timeMs,xpGain,achievedAt,runId}){
   const c=COLUMNS[difficulty];
@@ -62,26 +72,23 @@ function regularUpdate(env,{userId,game,difficulty,rankScore,score,timeMs,xpGain
   );
 }
 
-function dailyUpdate(env,{userId,game,difficulty,xpGain,today,runId,updatedAt,countProgress}){
-  const c=COLUMNS[difficulty],bit=dailyBit(difficulty),increment=countProgress?1:0;
+function dailyUpdate(env,{userId,game,difficulty,today,runId,updatedAt}){
+  const bit=dailyBit(difficulty);
   return env.DB.prepare(`
     UPDATE user_game_stats
-    SET games_completed=games_completed+?,
-        ${c.clears}=${c.clears}+?,
-        xp=xp+?,
-        daily_complete_mask=CASE WHEN daily_date=? THEN (daily_complete_mask | ?) ELSE ? END,
+    SET daily_complete_mask=CASE WHEN daily_date=? THEN (daily_complete_mask | ?) ELSE ? END,
         daily_blocked_mask=CASE WHEN daily_date=? THEN daily_blocked_mask ELSE 0 END,
         daily_date=?,
         updated_at=?
     WHERE user_id=? AND game=?
       AND EXISTS (SELECT 1 FROM ranked_attempts WHERE run_id=? AND user_id=? AND consumed_at IS NULL)
-  `).bind(increment,increment,xpGain,today,bit,bit,today,today,updatedAt,userId,game,runId,userId);
+  `).bind(today,bit,bit,today,today,updatedAt,userId,game,runId,userId);
 }
 
-async function extendDailyStreak(env,userId,game,today,updatedAt){
+function dailyStreakUpdate(env,userId,game,today,updatedAt){
   const yesterday=new Date(`${today}T00:00:00Z`);yesterday.setUTCDate(yesterday.getUTCDate()-1);
   const previous=yesterday.toISOString().slice(0,10);
-  await env.DB.prepare(`
+  return env.DB.prepare(`
     UPDATE user_game_stats
     SET daily_streak=CASE WHEN last_daily_complete_date=? THEN daily_streak+1 ELSE 1 END,
         longest_daily_streak=MAX(longest_daily_streak,CASE WHEN last_daily_complete_date=? THEN daily_streak+1 ELSE 1 END),
@@ -89,7 +96,7 @@ async function extendDailyStreak(env,userId,game,today,updatedAt){
         updated_at=?
     WHERE user_id=? AND game=? AND daily_date=? AND daily_complete_mask=7
       AND COALESCE(last_daily_complete_date,'')<>?
-  `).bind(previous,previous,today,updatedAt,userId,game,today,today).run();
+  `).bind(previous,previous,today,updatedAt,userId,game,today,today);
 }
 
 async function duplicateResponse(env,{attempt,userId,game,today}){
@@ -123,49 +130,55 @@ export async function onRequest({request,env}){
   const runId=typeof body.run_id==='string'?body.run_id.trim():'';
   if(runId.length<20||runId.length>180)return error('Invalid run id.',400,'INVALID_RUN_ID');
   if(!validGame(body.game))return error('Invalid game.',400,'INVALID_GAME');
-  if(!validDifficulty(body.difficulty))return error('Invalid difficulty.',400,'INVALID_DIFFICULTY');
-  if(!validMode(body.mode))return error('Invalid mode.',400,'INVALID_MODE');
+  if(!validGameDifficulty(body.game,body.difficulty))return error('Invalid difficulty for this game.',400,'INVALID_DIFFICULTY');
+  if(!validGameMode(body.game,body.mode))return error('This mode is not available for this game.',400,'INVALID_MODE');
   if(body.solution_used)return json({eligible:false,ranking_points:0,reason:'practice'});
 
   try{
     const attempt=await env.DB.prepare(`
       SELECT run_id,user_id,game,difficulty,mode,seed,started_at,expires_at,consumed_at,
-             solution_revealed,completed_score,completed_rank_score,completed_time_ms,completed_at
+             solution_revealed,hint_count,completed_score,completed_rank_score,completed_time_ms,completed_at
       FROM ranked_attempts
       WHERE run_id=? AND user_id=?
       LIMIT 1
     `).bind(runId,session.user.id).first();
     if(!attempt)return error('This verified attempt is no longer active. Start a New Puzzle.',409,'ATTEMPT_NOT_FOUND');
-    const today=new Date().toISOString().slice(0,10);
+    const currentDate=new Date().toISOString().slice(0,10);
+    const dailyDate=attempt.mode==='daily'?dailyDateFromSeed(attempt.seed,attempt.game,attempt.difficulty):currentDate;
+    const progressDate=dailyDate||currentDate;
     if(attempt.game!==body.game||attempt.difficulty!==body.difficulty||attempt.mode!==body.mode)return error('Attempt details do not match.',409,'ATTEMPT_MISMATCH');
-    if(attempt.completed_at)return json(await duplicateResponse(env,{attempt,userId:session.user.id,game:body.game,today}));
+    if(attempt.completed_at)return json(await duplicateResponse(env,{attempt,userId:session.user.id,game:body.game,today:progressDate}));
     if(Number(attempt.solution_revealed)===1)return json({eligible:false,duplicate:true,ranking_points:0,reason:'practice'});
     if(attempt.consumed_at)return error('This attempt has already been used.',409,'ATTEMPT_CONSUMED');
     if(Date.parse(attempt.expires_at)<=Date.now())return error('This attempt has expired.',410,'ATTEMPT_EXPIRED');
     if(!body.metadata||body.metadata.seed!==attempt.seed)return error('Puzzle seed does not match this attempt.',409,'ATTEMPT_SEED_MISMATCH');
 
     const beforeStats=await fetchGameStats(env,session.user.id,body.game);
-    const beforeDaily=dailyProgressFromRow(beforeStats,today);
+    const beforeDaily=dailyProgressFromRow(beforeStats,progressDate);
     const repeatDaily=body.mode==='daily'&&beforeDaily.completed.includes(body.difficulty);
     const beforeRank=body.mode==='normal'?await rankSnapshot(env,session.user.id,body.game,'overall'):null;
     const serverTimeMs=Math.max(1000,Date.now()-Date.parse(attempt.started_at));
-    const verified=verifyAndScoreResult({game:body.game,difficulty:body.difficulty,mode:body.mode,time_ms:serverTimeMs,hints_used:body.hints_used,metadata:body.metadata});
+    const serverHints=Math.max(0,Number(attempt.hint_count||0));
+    const verified=verifyAndScoreResult({game:body.game,difficulty:body.difficulty,mode:body.mode,time_ms:serverTimeMs,hints_used:serverHints,metadata:body.metadata,expected_seed:attempt.seed});
     if(!verified.ok)return error('This result could not be verified as a valid finish.',422,verified.reason||'RESULT_NOT_VERIFIED');
 
     const score=verified.score,timeMs=verified.timeMs,hints=verified.hints;
     const candidateRankScore=body.mode==='normal'?rankingPoints({difficulty:body.difficulty,mode:'normal',score,hints}):0;
-    const anomaly=anomalyAssessment({game:body.game,difficulty:body.difficulty,timeMs,score,recentHourlyFinishes:0});
+    const bucket=hourBucket(),recent=await recentHourlyFinishes(env,session.user.id,bucket);
+    const anomaly=anomalyAssessment({game:body.game,difficulty:body.difficulty,timeMs,score,recentHourlyFinishes:recent+1});
     const eligible=!anomaly.suspicious;
-    const countsForProgress=eligible&&!repeatDaily;
-    const xpGain=countsForProgress?progressionXp({difficulty:body.difficulty,score,hints}):0;
+    const xpGain=eligible&&body.mode==='normal'?progressionXp({difficulty:body.difficulty,score,hints}):0;
     const now=new Date().toISOString();
     const operations=[ensureStats(env,session.user.id,body.game)];
 
     if(eligible){
-      operations.push(body.mode==='normal'
-        ?regularUpdate(env,{userId:session.user.id,game:body.game,difficulty:body.difficulty,rankScore:candidateRankScore,score,timeMs,xpGain,achievedAt:now,runId})
-        :dailyUpdate(env,{userId:session.user.id,game:body.game,difficulty:body.difficulty,xpGain,today,runId,updatedAt:now,countProgress:countsForProgress}));
+      if(body.mode==='normal')operations.push(regularUpdate(env,{userId:session.user.id,game:body.game,difficulty:body.difficulty,rankScore:candidateRankScore,score,timeMs,xpGain,achievedAt:now,runId}));
+      else{
+        operations.push(dailyUpdate(env,{userId:session.user.id,game:body.game,difficulty:body.difficulty,today:progressDate,runId,updatedAt:now}));
+        operations.push(dailyStreakUpdate(env,session.user.id,body.game,progressDate,now));
+      }
     }
+    operations.push(incrementHourlyFinishes(env,session.user.id,bucket));
     operations.push(env.DB.prepare(`
       UPDATE ranked_attempts
       SET consumed_at=?,completed_score=?,completed_rank_score=?,completed_time_ms=?,completed_at=?
@@ -173,11 +186,10 @@ export async function onRequest({request,env}){
     `).bind(now,score,eligible?candidateRankScore:0,timeMs,now,runId,session.user.id));
 
     await env.DB.batch(operations);
-    if(eligible&&body.mode==='daily')await extendDailyStreak(env,session.user.id,body.game,today,now);
 
     const afterStats=await fetchGameStats(env,session.user.id,body.game);
     const afterRank=body.mode==='normal'?await rankSnapshot(env,session.user.id,body.game,'overall'):null;
-    const progress=dailyPayload(afterStats,today);
+    const progress=dailyPayload(afterStats,progressDate);
     const beforeOverall=Number(beforeStats?.overall_rank_score||0),afterOverall=Number(afterStats?.overall_rank_score||0);
     const newPersonalBest=eligible&&body.mode==='normal'&&isBetterPerformance(
       {rankScore:candidateRankScore,score,timeMs},
@@ -198,6 +210,7 @@ export async function onRequest({request,env}){
       reward_multiplier:body.mode==='normal'?difficultyMultiplier(body.difficulty):0,
       verified:true,
       time_ms:timeMs,
+      hints_used:hints,
       previous_best:Number(beforeStats?.overall_best_score||0),
       best_score:Number(afterStats?.overall_best_score||0),
       new_personal_best:newPersonalBest,
@@ -210,6 +223,7 @@ export async function onRequest({request,env}){
       repeat_daily:repeatDaily,
       ranking_excluded:anomaly.suspicious,
       anomaly_risk:anomaly.risk,
+      anomaly_reasons:anomaly.reasons,
       mode:body.mode,
       xp_gain:xpGain,
       ...progress
