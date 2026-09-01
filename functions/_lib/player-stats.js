@@ -58,7 +58,7 @@ export async function rankSnapshot(env,userId,game,board='overall'){
            s.${fields.achieved} AS achieved_at
     FROM user_game_stats s
     JOIN users u ON u.id=s.user_id
-    WHERE s.user_id=? AND s.game=? AND s.${fields.rank}>0
+    WHERE s.user_id=? AND s.game=? AND s.${fields.rank}>0 AND u.google_sub NOT LIKE 'demo:%'
     LIMIT 1
   `).bind(userId,game).first();
   if(!row)return null;
@@ -78,8 +78,9 @@ export async function rankSnapshot(env,userId,game,board='overall'){
   const binds=[game,...betterBinds({...me,rank_score:me.rank_score,best_score:me.best_score})];
   const count=await env.DB.prepare(`
     SELECT COUNT(*) AS count
-    FROM user_game_stats
-    WHERE game=? AND ${fields.rank}>0 AND ${betterSql(fields)}
+    FROM user_game_stats s
+    JOIN users u ON u.id=s.user_id
+    WHERE s.game=? AND s.${fields.rank}>0 AND u.google_sub NOT LIKE 'demo:%' AND ${betterSql(fields)}
   `).bind(...binds).first();
   me.position=numeric(count?.count)+1;
 
@@ -93,7 +94,7 @@ export async function rankSnapshot(env,userId,game,board='overall'){
              s.${fields.achieved} AS achieved_at
       FROM user_game_stats s
       JOIN users u ON u.id=s.user_id
-      WHERE s.game=? AND s.${fields.rank}>0 AND ${betterSql(fields)}
+      WHERE s.game=? AND s.${fields.rank}>0 AND u.google_sub NOT LIKE 'demo:%' AND ${betterSql(fields)}
       ORDER BY s.${fields.rank} ASC,
                s.${fields.score} ASC,
                COALESCE(s.${fields.time},9223372036854775807) DESC,
@@ -129,7 +130,7 @@ export async function topRankingRows(env,game,board='overall',limit=8,currentUse
            s.${fields.achieved} AS achieved_at
     FROM user_game_stats s
     JOIN users u ON u.id=s.user_id
-    WHERE s.game=? AND s.${fields.rank}>0
+    WHERE s.game=? AND s.${fields.rank}>0 AND u.google_sub NOT LIKE 'demo:%'
     ORDER BY s.${fields.rank} DESC,
              s.${fields.score} DESC,
              COALESCE(s.${fields.time},9223372036854775807) ASC,
