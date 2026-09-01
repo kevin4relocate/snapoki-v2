@@ -28,15 +28,24 @@ export function isBetterPerformance(candidate,current={}){
   return false;
 }
 
+function visibleDailyStreak(row,today){
+  const stored=Number(row?.daily_streak||0),last=String(row?.last_daily_complete_date||'');
+  if(!stored||!last)return 0;
+  if(last===today)return stored;
+  const yesterday=new Date(`${today}T00:00:00Z`);yesterday.setUTCDate(yesterday.getUTCDate()-1);
+  return last===yesterday.toISOString().slice(0,10)?stored:0;
+}
+
 export function dailyProgressFromRow(row,today=new Date().toISOString().slice(0,10)){
-  if(!row||row.daily_date!==today)return{completed:[],mask:0,blockedMask:0,streak:Number(row?.daily_streak||0),longestStreak:Number(row?.longest_daily_streak||0)};
+  const streak=visibleDailyStreak(row,today),longestStreak=Number(row?.longest_daily_streak||0);
+  if(!row||row.daily_date!==today)return{completed:[],mask:0,blockedMask:0,streak,longestStreak};
   const mask=Number(row.daily_complete_mask||0),blockedMask=Number(row.daily_blocked_mask||0);
   return{
     completed:Object.entries(DAILY_BITS).filter(([,bit])=>(mask&bit)!==0).map(([difficulty])=>difficulty),
     mask,
     blockedMask,
-    streak:Number(row.daily_streak||0),
-    longestStreak:Number(row.longest_daily_streak||0)
+    streak,
+    longestStreak
   };
 }
 
