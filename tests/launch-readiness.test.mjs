@@ -30,7 +30,7 @@ function localTargetExists(raw){
 }
 
 test('launch build has the complete scalable route set',()=>{
-  const expected=1+GAMES.length+contentRoutes.length+1+GAMES.length;
+  const expected=1+GAMES.length+contentRoutes.length+1+GAMES.length+1; // homepage + games + content + blog + guides + global leaderboard
   const pages=indexableHtml();
   assert.equal(pages.length,expected,`expected ${expected} indexable pages`);
   for(const g of GAMES){
@@ -38,7 +38,7 @@ test('launch build has the complete scalable route set',()=>{
     assert.ok(fs.existsSync(path.join(dist,'blog',`how-to-play-${g.slug}`,'index.html')),`missing guide ${g.slug}`);
     assert.ok(fs.existsSync(path.join(dist,'brand','guides',`${g.slug}.svg`)),`missing guide illustration ${g.slug}`);
   }
-  for(const route of [...contentRoutes,'blog'])assert.ok(fs.existsSync(path.join(dist,route,'index.html')),`missing ${route}`);
+  for(const route of [...contentRoutes,'blog','leaderboard'])assert.ok(fs.existsSync(path.join(dist,route,'index.html')),`missing ${route}`);
 });
 
 test('every indexable page has unique canonical metadata and one H1',()=>{
