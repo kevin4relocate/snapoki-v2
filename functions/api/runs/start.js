@@ -69,13 +69,14 @@ export async function onRequest({request,env}){
       if(Number(previous.solution_revealed)===1)return json({seed,ranked:false,reason:'solution_viewed',reward_multiplier:mode==='normal'?difficultyMultiplier(difficulty):0});
       if(previous.completed_at||previous.consumed_at)return json({seed,ranked:false,reason:'recent_replay',reward_multiplier:mode==='normal'?difficultyMultiplier(difficulty):0});
       if(Date.parse(previous.expires_at)<=Date.now())return json({seed,ranked:false,reason:'attempt_expired',reward_multiplier:mode==='normal'?difficultyMultiplier(difficulty):0});
+      if(Number(previous.hint_count||0)>0)return json({seed,ranked:false,reason:'hinted_reset',reward_multiplier:mode==='normal'?difficultyMultiplier(difficulty):0});
       return json({
         run_id:previous.run_id,
         seed,
         started_at:previous.started_at,
         expires_at:previous.expires_at,
         ranked:true,
-        hints_used:Number(previous.hint_count||0),
+        hints_used:0,
         reward_multiplier:mode==='normal'?difficultyMultiplier(difficulty):0
       });
     }else if(mode==='daily'){
