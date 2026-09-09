@@ -8,7 +8,7 @@ import {GAMES,DIFFICULTY_REWARDS} from '../src/js/games-config.js';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const extract=(html,tag,className)=>{const start=html.indexOf(`<${tag} class="${className}"`),end=html.indexOf(`</${tag}>`,start);return html.slice(start,end+tag.length+3);};
-const contentRoutes=['about','help','privacy','terms','how-to-play','daily-challenges','rankings-guide'];
+const contentRoutes=['about','help','privacy','terms','how-to-play','daily-challenges'];
 
 test('build produced homepage game routes and guide routes',()=>{
   assert.ok(fs.existsSync(path.join(root,'dist/index.html')));
@@ -26,12 +26,11 @@ test('header and footer are identical everywhere',()=>{
 test('all game pages retain shared platform controls rail daily and result contracts',()=>{
   for(const g of GAMES){
     const html=read(`dist/${g.slug}/index.html`);
-    for(const id of ['newPuzzle','hint','solution','resetPuzzle','rankingList','profileBody','dailyProgress','resultModal'])assert.match(html,new RegExp(`id="${id}"`));
-    assert.doesNotMatch(html,/id="undoAction"/);
+    for(const id of ['newPuzzle','hint','solution','resetPuzzle','dailyProgress','resultModal'])assert.match(html,new RegExp(`id="${id}"`));
+    assert.doesNotMatch(html,/id="undoAction"|id="rankingList"|id="profileBody"/);
     assert.match(html,/class="panel left-panel"/);
     assert.match(html,/class="right-panel"/);
-    assert.match(html,/Personal Best/);
-    assert.match(html,/Your best score counts\./);
+    assert.doesNotMatch(html,/Personal Best|Your best score counts\.|Sign in/);
   }
 });
 
@@ -138,14 +137,13 @@ test('legacy results are retained only as migration archive and no runtime API d
   for(const file of ['functions/api/results.js','functions/api/profile.js','functions/api/rankings.js','functions/api/runs/start.js','functions/api/runs/reveal.js'])assert.doesNotMatch(read(file),/\bFROM results\b|\bINTO results\b|\bJOIN results\b/);
 });
 
-test('instant loading optimization remains intact',()=>{
-  const page=read('src/js/game-page.js'),site=read('src/js/site.js'),api=read('src/js/api.js');
+test('instant guest loading remains intact without auth bootstrap',()=>{
+  const page=read('src/js/game-page.js'),site=read('src/js/site.js');
   assert.match(page,/enginePromise=loadEngineFactory\(\)/);
   assert.match(page,/Promise\.all\(\[enginePromise,attemptPromise\]\)/);
-  assert.match(page,/consumeRankedAttempt/);
-  assert.match(site,/hydrateCachedAuth/);
   assert.match(site,/warmGameModule/);
-  assert.match(api,/prefetchRankedAttempt/);
+  assert.match(site,/SnapokiAuthReady=Promise\.resolve/);
+  assert.doesNotMatch(site,/SnapokiAuthReady=refreshAuth\(\)/);
 });
 
 test('competitive ranking remains capped at eight with YOU motivation',()=>{
@@ -165,8 +163,10 @@ test('SEO and guide content remain available',()=>{
   const home=read('dist/index.html'),sitemap=read('dist/sitemap.xml'),robots=read('dist/robots.txt');
   assert.match(home,/application\/ld\+json/);
   assert.match(home,/rel="canonical"/);
-  assert.match(home,/Personal-Best Rankings/);
-  for(const route of ['how-to-play','daily-challenges','rankings-guide','blog'])assert.match(sitemap,new RegExp(`${route}/`));
+  assert.match(home,/Play Instantly/);
+  assert.doesNotMatch(home,/Personal-Best Rankings|Sign in/);
+  for(const route of ['how-to-play','daily-challenges','blog'])assert.match(sitemap,new RegExp(`${route}/`));
+  assert.doesNotMatch(sitemap,/rankings-guide|leaderboard|profile/);
   for(const g of GAMES){
     assert.ok(fs.existsSync(path.join(root,`dist/blog/how-to-play-${g.slug}/index.html`)));
     assert.ok(fs.existsSync(path.join(root,`dist/brand/guides/${g.slug}.svg`)));
