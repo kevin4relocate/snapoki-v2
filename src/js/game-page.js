@@ -34,8 +34,7 @@ const state={
   dailyStreak:0,
   smartNext:null,
   startToken:0,
-  rankingBoard:'overall'
-};
+  };
 
 const capability=name=>game.capabilities?.[name]!==false;
 
@@ -44,7 +43,6 @@ function setMetric(k,v){const e=metricElement(k);if(e)e.textContent=String(v);}
 function setMetrics(v={}){Object.entries(v).forEach(([k,x])=>setMetric(k,x));updateControlAvailability();}
 function setStatus(t){renderGameStatus($('#gameStatus'),gameKey,t);}
 function modeName(){return state.mode==='daily'?'Daily Challenge':'Regular Play';}
-function hasAccount(){return false;}
 function runLabel(){
   if(review)return`Review · ${review.score}`;
   if(state.solutionUsed)return state.practiceComplete?'Practice Complete':'Practice';
@@ -184,7 +182,7 @@ function ensureReviewPanel(){
   const bandButtons=COLOR_CONNECT_REVIEW_BANDS.map(band=>`<button type="button" data-review-band="${band}" class="${band===review.band?'active':''}">${band}</button>`).join('');
   const samples=COLOR_CONNECT_REVIEW_SAMPLES.filter(sample=>sample.band===review.band);
   const sampleButtons=samples.map((sample,index)=>`<button type="button" data-review-seed="${sample.seed}" class="${sample.seed===review.seed?'active':''}">Sample ${index+1} · ${sample.score}</button>`).join('');
-  panel.innerHTML=`<div class="color-review-head"><div><b>Calibration Review · Score ${review.score}</b><small>Practice-only. No ranking or Daily progress writes.</small></div><a class="color-review-exit" href="/color-connect/">Exit Review</a></div><div class="color-review-bands">${bandButtons}</div><div class="color-review-samples">${sampleButtons}</div><div class="color-review-metrics">${review.backtracks} backtracks · ${review.deadEnds} dead ends · ${review.decisions} decisions · ${review.greedyTraps} greedy traps · ${review.temptingRoutes} tempting routes · ${review.shortcutVictims} shortcut victims</div>`;
+  panel.innerHTML=`<div class="color-review-head"><div><b>Calibration Review · Score ${review.score}</b><small>Practice-only. No Daily progress is saved.</small></div><a class="color-review-exit" href="/color-connect/">Exit Review</a></div><div class="color-review-bands">${bandButtons}</div><div class="color-review-samples">${sampleButtons}</div><div class="color-review-metrics">${review.backtracks} backtracks · ${review.deadEnds} dead ends · ${review.decisions} decisions · ${review.greedyTraps} greedy traps · ${review.temptingRoutes} tempting routes · ${review.shortcutVictims} shortcut victims</div>`;
   panel.addEventListener('click',event=>{
     const seedButton=event.target.closest('[data-review-seed]'),bandButton=event.target.closest('[data-review-band]');
     if(seedButton){const sample=COLOR_CONNECT_REVIEW_SAMPLES.find(item=>item.seed===seedButton.dataset.reviewSeed);if(sample)location.href=colorConnectReviewUrl(sample);return;}
@@ -216,7 +214,7 @@ async function startPuzzle({reuseSeed=false}={}){
     state.engine=createGame({host:$('#gameBoard'),difficulty:state.difficulty,mode:state.mode,seed:state.seed,onMetrics:setMetrics,onStatus:setStatus,onComplete:finishPuzzle,onPracticeComplete:message=>finishPractice(review?`Review sample ${review.score} complete. Reset this sample or choose another calibration board.`:message)});
     state.loading=false;updateActiveControls();beginTimer();
     if(review)setStatus(`Review ${review.band} · score ${review.score} · practice-only.`);
-    else if(state.unrankedReason==='recent_replay')setStatus('Replay mode: enjoy the same board again, but only a fresh Regular Play puzzle can improve your PB.');
+    else if(state.unrankedReason==='recent_replay')setStatus('Replay mode: enjoy the same board again, or start a New Puzzle for a fresh challenge.');
     else if(state.unrankedReason==='daily_solution_viewed')setStatus('Daily Practice: Solution was viewed for this level today, so it cannot count toward today’s streak.');
   }catch(error){
     if(token!==state.startToken)return;
@@ -234,12 +232,7 @@ async function resetAttempt(){
   state.loading=true;state.completed=false;state.practiceComplete=false;state.hints=0;state.solutionVisible=false;state.smartNext=null;stopTimer();hidePracticeNotice();hideSolutionNavigator();
   if(!practiceLocked){
     state.solutionUsed=false;state.ranked=false;state.unrankedReason='';setPracticeUi(false,false);updateActiveControls();
-    if(hasAccount()&&previousRunId&&capability('ranking')){
-      const attempt=await rankedAttempt(previousRunId);
-      if(token!==state.startToken)return;
-      if(attempt?.run_id&&attempt.seed===state.seed){state.runId=attempt.run_id;state.ranked=true;}
-      else{state.runId=makeRunId(game.key);state.unrankedReason=attempt?.reason||'';}
-    }else state.runId=makeRunId(game.key);
+    state.runId=makeRunId(game.key);
   }else{
     state.ranked=false;state.unrankedReason='solution_viewed';setPracticeUi(true,false);updateActiveControls();
   }
