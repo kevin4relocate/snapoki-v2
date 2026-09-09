@@ -42,7 +42,7 @@ function metricElement(k){return document.querySelector(`[data-metric-value="${k
 function setMetric(k,v){const e=metricElement(k);if(e)e.textContent=String(v);}
 function setMetrics(v={}){Object.entries(v).forEach(([k,x])=>setMetric(k,x));updateControlAvailability();}
 function setStatus(t){renderGameStatus($('#gameStatus'),gameKey,t);}
-function modeName(){return state.mode==='daily'?'Daily Challenge':'Regular Play';}
+function modeName(){return state.mode==='daily'?'Daily Challenge':game.modeLabel||'Regular Play';}
 function runLabel(){
   if(review)return`Review · ${review.score}`;
   if(state.solutionUsed)return state.practiceComplete?'Practice Complete':'Practice';
@@ -69,7 +69,8 @@ function updateActiveControls(){
 }
 
 function decorateRewards(){
-  for(const button of $$('.difficulty-button')){
+  if(game.ranking?.enabled===false||game.capabilities?.ranking===false)return;
+  for(const button of $('.difficulty-button')){
     if(button.querySelector('.difficulty-reward'))continue;
     const mult=DIFFICULTY_REWARDS[button.dataset.difficulty]||1,reward=document.createElement('em');
     reward.className='difficulty-reward';
@@ -237,9 +238,9 @@ async function resetAttempt(){
     state.ranked=false;state.unrankedReason='solution_viewed';setPracticeUi(true,false);updateActiveControls();
   }
   state.engine.reset?.();setMetric('hints','0');state.loading=false;setPracticeUi(practiceLocked,false);beginTimer();
-  setStatus(practiceLocked?'Practice reset. This same board remains practice-only after viewing Solution; New Puzzle starts a fresh board.':'Puzzle reset. Have another go.');
+  setStatus(practiceLocked?'Practice reset. This same board remains practice-only after viewing Solution; New Puzzle starts a fresh board.':game.capabilities?.daily===false&&game.capabilities?.ranking===false?'Session reset. A new endless run has started.':'Puzzle reset. Have another go.');
 }
-function setDifficulty(d,start=true){if(review||state.loading||!game.levels.some(([k])=>k===d))return;state.difficulty=d;updateActiveControls();if(start)startPuzzle();}
+function setDifficulty(d,start=true){if(review||state.loading||!game.levels.some(([k])=>k===d))return;state.difficulty=d;updateActiveControls();if(game.key==='world-loop'&&state.engine?.setDifficulty){state.engine.setDifficulty(d);return;}if(start)startPuzzle();}
 function setMode(m,start=true){if(review||state.loading||!['normal','daily'].includes(m)||m==='daily'&&!capability('daily'))return;state.mode=m;updateActiveControls();if(start)startPuzzle();}
 function difficultyLabel(key=state.difficulty){return game.levels.find(([k])=>k===key)?.[1]||key;}
 

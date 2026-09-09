@@ -47,6 +47,15 @@ const PRESENTATION={
     tools:[['Hint','exact edge to change'],['Solution','one ghost loop']],
     socialHook:'Can you close the loop?'
   },
+
+  'world-loop':{
+    styles:['world-loop.css'],
+    solutionLabel:'Guide',
+    goal:{tokens:['PICK COUNTRIES','WATCH FOREVER'],joiner:'→',note:'No finish line'},
+    rows:[['Run','Every country has one lane and keeps moving forward continuously. There is no finish line.'],['Distance','The camera scrolls with the pack while each racer accumulates distance forever instead of resetting.'],['Control','Pause keeps the same session. Stop returns to country selection; Restart returns all distances to zero with the same countries.']],
+    tools:[['Pause','freeze / resume'],['Full Screen','screensaver view'],['Restart','new endless session']],
+    socialHook:'Who leads after an hour?'
+  },
   bridges:{
     styles:['bridges.css','bridges-progress-fix.css'],
     goal:{tokens:['MATCH NUMBERS'],joiner:'+',note:'One connected network'},
