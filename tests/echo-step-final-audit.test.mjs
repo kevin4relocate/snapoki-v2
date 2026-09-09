@@ -61,7 +61,7 @@ test('Echo Step result modal removes redundant guest actions and Guide label com
   assert.match(built,/label=presentation\.solutionLabel\|\|'Solution'/);
   assert.match(built,/label==='Solution'\?'Hide Solution':`Exit \$\{label\}`/);
   assert.match(built,/next\.hidden=!action;if\(!action\)return/);
-  assert.match(built,/hasAccount\(\)\?'Unverified':'—'/);
+  assert.match(built,/state\.mode==='daily'\?'Saved':'Local'/);
   assert.doesNotMatch(built,/gameKey==='echo-step'\?\(visible/);
 });
 
