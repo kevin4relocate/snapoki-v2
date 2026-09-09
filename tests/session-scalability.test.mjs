@@ -5,12 +5,9 @@ import {DatabaseSync} from 'node:sqlite';
 
 const auth=fs.readFileSync('functions/api/auth/google.js','utf8');
 
-test('Google login uses indexed bounded session cleanup instead of an unbounded expiry delete',()=>{
-  assert.match(auth,/SESSION_CLEANUP_BATCH\s*=\s*24/);
-  assert.match(auth,/WHERE expires_at <= \?/);
-  assert.match(auth,/ORDER BY expires_at ASC/);
-  assert.match(auth,/LIMIT \?/);
-  assert.doesNotMatch(auth,/DELETE FROM sessions WHERE datetime\(expires_at\) <= datetime\('now'\)/);
+test('public Google login endpoint is disabled',()=>{
+  assert.match(auth,/ACCOUNTS_DISABLED/);
+  assert.doesNotMatch(auth,/INSERT INTO sessions|SESSION_CLEANUP_BATCH|oauth2\.googleapis/);
 });
 
 test('bounded session cleanup removes at most one small batch and preserves active sessions',()=>{
