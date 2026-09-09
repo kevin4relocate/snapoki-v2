@@ -20,10 +20,13 @@ test('public names are capped at twelve graphemes including ellipsis',()=>{
   assert.match(long,/…$/);
 });
 
-test('public Google account creation is disabled',()=>{
+test('Google auth is admin-only and keeps compact identity',()=>{
   const auth=read('functions/api/auth/google.js');
-  assert.match(auth,/ACCOUNTS_DISABLED/);
-  assert.doesNotMatch(auth,/given_name|tokeninfo|oauth2/);
+  assert.match(auth,/ADMIN_EMAIL/);
+  assert.match(auth,/allowed\.includes\(email\)/);
+  assert.match(auth,/token\?\.given_name/);
+  assert.match(auth,/compactPublicName/);
+  assert.match(auth,/ADMIN_ONLY/);
 });
 
 test('session and ranking responses clamp public names server-side',()=>{
