@@ -1,11 +1,11 @@
 import {getGame,DIFFICULTY_REWARDS} from './games-config.js';
 import {getGamePresentation} from './game-presentation.js';
 import {renderGameStatus} from './game-status.js';
-import {makeRunId} from './api.js';
 import {dailySeed,randomSeed,formatTime} from './games/utils.js';
 import {resolveColorConnectReview,COLOR_CONNECT_REVIEW_SAMPLES,COLOR_CONNECT_REVIEW_BANDS,colorConnectReviewUrl} from './games/color-connect-review.js';
 
-const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const $=(s,r=document)=>r.querySelector(s),$=(s,r=document)=>[...r.querySelectorAll(s)];
+const makeRunId=key=>`local-${key}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;
 const gameKey=document.body.dataset.game,game=getGame(gameKey);
 if(!game)throw new Error(`Unknown Snapoki game: ${gameKey}`);
 const presentation=getGamePresentation(game);
@@ -47,7 +47,7 @@ function runLabel(){
   if(review)return`Review · ${review.score}`;
   if(state.solutionUsed)return state.practiceComplete?'Practice Complete':'Practice';
   if(state.ranked)return modeName();
-  if(state.unrankedReason==='recent_replay')return'Replay · No PB';
+  if(state.unrankedReason==='recent_replay')return'Replay';
   if(state.unrankedReason==='daily_solution_viewed')return'Daily Practice';
   return modeName();
 }
