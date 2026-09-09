@@ -73,16 +73,11 @@ test('shared lifecycle keeps practice completion and dead-control disabling',()=
   assert.match(page,/setDisabled\('#resetPuzzle'/);
 });
 
-test('verified lifecycle is account-bound proof-driven and no longer writes immutable result history',()=>{
-  const page=read('src/js/game-page.js'),results=read('functions/api/results.js'),attempts=read('functions/api/runs/start.js'),reveal=read('functions/api/runs/reveal.js'),scoring=read('functions/_lib/scoring.js');
-  assert.match(page,/\/api\/runs\/reveal/);
-  assert.match(results,/ranked_attempts/);
-  assert.match(results,/user_game_stats/);
-  assert.match(results,/serverTimeMs/);
-  assert.doesNotMatch(results,/INSERT INTO results/);
-  assert.match(reveal,/daily_blocked_mask/);
-  assert.match(attempts,/ON CONFLICT\(user_id,game,difficulty,mode\)/);
-  for(const term of ['verifyEchoStep','verifyMaze','verifyNumberPath','verifyColorConnect','verifyLightsOut','verifyLoop','verifyBridges'])assert.match(scoring,new RegExp(term));
+test('public lifecycle never starts or submits account-bound ranked attempts',()=>{
+  const page=read('src/js/game-page.js');
+  assert.match(page,/async function rankedAttempt\(\)\{return null;\}/);
+  assert.doesNotMatch(page,/\/api\/runs\/reveal|\/api\/results|refreshRankings|refreshProfile/);
+  assert.match(page,/snapoki:daily:v1:/);
 });
 
 test('ranking economy remains x1 x3 x5 but leaderboard uses personal best instead of cumulative farming',()=>{
@@ -96,31 +91,25 @@ test('ranking economy remains x1 x3 x5 but leaderboard uses personal best instea
   assert.doesNotMatch(results,/farmMultiplier|adjustedRegularPoints/);
 });
 
-test('Daily Challenge has no leaderboard award and stores only current state plus streak',()=>{
-  const page=read('src/js/game-page.js'),results=read('functions/api/results.js'),migration=read('migrations/0005_free_tier_scalability.sql');
-  assert.match(results,/body\.mode==='normal'\?rankingPoints/);
-  assert.match(results,/body\.mode==='normal'\?rankingGain:0/);
-  assert.match(migration,/daily_complete_mask/);
-  assert.match(migration,/daily_streak/);
-  assert.match(migration,/longest_daily_streak/);
-  assert.doesNotMatch(page,/\+250 bonus earned|\+250 pts at 3\/3/);
+test('Daily Challenge stores completion and streak only in browser localStorage',()=>{
+  const page=read('src/js/game-page.js');
+  assert.match(page,/localStorage\.getItem/);
+  assert.match(page,/localStorage\.setItem/);
+  assert.match(page,/markLocalDailyComplete/);
+  assert.match(page,/last_complete/);
+  assert.doesNotMatch(page,/\/api\/results|daily_blocked_mask/);
 });
 
-test('rankings expose Overall Easy Medium Hard boards without multiplying rows',()=>{
-  const page=read('src/js/game-page.js'),progression=read('functions/_lib/progression.js'),migration=read('migrations/0005_free_tier_scalability.sql');
-  for(const board of ['overall','easy','medium','hard'])assert.match(page,new RegExp(`'${board}'`));
-  assert.match(page,/ranking-board-tabs/);
-  assert.match(progression,/rankingBoardFields/);
-  assert.match(migration,/PRIMARY KEY \(user_id, game\)/);
+test('public game runtime exposes no ranking boards',()=>{
+  const page=read('src/js/game-page.js'),build=read('scripts/build.mjs');
+  assert.doesNotMatch(page,/ranking-board-tabs|refreshRankings|rankingRow/);
+  assert.doesNotMatch(build,/id="rankingList"|class="panel rankings"/);
 });
 
-test('profile progression is bounded in the same user game row',()=>{
-  const profile=read('functions/api/profile.js'),page=read('src/js/game-page.js'),migration=read('migrations/0005_free_tier_scalability.sql');
-  assert.match(profile,/statsPayload/);
-  assert.match(page,/COMPLETES/);
-  assert.match(page,/RANK PB/);
-  assert.match(page,/LEVEL/);
-  for(const field of ['games_completed','easy_clears','medium_clears','hard_clears','xp'])assert.match(migration,new RegExp(field));
+test('public game runtime exposes no profile progression',()=>{
+  const page=read('src/js/game-page.js'),build=read('scripts/build.mjs');
+  assert.doesNotMatch(page,/refreshProfile|masteryMarkup|COMPLETES|RANK PB/);
+  assert.doesNotMatch(build,/id="profileBody"|class="panel profile"/);
 });
 
 test('attempt storage is bounded to one slot per user game difficulty and mode',()=>{
@@ -142,15 +131,13 @@ test('instant guest loading remains intact without auth bootstrap',()=>{
   assert.match(page,/enginePromise=loadEngineFactory\(\)/);
   assert.match(page,/Promise\.all\(\[enginePromise,attemptPromise\]\)/);
   assert.match(site,/warmGameModule/);
-  assert.match(site,/SnapokiAuthReady=Promise\.resolve/);
-  assert.doesNotMatch(site,/SnapokiAuthReady=refreshAuth\(\)/);
+  assert.doesNotMatch(site,/SnapokiAuth|refreshAuth|Google|loginButton|\/api\/me/);
 });
 
-test('competitive ranking remains capped at eight with YOU motivation',()=>{
-  const page=read('src/js/game-page.js'),api=read('functions/api/rankings.js');
-  assert.match(page,/limit=8/);
-  assert.match(page,/YOU/);
-  assert.match(api,/Math\.min\(8/);
+test('public pages contain no competitive ranking surface',()=>{
+  const page=read('src/js/game-page.js'),home=read('dist/index.html');
+  assert.doesNotMatch(page,/limit=8|rankingList|leaderboard|\bYOU\b/);
+  assert.doesNotMatch(home,/Leaderboard|Personal-Best Rankings|Sign in/);
 });
 
 test('solution navigator remains capability-driven',()=>{
