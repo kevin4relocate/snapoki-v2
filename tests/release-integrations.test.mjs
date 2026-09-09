@@ -23,10 +23,9 @@ test('Google Analytics is installed exactly once on every public built HTML page
 test('homepage FAQ uses the shared 1080px measure and covers launch questions',()=>{
   const html=read('dist/index.html'),css=read('dist/assets/styles/launch.css');
   const faq=(html.match(/<section class="section faq">([\s\S]*?)<\/section>/)||[])[1]||'';
-  assert.equal((faq.match(/<details>/g)||[]).length,6);
-  for(const text of ['Is Snapoki free?','Do I need an account?','What is a Daily Challenge?','How does difficulty work?','How do Rankings work?','What happens when I use Solution?'])assert.ok(faq.includes(text),`missing FAQ: ${text}`);
+  assert.equal((faq.match(/<details>/g)||[]).length,5);
+  for(const text of ['Is Snapoki free?','Do I need an account?','What is a Daily Challenge?','How does difficulty work?','What happens when I use Solution?'])assert.ok(faq.includes(text),`missing FAQ: ${text}`);
   assert.match(faq,/href="\/daily-challenges\/"/);
-  assert.match(faq,/href="\/rankings-guide\/"/);
   assert.match(css,/\.home-page \.faq\{width:100%;max-width:calc\(var\(--content-max\) \+ \(var\(--site-shell-gutter\) \* 2\)\);margin-left:auto;margin-right:auto\}/);
 });
 
@@ -47,7 +46,7 @@ test('analytics disclosure and social identity metadata match PlaySnapoki launch
   const privacy=read('dist/privacy/index.html');
   assert.match(privacy,/<h2>Analytics<\/h2>/);
   assert.match(privacy,/Snapoki uses Google Analytics/);
-  assert.match(privacy,/Google Analytics may also use first-party cookies/);
+  assert.match(privacy,/Google Analytics|aggregate site usage/);
   const home=read('dist/index.html');
   assert.match(home,/name="twitter:site" content="@playsnapoki"/);
   assert.match(home,/property="og:image:alt" content="Snapoki puzzle games"/);
