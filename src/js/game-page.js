@@ -1,7 +1,7 @@
 import {getGame,DIFFICULTY_REWARDS} from './games-config.js';
 import {getGamePresentation} from './game-presentation.js';
 import {renderGameStatus} from './game-status.js';
-import {api,post,makeRunId,ApiError,consumeRankedAttempt,prefetchRankedAttempt} from './api.js';
+import {makeRunId} from './api.js';
 import {dailySeed,randomSeed,formatTime} from './games/utils.js';
 import {resolveColorConnectReview,COLOR_CONNECT_REVIEW_SAMPLES,COLOR_CONNECT_REVIEW_BANDS,colorConnectReviewUrl} from './games/color-connect-review.js';
 
@@ -45,14 +45,14 @@ function setMetric(k,v){const e=metricElement(k);if(e)e.textContent=String(v);}
 function setMetrics(v={}){Object.entries(v).forEach(([k,x])=>setMetric(k,x));updateControlAvailability();}
 function setStatus(t){renderGameStatus($('#gameStatus'),gameKey,t);}
 function modeName(){return state.mode==='daily'?'Daily Challenge':'Regular Play';}
-function hasAccount(){return Boolean(window.SnapokiAuth?.user);}
+function hasAccount(){return false;}
 function runLabel(){
   if(review)return`Review · ${review.score}`;
   if(state.solutionUsed)return state.practiceComplete?'Practice Complete':'Practice';
   if(state.ranked)return modeName();
   if(state.unrankedReason==='recent_replay')return'Replay · No PB';
   if(state.unrankedReason==='daily_solution_viewed')return'Daily Practice';
-  return hasAccount()?`${modeName()} · Unverified`:`${modeName()} · Guest`;
+  return modeName();
 }
 function setDisabled(selector,value){const element=$(selector);if(element)element.disabled=Boolean(value);}
 function updateControlAvailability(){
@@ -76,7 +76,7 @@ function decorateRewards(){
     if(button.querySelector('.difficulty-reward'))continue;
     const mult=DIFFICULTY_REWARDS[button.dataset.difficulty]||1,reward=document.createElement('em');
     reward.className='difficulty-reward';
-    reward.textContent=`×${mult} PB`;
+    reward.textContent=`×${mult} SCORE`;
     button.appendChild(reward);
   }
   for(const button of $$('.daily-level')){
@@ -110,30 +110,8 @@ function guestSeed(reuseSeed=false,previousSeed=''){
   if(reuseSeed&&previousSeed)return previousSeed;
   return state.mode==='daily'?dailySeed(game.key,state.difficulty):randomSeed(game.key,state.difficulty);
 }
-async function waitForAuth(){
-  if(window.SnapokiAuth?.ready)return window.SnapokiAuth;
-  try{if(window.SnapokiAuthReady)await window.SnapokiAuthReady;}catch{}
-  if(window.SnapokiAuth?.ready)return window.SnapokiAuth;
-  await new Promise(resolve=>{
-    let done=false;
-    const finish=()=>{if(done)return;done=true;window.removeEventListener('snapoki:auth-changed',finish);resolve();};
-    window.addEventListener('snapoki:auth-changed',finish,{once:true});
-    setTimeout(finish,900);
-  });
-  return window.SnapokiAuth||{user:null,ready:false};
-}
-async function rankedAttempt(cloneRunId=''){
-  if(review)return null;
-  await waitForAuth();
-  if(!hasAccount()||!capability('ranking')||game.ranking?.enabled===false)return null;
-  try{
-    if(cloneRunId)return await post('/api/runs/start',{game:game.key,difficulty:state.difficulty,mode:state.mode,clone_run_id:cloneRunId});
-    const cached=consumeRankedAttempt(game.key,state.difficulty,state.mode);
-    if(cached)return cached;
-    const warmed=await prefetchRankedAttempt(game.key,state.difficulty,state.mode);
-    return consumeRankedAttempt(game.key,state.difficulty,state.mode)||warmed;
-  }catch(error){console.warn('Verified attempt unavailable',error);return null;}
-}
+async function waitForAuth(){return {user:null,ready:true};}
+async function rankedAttempt(){return null;}
 async function loadEngineFactory(){
   if(state.engineFactory)return state.engineFactory;
   const module=await import(`/assets/js/games/${game.slug}.js`);
@@ -268,7 +246,7 @@ async function resetAttempt(){
     state.ranked=false;state.unrankedReason='solution_viewed';setPracticeUi(true,false);updateActiveControls();
   }
   state.engine.reset?.();setMetric('hints','0');state.loading=false;setPracticeUi(practiceLocked,false);beginTimer();
-  setStatus(practiceLocked?'Practice reset. This same board remains practice-only after viewing Solution; New Puzzle returns to verified play.':state.ranked?'Puzzle reset from the beginning. Verification is active.':'Puzzle reset. This attempt is unverified.');
+  setStatus(practiceLocked?'Practice reset. This same board remains practice-only after viewing Solution; New Puzzle starts a fresh board.':'Puzzle reset. Have another go.');
 }
 function setDifficulty(d,start=true){if(review||state.loading||!game.levels.some(([k])=>k===d))return;state.difficulty=d;updateActiveControls();if(start)startPuzzle();}
 function setMode(m,start=true){if(review||state.loading||!['normal','daily'].includes(m)||m==='daily'&&!capability('daily'))return;state.mode=m;updateActiveControls();if(start)startPuzzle();}
@@ -316,42 +294,55 @@ function openResult(result){
   $('#resultHints').textContent=String(state.hints);
   $('#resultMode').textContent=modeName();
   const replay=state.unrankedReason==='recent_replay'||state.unrankedReason==='daily_solution_viewed';
-  $('#resultRankPoints').textContent=state.ranked?'Saving…':replay?'—':hasAccount()?'Unverified':'—';
+  $('#resultRankPoints').textContent=state.mode==='daily'?'Saved':'Local';
   const status=$('#resultSaveStatus');status.className='result-save-status';
-  status.textContent=state.ranked?'Verifying this account-bound completion…':state.unrankedReason==='recent_replay'?'Replay complete. Start a New Puzzle to chase a new ranking PB.':state.unrankedReason==='daily_solution_viewed'?'Daily practice complete. This level cannot count toward today’s streak because Solution was viewed.':hasAccount()?'This attempt cannot update account progress.':'Guest finish. Sign in, then start a new puzzle to save progress.';
+  status.textContent=state.mode==='daily'?`Daily ${difficultyLabel()} complete on this browser.`:'Nice solve. Start a new puzzle whenever you are ready.';
   modal.hidden=false;document.body.classList.add('modal-open');$('#resultClose')?.focus();
 }
 function closeResult(restore=true){const modal=$('#resultModal');if(!modal||modal.hidden)return;modal.hidden=true;document.body.classList.remove('modal-open');if(restore)state.lastFocused?.focus?.();}
 
-async function saveResult(result){
-  const status=$('#resultSaveStatus');if(!state.ranked)return;
+async function saveResult(){return;}
+
+const dailyStorageKey=()=>`snapoki:daily:v1:${game.key}`;
+const utcDate=(date=new Date())=>date.toISOString().slice(0,10);
+function shiftUtcDate(dateText,days){
+  const date=new Date(`${dateText}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate()+days);
+  return utcDate(date);
+}
+function readDailyStore(){
   try{
-    const saved=await post('/api/results',result);
-    $('#resultScore').textContent=Number(saved.score||0).toLocaleString();
-    if(saved.ranking_excluded)$('#resultRankPoints').textContent='Excluded';
-    else if(state.mode==='daily')$('#resultRankPoints').textContent=saved.daily_complete?`🔥 ${Number(saved.streak||0)}`:'Daily ✓';
-    else $('#resultRankPoints').textContent=`PB ${Number(saved.ranking_score||0).toLocaleString()}`;
-    renderResultInsights(saved);
-    if(Array.isArray(saved.daily_completed))state.dailyCompleted=saved.daily_completed;
-    state.dailyStreak=Number(saved.streak||state.dailyStreak||0);
-    setSmartNext(saved.smart_next||null);renderDaily();
-    if(saved.ranking_excluded){
-      status.classList.add('muted');status.textContent='The puzzle proof was valid, but this completion was excluded from account progression by the fair-play check.';
-    }else if(state.mode==='daily'){
-      status.classList.add('success');status.textContent=saved.daily_complete?`Daily complete. Your streak is ${Number(saved.streak||0)} days.`:`Daily ${difficultyLabel()} saved. ${Number(saved.daily_remaining||0)} ${Number(saved.daily_remaining||0)===1?'level':'levels'} left today.`;
-    }else{
-      status.classList.add('success');status.textContent=saved.duplicate?'This verified completion was already processed.':saved.new_personal_best?'New ranking PB saved.':'Verified completion saved. Your ranking PB stays unchanged.';
-    }
-    if(state.mode==='daily')await refreshProfile();else await refreshRail();
-  }catch(error){
-    if(error instanceof ApiError&&error.status===401){
-      $('#resultRankPoints').textContent='Sign in';status.classList.add('muted');status.textContent='Your session ended. Sign in and start a new puzzle to save progress.';
-    }else if(error instanceof ApiError&&[409,410,422].includes(error.status)){
-      $('#resultRankPoints').textContent='Not saved';status.classList.add('error');status.textContent='This attempt could not be verified. Start a new puzzle and try again.';
-    }else{
-      $('#resultRankPoints').textContent='Not saved';status.classList.add('error');status.textContent='Online verification is temporarily unavailable. Your game can continue.';console.warn(error);
-    }
+    const parsed=JSON.parse(localStorage.getItem(dailyStorageKey())||'null');
+    return parsed&&typeof parsed==='object'?parsed:{};
+  }catch{return {};}
+}
+function writeDailyStore(data){
+  try{localStorage.setItem(dailyStorageKey(),JSON.stringify(data));}catch{}
+}
+function loadLocalDailyProgress(){
+  const today=utcDate(),data=readDailyStore(),valid=new Set(game.levels.map(([key])=>key));
+  state.dailyCompleted=data.date===today&&Array.isArray(data.completed)?data.completed.filter(key=>valid.has(key)):[];
+  const last=typeof data.last_complete==='string'?data.last_complete:'';
+  state.dailyStreak=(last===today||last===shiftUtcDate(today,-1))?Math.max(0,Number(data.streak||0)):0;
+}
+function markLocalDailyComplete(){
+  if(state.mode!=='daily')return;
+  const today=utcDate(),yesterday=shiftUtcDate(today,-1),data=readDailyStore();
+  const completed=data.date===today&&Array.isArray(data.completed)?[...new Set(data.completed)]:[];
+  if(!completed.includes(state.difficulty))completed.push(state.difficulty);
+  let streak=Math.max(0,Number(data.streak||0)),longest=Math.max(0,Number(data.longest||0)),last=typeof data.last_complete==='string'?data.last_complete:'';
+  if(completed.length===game.levels.length&&last!==today){
+    streak=last===yesterday?streak+1:1;
+    longest=Math.max(longest,streak);
+    last=today;
+  }else if(last!==today&&last!==yesterday){
+    streak=0;
   }
+  const next={date:today,completed,streak,longest,last_complete:last};
+  writeDailyStore(next);
+  state.dailyCompleted=completed;
+  state.dailyStreak=streak;
+  renderDaily();
 }
 
 function renderDaily(){
@@ -377,10 +368,11 @@ function finishPractice(message){
 async function finishPuzzle(){
   if(state.completed||!state.engine)return;
   if(review){finishPractice(`Review sample ${review.score} complete. Reset this sample or choose another calibration board.`);return;}
-  if(state.solutionUsed){finishPractice('Practice complete. Start a New Puzzle to return to verified play.');return;}
+  if(state.solutionUsed){finishPractice('Practice complete. Start a New Puzzle for a fresh board.');return;}
   state.completed=true;state.practiceComplete=false;stopTimer();hideSolutionNavigator();updateActiveControls();
   const timeMs=elapsed(),engineResult=state.engine.getResult?.(timeMs,state.hints)||{score:0,metadata:{}};
   const result={run_id:state.runId,game:game.key,difficulty:state.difficulty,mode:state.mode,score:Math.max(0,Math.min(5000,Math.round(engineResult.score||0))),time_ms:Math.round(timeMs),hints_used:state.hints,solution_used:false,metadata:{...(engineResult.metadata||{}),seed:state.seed}};
+  if(state.mode==='daily')markLocalDailyComplete();
   openResult(result);await saveResult(result);
 }
 
@@ -486,7 +478,7 @@ function setupControls(){
   $('#solution')?.addEventListener('click',()=>{
     if(state.loading||state.completed||state.engineLocked||!state.engine||!capability('solution'))return;
     if(state.solutionVisible){
-      state.solutionVisible=false;state.engine.hideSolution?.();setPracticeUi(true,false);setStatus(review?'Solution hidden. Calibration Review remains practice-only.':'Solution hidden. This same board remains practice-only; New Puzzle returns to verified play.');return;
+      state.solutionVisible=false;state.engine.hideSolution?.();setPracticeUi(true,false);setStatus(review?'Solution hidden. Calibration Review remains practice-only.':'Solution hidden. This same board remains practice-only; New Puzzle starts a fresh board.');return;
     }
     const rankedRun=state.ranked?state.runId:'';
     state.solutionUsed=true;state.solutionVisible=true;state.ranked=false;state.unrankedReason=review?'review_mode':'solution_viewed';stopTimer();state.engine.solution?.();setPracticeUi(true,true);
@@ -511,7 +503,6 @@ function setupControls(){
       else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
     }
   });
-  window.addEventListener('snapoki:auth-changed',()=>{state.dailyCompleted=[];state.dailyStreak=0;renderDaily();refreshRail();updateActiveControls();});
 }
 function applyQueryState(){
   if(review){state.difficulty='hard';state.mode='normal';return;}
@@ -527,9 +518,7 @@ window.addEventListener('snapoki:game-lock',event=>{
 });
 
 async function init(){
-  decorateRewards();applyCapabilities();applyQueryState();ensureReviewPanel();ensureRankingTabs();setupControls();updateActiveControls();renderDaily();updateCountdown();setInterval(updateCountdown,1000);
-  const rail=waitForAuth().then(()=>refreshRail());
+  decorateRewards();applyCapabilities();applyQueryState();ensureReviewPanel();setupControls();loadLocalDailyProgress();updateActiveControls();renderDaily();updateCountdown();setInterval(updateCountdown,1000);
   await startPuzzle();
-  rail.catch(()=>{});
 }
 init();
