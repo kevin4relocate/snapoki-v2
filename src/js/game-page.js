@@ -4,7 +4,7 @@ import {renderGameStatus} from './game-status.js';
 import {dailySeed,randomSeed,formatTime} from './games/utils.js';
 import {resolveColorConnectReview,COLOR_CONNECT_REVIEW_SAMPLES,COLOR_CONNECT_REVIEW_BANDS,colorConnectReviewUrl} from './games/color-connect-review.js';
 
-const $=(s,r=document)=>r.querySelector(s),$=(s,r=document)=>[...r.querySelectorAll(s)];
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const makeRunId=key=>`local-${key}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;
 const gameKey=document.body.dataset.game,game=getGame(gameKey);
 if(!game)throw new Error(`Unknown Snapoki game: ${gameKey}`);
