@@ -28,7 +28,6 @@ function contentPage({eyebrow,title,intro,body}){return `<section class="content
 function gameCards(){return GAMES.map(game=>`<div class="content-card"><h3><a href="/${game.slug}/">${esc(game.name)}</a></h3><p>${esc(game.description)}</p></div>`).join('');}
 function controlCards(){return GAMES.map(game=>{const ui=getGamePresentation(game),first=ui.rows[0]?.[1]||game.howTo?.[0]||game.description;return `<div class="content-card"><h3>${esc(game.name)}</h3><p>${esc(first)}</p></div>`;}).join('');}
 function gameRuleSections(){return GAMES.map(game=>`<h2>${esc(game.name)}</h2><p>${esc(game.description)}</p><ul>${game.howTo.map(rule=>`<li>${esc(rule)}</li>`).join('')}</ul><p><a href="/${game.slug}/">Play ${esc(game.name)}</a> · <a href="/blog/how-to-play-${game.slug}/">Read the full ${esc(game.name)} guide</a></p>`).join('');}
-function rankingProofs(){return GAMES.map(game=>`<li><strong>${esc(game.name)}:</strong> ${esc(game.ranking?.proofType||'game-specific')} completion proof is checked against the server-issued puzzle.</li>`).join('');}
 
 const pages={
   about:{
