@@ -38,7 +38,6 @@ const state={
 };
 
 const capability=name=>game.capabilities?.[name]!==false;
-const railKey=kind=>`snapoki:rail:v3:${kind}:${game.key}`;
 
 function metricElement(k){return document.querySelector(`[data-metric-value="${k}"]`);}
 function setMetric(k,v){const e=metricElement(k);if(e)e.textContent=String(v);}
@@ -219,7 +218,6 @@ async function startPuzzle({reuseSeed=false}={}){
     if(review)setStatus(`Review ${review.band} · score ${review.score} · practice-only.`);
     else if(state.unrankedReason==='recent_replay')setStatus('Replay mode: enjoy the same board again, but only a fresh Regular Play puzzle can improve your PB.');
     else if(state.unrankedReason==='daily_solution_viewed')setStatus('Daily Practice: Solution was viewed for this level today, so it cannot count toward today’s streak.');
-    else if(!state.ranked&&hasAccount()&&capability('ranking'))setStatus('Puzzle ready. Verification is temporarily unavailable; this attempt will not update account progress.');
   }catch(error){
     if(token!==state.startToken)return;
     console.error(error);state.loading=false;setStatus('This puzzle could not start. Please try New Puzzle.');updateActiveControls();
@@ -258,26 +256,7 @@ function ensureResultInsights(){
   host=document.createElement('div');host.id='resultInsights';host.className='result-insights';host.hidden=true;$('#resultSaveStatus')?.insertAdjacentElement('beforebegin',host);return host;
 }
 function clearResultInsights(){const host=ensureResultInsights();host.hidden=true;host.innerHTML='';}
-function renderResultInsights(saved){
-  const host=ensureResultInsights(),items=[];
-  if(state.mode==='normal'){
-    if(saved.new_personal_best)items.push(`<div class="result-insight is-best"><b>★ New Ranking PB · ${Number(saved.ranking_score||0).toLocaleString()}</b><small>Your strongest verified Regular Play performance</small></div>`);
-    else if(Number(saved.ranking_score||0)>0)items.push(`<div class="result-insight"><b>Ranking PB ${Number(saved.ranking_score).toLocaleString()}</b><small>${Number(saved.ranking_gain||0)>0?`+${Number(saved.ranking_gain).toLocaleString()} PB improvement`:'This run did not beat your current PB'}</small></div>`);
-    if(saved.reward_multiplier)items.push(`<div class="result-insight is-reward"><b>${difficultyLabel()} ×${Number(saved.reward_multiplier)}</b><small>Difficulty multiplier for this performance</small></div>`);
-    if(saved.rank_after){
-      const before=Number(saved.rank_before||0),after=Number(saved.rank_after);
-      items.push(`<div class="result-insight${Number(saved.rank_change)>0?' is-rank-up':''}"><b>${before?before===after?`Rank #${after}`:`↑ #${before} → #${after}`:`Entered #${after}`}</b><small>${Number(saved.rank_change)>0?'You moved up the leaderboard':'Current game ranking'}</small></div>`);
-    }
-    if(saved.next_target)items.push(`<div class="result-insight is-target"><b>Next target · #${Math.max(1,Number(saved.rank_after||1)-1)}</b><small>Beat ${escapeHtml(saved.next_target.display_name||'the player above')} with a stronger PB</small></div>`);
-    if(saved.milestone)items.push(`<div class="result-insight is-milestone"><b>🏆 ${Number(saved.milestone)===1?'#1 reached':`Top ${Number(saved.milestone)} reached`}</b><small>A new ranking milestone</small></div>`);
-  }else{
-    if(saved.daily_complete)items.push(`<div class="result-insight is-daily"><b>🔥 Daily Complete · ${Number(saved.streak||0)}-day streak</b><small>Easy + Medium + Hard are complete for today</small></div>`);
-    else items.push(`<div class="result-insight is-daily"><b>Daily ${difficultyLabel()} complete</b><small>${Number(saved.daily_remaining||0)} ${Number(saved.daily_remaining||0)===1?'level':'levels'} left today</small></div>`);
-  }
-  if(Number(saved.xp_gain||0)>0)items.push(`<div class="result-insight"><b>+${Number(saved.xp_gain).toLocaleString()} XP</b><small>Progression grows with verified completions</small></div>`);
-  if(saved.ranking_excluded)items.push('<div class="result-insight is-policy"><b>Verified · Progress excluded</b><small>This pace triggered an automated fair-play check</small></div>');
-  host.innerHTML=items.join('');host.hidden=!items.length;
-}
+function renderResultInsights(){}
 function setSmartNext(action){
   state.smartNext=action||null;
   const next=$('#resultNext');if(!next)return;
@@ -376,79 +355,6 @@ async function finishPuzzle(){
   openResult(result);await saveResult(result);
 }
 
-function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function rankingRow(row,{targetGap=null}={}){
-  const medal={1:'🥇',2:'🥈',3:'🥉'}[row.position]||`#${row.position}`;
-  const avatar=row.avatar_url?`<img src="${escapeHtml(row.avatar_url)}" alt="">`:'<span class="rank-avatar-fallback">S</span>';
-  const name=row.is_me?'YOU':escapeHtml(row.display_name||'Player'),runs=Math.max(0,Number(row.games||0));
-  const sub=targetGap!=null?'<small class="ranking-target">Beat the player above</small>':`<small>${runs} ${runs===1?'run':'runs'}</small>`;
-  return `<div class="ranking-row${row.is_me?' is-me':''}${targetGap!=null?' is-target':''}"><span class="ranking-position">${medal}</span>${avatar}<span class="ranking-player"><b>${name}</b>${sub}</span><strong>${Number(row.ranking_points||0).toLocaleString()} PB</strong></div>`;
-}
-function cacheRail(kind,data){try{sessionStorage.setItem(railKey(kind),JSON.stringify({at:Date.now(),data}));}catch{}}
-function readRail(kind){try{const parsed=JSON.parse(sessionStorage.getItem(railKey(kind))||'null');return parsed&&Date.now()-parsed.at<5*60*1000?parsed.data:null;}catch{return null;}}
-function rankingCacheKind(){return`ranking:${state.rankingBoard}`;}
-function renderRankingData(data){
-  const host=$('#rankingList');if(!host)return;
-  const rows=(data?.rows||[]).sort((a,b)=>Number(a.position)-Number(b.position));
-  if(!rows.length){host.className='ranking-state';host.textContent='No Regular Play PBs yet. Be the first.';return;}
-  host.className='ranking-list';
-  let html='',previous=0;
-  const me=data.me,mePosition=Number(me?.position||0);
-  for(const row of rows){
-    const pos=Number(row.position);
-    if(previous&&pos>previous+1)html+='<div class="ranking-gap" aria-hidden="true">•••</div>';
-    const targetGap=mePosition>1&&pos===mePosition-1?1:null;
-    html+=rankingRow(row,{targetGap});previous=pos;
-  }
-  host.innerHTML=html;
-}
-function ensureRankingTabs(){
-  const host=$('#rankingList');if(!host||$('#rankingBoardTabs'))return;
-  const tabs=document.createElement('div');tabs.id='rankingBoardTabs';tabs.className='ranking-board-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Ranking board');
-  for(const board of ['overall','easy','medium','hard']){
-    const button=document.createElement('button');button.type='button';button.className=`ranking-board-tab${board===state.rankingBoard?' active':''}`;button.dataset.rankingBoard=board;button.textContent=board==='overall'?'Overall':board[0].toUpperCase()+board.slice(1);button.setAttribute('aria-pressed',String(board===state.rankingBoard));
-    button.addEventListener('click',async()=>{
-      if(state.rankingBoard===board)return;
-      state.rankingBoard=board;
-      $$('.ranking-board-tab').forEach(item=>{const active=item.dataset.rankingBoard===board;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active));});
-      await refreshRankings();
-    });
-    tabs.appendChild(button);
-  }
-  host.insertAdjacentElement('beforebegin',tabs);
-}
-async function refreshRankings(){
-  const host=$('#rankingList');if(!host)return;
-  const kind=rankingCacheKind(),cached=readRail(kind);
-  if(cached)renderRankingData(cached);else{host.className='ranking-state';host.textContent='Loading rankings…';}
-  try{
-    const data=await api(`/api/rankings?game=${encodeURIComponent(game.key)}&board=${encodeURIComponent(state.rankingBoard)}&limit=8`);
-    cacheRail(kind,data);renderRankingData(data);
-  }catch(error){if(!cached)host.textContent='Rankings are temporarily unavailable.';console.warn(error);}
-}
-function masteryMarkup(mastery={}){
-  return `<div class="mastery"><div class="mastery-heading"><b>Difficulty Mastery</b><small>Regular Play PB</small></div><div class="mastery-levels">${game.levels.map(([key,label])=>{
-    const item=mastery[key]||{},done=Boolean(item.complete);
-    return `<div class="mastery-level${done?' complete':''}"><span>${done?'✓':'○'} ${escapeHtml(label)} · ×${DIFFICULTY_REWARDS[key]||1}</span><b>${done?Number(item.rank_score||0).toLocaleString():'—'}</b></div>`;
-  }).join('')}</div></div>`;
-}
-function renderProfileData(data){
-  const body=$('#profileBody');if(!body)return;
-  state.dailyCompleted=data?.user?(data.daily_completed||[]):[];state.dailyStreak=Number(data?.streak||0);renderDaily();
-  if(!data?.user){
-    body.innerHTML='<p class="profile-signed-out">Guest play is never ranked. Sign in before starting a puzzle to save PBs, progression and Daily streaks.</p><button class="button button-secondary profile-login" type="button">Sign in</button>';
-    body.querySelector('.profile-login')?.addEventListener('click',()=>$('#loginButton')?.click());return;
-  }
-  body.innerHTML=`<div class="profile-stats"><div><b>${Number(data.games||0)}</b><small>COMPLETES</small></div><div><b>${Number(data.ranking_score||0).toLocaleString()}</b><small>RANK PB</small></div><div class="profile-level"><b>${Number(data.level||1)}</b><small>LEVEL</small></div><div><b>${Number(data.streak||0)}</b><small>DAILY STREAK</small></div></div>${masteryMarkup(data.mastery||{})}`;
-}
-async function refreshProfile(){
-  const body=$('#profileBody');if(!body)return;
-  const cached=readRail('profile');if(cached)renderProfileData(cached);else body.innerHTML='<div class="profile-loading">Loading profile…</div>';
-  try{const data=await api(`/api/profile?game=${encodeURIComponent(game.key)}`);cacheRail('profile',data);renderProfileData(data);}
-  catch(error){if(!cached)body.innerHTML='<div class="profile-loading">Profile is temporarily unavailable.</div>';console.warn(error);}
-}
-async function refreshRail(){await Promise.all([refreshRankings(),refreshProfile()]);}
-
 function scrollBoardIntoView(){requestAnimationFrame(()=>$('.board-panel')?.scrollIntoView({behavior:'smooth',block:'start'}));}
 async function runSmartNext(){
   const action=state.smartNext;closeResult(false);
@@ -458,13 +364,6 @@ async function runSmartNext(){
     updateActiveControls();
   }
   await startPuzzle();scrollBoardIntoView();
-}
-async function recordSolutionReveal(runId){
-  if(!runId||!hasAccount())return;
-  for(let attempt=0;attempt<2;attempt++){
-    try{await post('/api/runs/reveal',{run_id:runId});return;}
-    catch(error){if(attempt===1)console.warn('Solution practice state could not be synced',error);else await new Promise(resolve=>setTimeout(resolve,350));}
-  }
 }
 function setupControls(){
   $$('.difficulty-button').forEach(b=>b.addEventListener('click',()=>setDifficulty(b.dataset.difficulty)));
@@ -480,10 +379,8 @@ function setupControls(){
     if(state.solutionVisible){
       state.solutionVisible=false;state.engine.hideSolution?.();setPracticeUi(true,false);setStatus(review?'Solution hidden. Calibration Review remains practice-only.':'Solution hidden. This same board remains practice-only; New Puzzle starts a fresh board.');return;
     }
-    const rankedRun=state.ranked?state.runId:'';
     state.solutionUsed=true;state.solutionVisible=true;state.ranked=false;state.unrankedReason=review?'review_mode':'solution_viewed';stopTimer();state.engine.solution?.();setPracticeUi(true,true);
     if(capability('solutionSteps'))renderSolutionProgress(state.engine.solutionStep?.(0)||null);
-    if(rankedRun&&!review)recordSolutionReveal(rankedRun);
   });
   $$('.daily-level').forEach(b=>b.addEventListener('click',async()=>{
     if(review||state.loading||!capability('daily'))return;
