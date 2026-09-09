@@ -29,11 +29,15 @@ test('Daily state is browser-local and does not require account hydration',()=>{
   assert.match(runtime,/markLocalDailyComplete/);
 });
 
-test('Google account creation endpoint is disabled',()=>{
+test('public accounts stay disabled while private admin auth is allowlisted',()=>{
   const auth=read('functions/api/auth/google.js');
   const config=read('functions/api/config.js');
-  assert.match(auth,/ACCOUNTS_DISABLED/);
-  assert.match(auth,/Accounts are not available on Snapoki/);
+  const adminClient=read('src/js/admin-content.js');
   assert.match(config,/accountsEnabled:\s*false/);
   assert.match(config,/googleClientId:\s*''/);
+  assert.match(auth,/ADMIN_EMAIL/);
+  assert.match(auth,/ADMIN_ONLY/);
+  assert.match(auth,/allowed\.includes\(email\)/);
+  assert.match(adminClient,/\/api\/snapdesk-74kq\/auth-config/);
+  assert.match(adminClient,/\/api\/auth\/google/);
 });
