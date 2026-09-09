@@ -38,7 +38,7 @@ test('game lifecycle keeps Color Connect Review Mode practice-only with no Daily
   assert.match(page,/function guestSeed\([^)]*\)[\s\S]*?if\(review\)return review\.seed;/,'review must use the approved deterministic seed');
   assert.match(page,/if\(review\)\{state\.difficulty='hard';state\.mode='normal';return;\}/,'review must force Hard Regular mode');
   assert.match(page,/async function finishPuzzle\(\)[\s\S]*?if\(review\)\{finishPractice/,'review completion must exit before verified result construction');
-  assert.match(page,/Practice-only\\. No Daily progress is saved\\./);
+  assert.match(page,/Practice-only\. No Daily progress is saved\./);
 });
 
 test('Review Mode has explicit band/sample navigation and disables normal difficulty/mode controls',()=>{
