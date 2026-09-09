@@ -71,10 +71,10 @@ test('Echo Step removes on-board arrow controls and keeps rules always visible',
   assert.match(source,/echo-rule-strip/);
 });
 
-test('difficulty reward labels no longer include EXPERT and describe PB ranking',()=>{
+test('difficulty reward labels no longer include EXPERT or ranking copy',()=>{
   const built=fs.readFileSync('dist/assets/js/game-page.js','utf8');
   assert.doesNotMatch(built,/EXPERT|RANK PTS/);
-  assert.match(built,/×\$\{mult\} PB/);
+  assert.match(built,/×\$\{mult\} SCORE/);
   assert.match(built,/reward\.textContent='STREAK'/);
 });
 
