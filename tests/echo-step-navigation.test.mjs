@@ -9,7 +9,7 @@ test('Echo Step is public in header, footer, homepage and Guides',()=>{
   assert.match(home,/class="desktop-game-link" data-game-link="echo-step" href="\/echo-step\/">Echo Step<\/a>/);
   assert.match(home,/class="game-card" href="\/echo-step\/"/);
   assert.match(home,/data-game-spotlight="echo-step"/);
-  assert.match(home,new RegExp(`${GAMES.length} puzzles\\.<br><span>Endless challenges\\.<\\/span>`));
+  assert.match(home,new RegExp(`${GAMES.length} games\\.<br><span>Endless challenges\\.<\\/span>`));
   assert.match(home,/<strong>Games<\/strong><a href="\/echo-step\/">Echo Step<\/a>/);
 
   const blog=fs.readFileSync('dist/blog/index.html','utf8');

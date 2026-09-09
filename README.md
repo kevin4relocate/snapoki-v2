@@ -1,130 +1,77 @@
 # Snapoki V2
 
-Snapoki is a browser puzzle platform with seven current games and a registry-first architecture designed to scale toward a much larger game library without duplicating the surrounding product stack.
+Snapoki is a guest-first browser game platform with a registry-driven architecture. Public play requires no account or sign-in.
 
 ## Current games
 
-- Echo Step
-- Maze
-- Number Path
-- Color Connect
-- Lights Out
-- Loop Puzzle
-- Bridges
+1. Echo Step
+2. Maze
+3. Number Path
+4. Color Connect
+5. Lights Out
+6. Loop Puzzle
+7. Bridges
+8. World Loop — an endless lane-race screensaver with 196 selectable countries (including Taiwan), no finish line, continuously increasing distance and a scrolling camera.
 
-Every game reuses the same site shell, account system, difficulty rail, Regular Play / Daily Challenge lifecycle, board-status area, How to Play card, result modal, Rankings, profile and Daily progress UI. A game plugin owns only its mechanic, deterministic generation, rendering, hint/practice behavior, social-board renderer and compact completion proof.
+The first seven games are puzzle experiences. World Loop intentionally uses the same platform shell while opting out of puzzle-only capabilities such as Hint, Solution, Daily completion and scoring.
 
-## Core product rules
+## Public product rules
 
-- **Guest play is free and local.** Guest finishes never write account data.
-- **Regular Play owns Rankings.** Each account has one personal-best ranking record per game. Repeating a game does not farm cumulative Ranking Points.
-- **Overall / Easy / Medium / Hard use the same row.** Easy ×1, Medium ×3 and Hard ×5 remain performance multipliers; the strongest Regular Play PB becomes Overall.
-- **Progression grows with verified completions.** Completion counters and XP are updated in the same bounded user/game row. Level is derived from XP.
-- **Daily Challenge is streak-only.** Daily does not affect the leaderboard. Only today's Easy/Medium/Hard completion mask, current streak and longest streak are retained.
-- **Hints are limited guidance.** Regular Play hints reduce the performance score; a full Solution / Guide makes the current board practice-only.
-- **Shared behavior stays shared.** New games must not create a second header, account flow, ranking UI, Daily shell, result modal, sitemap process, generic How to Play component or Content Desk branch.
+- **Guest-only public play.** No public registration, Login, Profile or Leaderboard.
+- **Local gameplay.** Regular Play does not require server account state.
+- **Browser-local Daily progress.** Daily completion and streaks are stored in localStorage for games that support Daily.
+- **Capability-driven games.** A game may opt out of Hint, Solution, Daily or ranking-related behavior without creating a second site shell.
+- **Shared behavior stays shared.** Header, navigation, game routes, SEO, guides, Content Desk discovery and audits remain registry-driven.
+- **Private admin stays private.** Content Desk uses its own allowlisted Google admin authentication and is not exposed as player sign-in.
 
 ## Architecture
 
 Canonical registries:
 
-- `src/js/games-config.js` — game ids, slugs, navigation metadata, difficulty, metrics, capabilities, SEO and baseline rules.
-- `src/js/game-presentation.js` — optional presentation overrides and game-specific CSS registration.
-- `functions/_lib/scoring.js` → `RESULT_VERIFIERS` — one mechanic-specific proof verifier per registered game.
+- `src/js/games-config.js` — game ids, slugs, navigation metadata, metrics, capabilities, SEO and control labels.
+- `src/js/game-presentation.js` — presentation overrides and game-specific stylesheet registration.
+- `functions/_lib/scoring.js` → `RESULT_VERIFIERS` — one verifier entry per registered game. Non-scoring simulations may expose a verifier that always rejects submissions so registry parity remains explicit.
 
 Shared runtime:
 
-- `src/js/site.js` — navigation and optional Google account UI.
-- `src/js/game-page.js` — shared game lifecycle, verification, PB Rankings, progression, Daily streaks and Profile.
+- `src/js/site.js` — public navigation only.
+- `src/js/game-page.js` — shared game lifecycle and capability handling.
 - `src/js/game-status.js` — shared board feedback/progress.
-- `src/js/games/<slug>.js` — stable public game entries. Each exports `createGame()` plus `generate<PascalCaseSlug>()`.
+- `src/js/games/<slug>.js` — stable game entry exporting `createGame()` plus `generate<PascalCaseSlug>()`.
+- `src/styles/<slug>.css` — optional game-specific presentation.
+- `src/js/social-renderers/<slug>.js` — Content Desk/social preview renderer.
 
-Server state helpers:
+Generated public output is written to `dist/`.
 
-- `functions/_lib/progression.js` — Daily bitmask, PB comparison, XP/Level and ranking-board field contracts.
-- `functions/_lib/player-stats.js` — bounded profile payloads and indexed leaderboard reads.
-- `functions/api/results.js` — verifies a completion and updates the bounded user/game state; it no longer appends immutable gameplay history.
+## World Loop
 
-Content Desk remains plugin-driven through `src/js/social-game-board.js`, `src/js/social-renderers/<slug>.js`, `functions/_lib/social-content.js` and `CONTENT_DESK_PLUGIN_CONTRACT.md`.
+World Loop is deliberately different from the puzzle catalog:
 
-## D1 Free-Tier Scalability V1
+- search 196 country choices, including Taiwan, then choose 4–12 racers;
+- each country gets one clear horizontal lane;
+- there is no finish line, no winner screen and no round system;
+- each racer accumulates an unbounded distance value continuously;
+- the road scrolls and the camera follows the leading pack, so racers can keep moving forever without running off the screen;
+- Current Order, Leader Distance and the P1→P2 gap update live;
+- neutral seeded session traits, comeback pressure and brief bursts allow lead changes without permanent country advantages;
+- Cruise, Dynamic and Sprint change pace without changing the core endless format;
+- Full Screen turns the game into a clean screensaver-style view;
+- supported browsers request Screen Wake Lock after Start / Full Screen to help keep a display awake;
+- runtime state is bounded to current counters and racers rather than storing an ever-growing history;
+- Pause preserves the same session; Restart returns all distance to zero with the same countries, while Stop returns to country selection;
+- no account, D1 gameplay state, Daily completion or public leaderboard dependency.
 
-The durable gameplay model is intentionally bounded:
+## Content Desk plugin contract
 
-```text
-users
-└── 1 row / account
+Every registered game must provide:
 
-user_game_stats
-└── 1 row / user / game
-    ├── Overall ranking PB
-    ├── Easy / Medium / Hard PB
-    ├── verified completion counters
-    ├── XP (Level derived at read time)
-    └── today's Daily mask + streak
+1. `src/js/games/<slug>.js` with `createGame()`.
+2. A deterministic `generate<PascalCaseSlug>()` export.
+3. `src/js/social-renderers/<slug>.js` with `drawSocialBoard()`.
+4. A matching key in `RESULT_VERIFIERS`.
+5. Mechanic-specific tests.
 
-ranked_attempts
-└── 1 temporary slot / user / game / difficulty / mode
-
-sessions
-└── temporary account sessions
-
-results
-└── legacy read-only archive after migration 0005
-```
-
-A player can complete the same game ten times or one million times without creating new durable gameplay rows. `user_game_stats` updates in place. `ranked_attempts` is also bounded by a unique slot, so starting puzzles does not create unbounded attempt history.
-
-The legacy `results` table is deliberately retained by migration `0005_free_tier_scalability.sql` for rollback/audit. Runtime APIs stop reading and writing it. Once the new model has been observed safely in production, a later migration may remove that archive.
-
-### Ranking
-
-Regular Play calculates a verified performance score using the existing difficulty multiplier contract. A PB is replaced only when the new performance is better by:
-
-1. ranking score
-2. raw verified game score
-3. lower verified time
-
-Leaderboard boards:
-
-```text
-Overall | Easy | Medium | Hard
-```
-
-Overall uses the strongest PB across difficulties. Daily Challenge never changes any ranking PB.
-
-### Daily streak
-
-Daily state is a 3-bit mask:
-
-```text
-Easy   = 1
-Medium = 2
-Hard   = 4
-3/3    = 7
-```
-
-The row stores only today's mask, today’s practice-blocked mask, current streak, longest streak and last completed UTC date. Historical Daily rows are not appended.
-
-## Cloudflare D1 migrations
-
-Database configuration lives in `wrangler.toml`. Runtime Functions never create or alter tables.
-
-```text
-0001_initial.sql
-0002_ranked_attempts.sql
-0003_scalable_game_ids.sql
-0004_admin_social_content.sql
-0005_free_tier_scalability.sql
-```
-
-Apply pending migrations when deployment is approved:
-
-```bash
-npx wrangler d1 migrations apply snapoki-v2-db --remote
-```
-
-**Do not apply migration 0005 to production merely to review the GitHub preview code.** The production migration is a separate release decision.
+The Content Desk audit fails the build when these contracts drift.
 
 ## Local validation
 
@@ -134,36 +81,7 @@ npm run build
 npm test
 ```
 
-`npm run check` syntax-checks runtime, Functions, scripts and tests, then runs the Content Desk plugin audit. `npm run build` performs the generated-site pipeline and final platform audit. Generated public output is written to `dist/` and should not be hand-edited.
-
-## Adding a game
-
-Required:
-
-1. Add the game to `src/js/games-config.js`.
-2. Add `src/js/games/<slug>.js` exporting `createGame()` and `generate<PascalCaseSlug>()`.
-3. Add `src/js/social-renderers/<slug>.js` exporting `drawSocialBoard()`.
-4. Add its proof verifier to `RESULT_VERIFIERS` in `functions/_lib/scoring.js`.
-5. Add mechanic-specific generator/gameplay/verifier tests.
-6. Run check, build and tests.
-
-A normal new game must not require editing the header, footer, account flow, generic Ranking/Profile/Daily UI, Content Desk core, sitemap process or other game plugins.
-
-## Core API
-
-```text
-GET  /api/config
-GET  /api/me
-POST /api/auth/google
-POST /api/logout
-POST /api/runs/start
-POST /api/runs/reveal
-POST /api/results
-GET  /api/rankings?game=maze&board=overall
-GET  /api/profile?game=maze
-```
-
-A signed-in verified puzzle receives a server-issued `run_id`, seed and server start time. The server regenerates the expected puzzle and validates the completion proof before calculating authoritative time/score. Regular Play may update PB Ranking state; Daily may update only Daily/progression state.
+The build pipeline syntax-checks runtime code, validates Content Desk plugin contracts, generates the site and guides, audits public routes/SEO/internal links, and runs the test suite.
 
 ## Cloudflare Pages
 
@@ -175,14 +93,21 @@ Build command: npm run build
 Build output directory: dist
 ```
 
-Production deployment remains a separate manual decision from GitHub validation.
+Production deployment remains a separate release decision from GitHub validation.
 
-## Google sign-in
+## Cloudflare D1
 
-Set:
+Legacy player/ranking tables may still exist for compatibility, but the public guest-only product does not depend on them. Do not apply old account/ranking migrations merely to review World Loop.
+
+Private Content Desk authentication still relies on the minimal admin session path, so user/session storage must not be removed casually.
+
+## Private admin authentication
+
+Content Desk admin sign-in requires Cloudflare environment configuration:
 
 ```text
+ADMIN_EMAIL=<allowlisted admin email>
 GOOGLE_CLIENT_ID=<Google OAuth Web Client ID>
 ```
 
-Sessions use a random token in a Secure, HttpOnly, SameSite cookie; D1 stores only its SHA-256 hash.
+The public site does not receive or render player Google sign-in.

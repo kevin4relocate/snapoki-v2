@@ -27,7 +27,8 @@ test('each How to Play card keeps a game-specific goal and concise actions',()=>
     'color-connect':['PAIR → PAIR','Cover every open cell','Paths cannot overlap','all ghost routes'],
     'lights-out':['ALL LIGHTS → OFF','Clear the board','up, down, left and right','shortest press set'],
     'loop-puzzle':['ONE CLOSED LOOP','Match every clue','exact count','one ghost loop'],
-    'bridges':['MATCH NUMBERS','ONE CONNECTED NETWORK','Tap an existing bridge to remove one','Solution']
+    'bridges':['MATCH NUMBERS','ONE CONNECTED NETWORK','Tap an existing bridge to remove one','Solution'],
+    'world-loop':['PICK COUNTRIES','WATCH FOREVER','No finish line','Pause']
   };
   assert.deepEqual(Object.keys(expected).sort(),GAMES.map(game=>game.slug).sort());
   for(const game of GAMES){
