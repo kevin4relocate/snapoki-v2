@@ -5,11 +5,14 @@ import {DatabaseSync} from 'node:sqlite';
 
 const auth=fs.readFileSync('functions/api/auth/google.js','utf8');
 
-test('Google login uses indexed bounded session cleanup instead of an unbounded expiry delete',()=>{
+test('admin-only Google login keeps bounded session cleanup',()=>{
+  assert.match(auth,/ADMIN_EMAIL/);
+  assert.match(auth,/allowed\.includes\(email\)/);
   assert.match(auth,/SESSION_CLEANUP_BATCH\s*=\s*24/);
   assert.match(auth,/WHERE expires_at <= \?/);
   assert.match(auth,/ORDER BY expires_at ASC/);
   assert.match(auth,/LIMIT \?/);
+  assert.match(auth,/ADMIN_ONLY/);
   assert.doesNotMatch(auth,/DELETE FROM sessions WHERE datetime\(expires_at\) <= datetime\('now'\)/);
 });
 

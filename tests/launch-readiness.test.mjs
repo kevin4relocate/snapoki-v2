@@ -8,7 +8,7 @@ import {GAMES} from '../src/js/games-config.js';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dist=path.join(root,'dist');
 const siteUrl='https://snapoki.com';
-const contentRoutes=['about','help','privacy','terms','how-to-play','daily-challenges','rankings-guide'];
+const contentRoutes=['about','help','privacy','terms','how-to-play','daily-challenges'];
 const contactRoutes=new Set(['help','privacy','terms']);
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 function walk(dir){const out=[];for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,entry.name);if(entry.isDirectory())out.push(...walk(full));else out.push(full);}return out;}

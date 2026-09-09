@@ -25,7 +25,7 @@ export async function requireAdmin(request, env) {
   }
   const session = await getSession(request, env);
   if (!session) {
-    return {ok:false,response:json({error:'Sign in to Snapoki first.'},401)};
+    return {ok:false,response:json({error:'Sign in to Content Desk first.'},401)};
   }
   const email = String(session.user.email || '').toLowerCase();
   if (!allowed.includes(email)) {

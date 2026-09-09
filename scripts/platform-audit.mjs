@@ -154,6 +154,18 @@ for(const game of GAMES){
 const packageJson=JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8'));
 for(const obsolete of ['echo-step-integration.mjs','echo-launch-final.mjs','apply-board-contract.mjs','post-build-ui-safety.mjs'])if(String(packageJson.scripts?.build||'').includes(obsolete))fail(`build pipeline still references obsolete ${obsolete}`);
 
+
+// Guest-only public product contract: no account, profile or leaderboard surfaces may ship.
+for(const {name,html} of publicHtml){
+  if(/id="loginButton"|id="loginModal"|id="accountSlot"|href="\/profile\/"|href="\/leaderboard\/"|href="\/rankings-guide\/"/i.test(html))fail(`${name}: public account or leaderboard surface is present`);
+  if(/class="panel rankings"|id="rankingList"|class="panel profile"|id="profileBody"/i.test(html))fail(`${name}: game account/ranking rail is present`);
+}
+for(const retired of ['profile','leaderboard','rankings-guide']){
+  if(await exists(path.join(dist,retired,'index.html')))fail(`${retired}: retired account/ranking route was generated`);
+}
+const publicSiteJs=await fs.readFile(path.join(dist,'assets','js','site.js'),'utf8').catch(()=> '');
+if(/SnapokiAuth|google\.accounts|loginButton|\/api\/me|\/api\/auth\/google/.test(publicSiteJs))fail('site.js still contains public account bootstrap code');
+
 if(warnings.length){console.warn(`Platform audit warnings (${warnings.length}):`);for(const item of warnings)console.warn(`  - ${item}`);}
 if(failures.length){console.error(`Platform audit failed (${failures.length}):`);for(const item of failures)console.error(`  - ${item}`);process.exit(1);}
 console.log(`Platform audit passed: ${GAMES.length} games, ${publicHtml.length} public HTML pages, ${canonicals.size} indexable canonicals, verifier parity and no dead internal links.`);

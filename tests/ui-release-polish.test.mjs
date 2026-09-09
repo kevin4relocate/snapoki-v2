@@ -28,7 +28,7 @@ test('all static and reference content pages share the same centered 1080px widt
   const css=read('src/styles/launch.css');
   assert.match(css,/--content-max:1080px/);
   assert.match(css,/\.content-shell \.content-page \.content-hero,\.content-shell \.content-page article\{width:100%;max-width:var\(--content-max\);margin-left:auto;margin-right:auto\}/);
-  for(const route of ['about','help','privacy','terms','how-to-play','daily-challenges','rankings-guide']){
+  for(const route of ['about','help','privacy','terms','how-to-play','daily-challenges']){
     const html=read(`dist/${route}/index.html`);
     assert.match(html,/<body class="content-shell"/);
     assert.ok(html.indexOf('/assets/styles/content.css')<html.indexOf('/assets/styles/launch.css'),`${route}: content.css must load before launch.css`);

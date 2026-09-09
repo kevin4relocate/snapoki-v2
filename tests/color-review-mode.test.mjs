@@ -31,15 +31,14 @@ test('review query only resolves approved 11-color samples and has a stable boun
   assert.match(colorConnectReviewUrl(chosen),/^\/color-connect\/\?review=1&reviewSeed=/);
 });
 
-test('game lifecycle makes Color Connect Review Mode practice-only before any ranked write',()=>{
+test('game lifecycle keeps Color Connect Review Mode practice-only with no Daily write',()=>{
   const page=read('src/js/game-page.js');
   assert.match(page,/gameKey==='color-connect'\?resolveColorConnectReview/);
-  assert.match(page,/async function rankedAttempt\([^)]*\)[\s\S]*?if\(review\)return null;/,'review must short-circuit ranked attempt creation');
+  assert.match(page,/async function rankedAttempt\([^)]*\)\{return null;\}/,'all public play must stay local and unranked');
   assert.match(page,/function guestSeed\([^)]*\)[\s\S]*?if\(review\)return review\.seed;/,'review must use the approved deterministic seed');
   assert.match(page,/if\(review\)\{state\.difficulty='hard';state\.mode='normal';return;\}/,'review must force Hard Regular mode');
   assert.match(page,/async function finishPuzzle\(\)[\s\S]*?if\(review\)\{finishPractice/,'review completion must exit before verified result construction');
-  assert.match(page,/if\(rankedRun&&!review\)recordSolutionReveal/,'review solution must never record a server reveal');
-  assert.match(page,/Practice-only\. No ranking or Daily progress writes\./);
+  assert.match(page,/Practice-only\. No Daily progress is saved\./);
 });
 
 test('Review Mode has explicit band/sample navigation and disables normal difficulty/mode controls',()=>{

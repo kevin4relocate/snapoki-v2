@@ -4,6 +4,8 @@ import {getGamePresentation} from './game-presentation.js';
 const $=id=>document.getElementById(id);
 const state={content:null};
 const CONTENT_API='/api/snapdesk-74kq/content';
+const AUTH_CONFIG='/api/snapdesk-74kq/auth-config';
+const ADMIN_AUTH='/api/auth/google';
 
 function notice(message,type=''){
   const el=$('adminNotice');el.textContent=message;el.className=`admin-notice ${type}`.trim();el.hidden=false;
@@ -13,8 +15,35 @@ function clearNotice(){$('adminNotice').hidden=true;}
 async function request(url,options={}){
   const response=await fetch(url,{credentials:'same-origin',headers:{'content-type':'application/json',...(options.headers||{})},...options});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
+  if(!response.ok){const error=new Error(data.error||`Request failed (${response.status})`);error.status=response.status;throw error;}
   return data;
+}
+
+function loadGoogleIdentity(){
+  if(window.google?.accounts?.id)return Promise.resolve();
+  return new Promise((resolve,reject)=>{
+    const existing=document.querySelector('script[data-admin-google-identity]');
+    if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',()=>reject(new Error('Google sign-in could not load.')),{once:true});return;}
+    const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;script.defer=true;script.dataset.adminGoogleIdentity='1';script.addEventListener('load',resolve,{once:true});script.addEventListener('error',()=>reject(new Error('Google sign-in could not load.')),{once:true});document.head.appendChild(script);
+  });
+}
+async function showAdminLogin(){
+  $('adminLoading').hidden=true;
+  if($('adminAuthPanel'))return;
+  const panel=document.createElement('section');panel.id='adminAuthPanel';panel.className='admin-loading';panel.innerHTML='<strong>Private admin access</strong><p>Sign in with the Google account configured in ADMIN_EMAIL.</p><div id="adminGoogleButton"></div>';
+  $('adminNotice').before(panel);
+  try{
+    const config=await request(AUTH_CONFIG);
+    if(!config.enabled||!config.googleClientId)throw new Error('Configure ADMIN_EMAIL and GOOGLE_CLIENT_ID in Cloudflare first.');
+    await loadGoogleIdentity();
+    window.google.accounts.id.initialize({client_id:config.googleClientId,callback:async response=>{
+      try{
+        await request(ADMIN_AUTH,{method:'POST',body:JSON.stringify({credential:response.credential})});
+        panel.remove();$('adminLoading').hidden=false;await load();
+      }catch(error){notice(error.message,'error');}
+    }});
+    window.google.accounts.id.renderButton($('adminGoogleButton'),{theme:'outline',size:'large',text:'signin_with',shape:'rectangular'});
+  }catch(error){notice(error.message,'error');}
 }
 
 function textValue(platform){return $(`${platform}Text`).value;}
@@ -62,7 +91,7 @@ async function render(content){
 }
 
 async function load(){
-  try{const data=await request(CONTENT_API);await render(data.content);}catch(error){$('adminLoading').hidden=true;notice(`${error.message} If you are not signed in, sign in on the Snapoki homepage first. If this is the first deploy, configure ADMIN_EMAIL in Cloudflare.`, 'error');}
+  try{const data=await request(CONTENT_API);await render(data.content);}catch(error){if(error.status===401){await showAdminLogin();return;}$('adminLoading').hidden=true;notice(`${error.message} Check ADMIN_EMAIL and the private Content Desk configuration in Cloudflare.`, 'error');}
 }
 async function save(){
   try{const data=await request(CONTENT_API,{method:'POST',body:JSON.stringify({action:'save',headline:$('headlinePreview').textContent,linkedIn:textValue('linkedIn'),x:textValue('x'),instagram:textValue('instagram')})});await render(data.content);notice('Edits saved.');}catch(error){notice(error.message,'error');}
