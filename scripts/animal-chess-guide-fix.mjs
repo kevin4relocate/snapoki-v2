@@ -3,8 +3,8 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const file=path.join(root,'dist','blog','how-to-play-animal-chess','index.html');
-let html=await fs.readFile(file,'utf8');
+const guideFile=path.join(root,'dist','blog','how-to-play-animal-chess','index.html');
+let html=await fs.readFile(guideFile,'utf8');
 
 const replacements=[
   [
@@ -29,5 +29,18 @@ for(const[from,to]of replacements){
   if(!html.includes(from))throw new Error(`Animal Chess guide fix could not find expected build text: ${from.slice(0,80)}`);
   html=html.replace(from,to);
 }
-await fs.writeFile(file,html);
-console.log('Animal Chess guide copy normalized for local board-game play.');
+await fs.writeFile(guideFile,html);
+
+const homeFile=path.join(root,'dist','index.html');
+let home=await fs.readFile(homeFile,'utf8');
+const homeDescription='Play free browser games on Snapoki, including logic puzzles, Animal Chess and endless simulations. No download or account required.';
+for(const [pattern,replacement] of [
+  [/<meta name="description" content="[^"]*">/,`<meta name="description" content="${homeDescription}">`],
+  [/<meta property="og:description" content="[^"]*">/,`<meta property="og:description" content="${homeDescription}">`],
+  [/<meta name="twitter:description" content="[^"]*">/,`<meta name="twitter:description" content="${homeDescription}">`]
+]){
+  if(!pattern.test(home))throw new Error(`Homepage metadata fix could not find ${pattern}`);
+  home=home.replace(pattern,replacement);
+}
+await fs.writeFile(homeFile,home);
+console.log('Animal Chess guide and homepage metadata normalized for launch.');
