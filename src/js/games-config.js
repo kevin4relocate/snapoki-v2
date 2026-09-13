@@ -20,18 +20,18 @@ export const GAMES = [
     featured:false,
     category:'Board',
     tagline:'Outrank. Outsmart. Reach the den.',
-    description:'Play Dou Shou Qi, the classic 7×9 Animal Chess game. Move eight ranked animals across rivers and traps, capture weaker rivals and reach the enemy den.',
+    description:'Play Dou Shou Qi on a premium 7×9 Animal Chess board with local two-player play or three computer strengths. Move eight ranked animals across rivers and traps, capture weaker rivals and reach the enemy den.',
     socialInsight:'The smallest Rat can defeat the strongest Elephant, while Lion and Tiger can leap rivers. Winning depends on terrain, timing and rank—not brute strength alone.',
-    heroPills:['Local 2 players','8 animals · ranks 1–8','Rivers · traps · dens'],
+    heroPills:['2 Players + vs CPU','8 animals · ranks 1–8','Rivers · traps · dens'],
     metrics:[['turn','TURN'],['red','RED PIECES'],['blue','BLUE PIECES'],['moves','MOVES']],
     levels:[['local','Local 2P','same device · Red moves first']],
     howTo:['Red moves first. Select one of your animals, then choose a highlighted square. Animals normally move one square up, down, left or right.','Higher or equal ranks capture lower ranks. The Rat can capture the Elephant, but the Elephant cannot capture the Rat. Only Rats may enter rivers.','Lion and Tiger may leap across a river in a straight line unless any Rat blocks the water squares. Enemy animals standing in your traps lose their rank and can be captured by any animal.','Win by moving any animal into the enemy den, capturing every enemy animal, or leaving the opponent with no legal move. You may never enter your own den.'],
     seoTitle:'Animal Chess – Play Dou Shou Qi Online Free | Snapoki',
-    seoDescription:'Play Animal Chess (Dou Shou Qi) free online with local two-player play, ranked animals, rivers, traps, dens, Rat vs Elephant and Lion/Tiger river jumps.',
+    seoDescription:'Play premium Animal Chess (Dou Shou Qi) free online with local two-player or computer opponents, ranked animals, rivers, traps, dens and classic capture rules.',
     capabilities:{hint:false,solution:false,solutionSteps:false,drag:false,daily:false,ranking:false},
     ranking:{enabled:false,proofType:'none',scoreModel:'none'},
     modeLabel:'Local 2 Players',
-    ui:{controlTitle:'Game mode',controlHint:'Two players · one device',guideControlTitle:'Animal ranks',newLabel:'New Game',resetLabel:'Reset Game'}
+    ui:{controlTitle:'Game mode',controlHint:'Two players or computer',guideControlTitle:'Animal ranks',newLabel:'New Game',resetLabel:'Reset Game'}
   }),
   withContract({
     key:'world-loop',
