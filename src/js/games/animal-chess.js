@@ -33,6 +33,7 @@ export function createAnimalChessState(){
   ];
   return{turn:'red',pieces,moves:0,winner:null,draw:false,noCaptureMoves:0,lastMove:null};
 }
+export function generateAnimalChess(difficulty='local',seed='animal-chess:local'){const state=createAnimalChessState();return{...state,difficulty,seed,pieces:state.pieces.map(p=>({...p}))};}
 
 export function animalChessPieceAt(state,r,c){return state.pieces.find(p=>p.r===r&&p.c===c)||null;}
 function cloneState(state){return{...state,pieces:state.pieces.map(p=>({...p})),lastMove:state.lastMove?{...state.lastMove}:null};}
