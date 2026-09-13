@@ -18,10 +18,10 @@ test('Animal Chess premium AI always chooses a legal deterministic move',()=>{
 
 test('Animal Chess premium shell includes CPU modes, player HUDs, history, sound and victory overlay',()=>{
   const source=fs.readFileSync('src/js/games/animal-chess.js','utf8');
-  for(const phrase of ['vs CPU','data-ai="easy"','data-ai="hard"','animal-chess-player','MOVE HISTORY','animalChessSound','animal-chess-result','COMPUTER THINKING'])assert.match(source,new RegExp(phrase));
+  for(const phrase of ['vs CPU','data-ai="easy"','data-ai="hard"','animal-chess-player','MOVE HISTORY','animalChessSound','animal-chess-result','Blue is thinking'])assert.match(source,new RegExp(phrase));
 });
 
 test('Animal Chess premium board uses lacquer pieces and responsive motion polish',()=>{
   const css=fs.readFileSync('src/styles/animal-chess.css','utf8');
-  for(const phrase of ['animal-chess-boardframe','animal-chess-han','animal-chess-captured','animalChessArrive','prefers-reduced-motion','animal-chess-water'])assert.match(css,new RegExp(phrase));
+  for(const phrase of ['animal-chess-boardframe','animal-chess-han','animal-chess-captured','animalChessArrive','prefers-reduced-motion','animal-chess-water','COMPUTER THINKING'])assert.match(css,new RegExp(phrase));
 });
