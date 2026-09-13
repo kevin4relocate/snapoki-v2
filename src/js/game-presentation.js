@@ -47,7 +47,17 @@ const PRESENTATION={
     tools:[['Hint','exact edge to change'],['Solution','one ghost loop']],
     socialHook:'Can you close the loop?'
   },
-
+  'animal-chess':{
+    solutionLabel:'Guide',
+    goal:{tokens:['REACH ENEMY DEN'],note:'or capture every rival'},
+    rows:[
+      ['Move','Red moves first. Move one animal one square up, down, left or right.'],
+      ['Ranks','Higher or equal ranks capture lower ranks. Rat can capture Elephant, and only Rats may enter rivers.'],
+      ['Terrain','Lion and Tiger jump rivers unless a Rat blocks them. Enemy animals standing in your traps lose their rank.']
+    ],
+    tools:[['Undo','take back one move'],['Restart','new local game']],
+    socialHook:'Can you reach the enemy den?'
+  },
   'world-loop':{
     styles:['world-loop.css'],
     solutionLabel:'Guide',
