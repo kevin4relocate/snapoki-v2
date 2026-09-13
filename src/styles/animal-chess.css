@@ -1,0 +1,30 @@
+body[data-game="animal-chess"] .game-board{max-width:none;width:100%;padding:0;background:transparent}
+body[data-game="animal-chess"] .board-panel{overflow:visible}
+body[data-game="animal-chess"] .difficulty-list{grid-template-columns:1fr}
+body[data-game="animal-chess"] .difficulty-button{cursor:default}
+body[data-game="animal-chess"] .daily-section{display:none!important}
+.animal-chess-app{display:grid;gap:10px;width:100%;min-width:0}
+.animal-chess-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px}
+.animal-chess-head>div:first-child{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:2px 10px}
+.animal-chess-kicker{grid-row:1/3;align-self:center;padding:5px 7px;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#8fd4ff;font-size:7px;font-weight:950;letter-spacing:.12em}
+.animal-chess-head strong{font-size:15px}.animal-chess-head small{color:var(--muted);font-size:9px}
+.animal-chess-actions{display:flex;gap:6px}.animal-chess-actions button{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.045);color:inherit;border-radius:9px;padding:7px 10px;font:inherit;font-size:10px;font-weight:850;cursor:pointer}.animal-chess-actions button:hover{background:rgba(255,255,255,.08)}.animal-chess-actions button:disabled{opacity:.38;cursor:default}
+.animal-chess-turn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:36px;padding:7px 10px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025)}
+.animal-chess-turn b{font-size:10px}.animal-chess-turn b.red{color:#ff8d8d}.animal-chess-turn b.blue{color:#7fc5ff}.animal-chess-turn span{color:var(--muted);font-size:8px;text-align:right}
+.animal-chess-board{width:min(100%,650px);margin:0 auto;aspect-ratio:7/9;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(9,minmax(0,1fr));border:1px solid rgba(220,232,210,.28);border-radius:18px;overflow:hidden;background:#263427;box-shadow:inset 0 0 55px rgba(0,0,0,.3),0 18px 50px rgba(0,0,0,.22)}
+.animal-chess-cell{position:relative;display:grid;place-items:center;min-width:0;min-height:0;padding:0;border:0;border-right:1px solid rgba(235,240,220,.13);border-bottom:1px solid rgba(235,240,220,.13);background:rgba(133,158,105,.08);color:inherit;cursor:pointer;overflow:hidden}
+.animal-chess-cell:nth-child(7n){border-right:0}.animal-chess-cell:nth-last-child(-n+7){border-bottom:0}.animal-chess-cell:hover{background:rgba(255,255,255,.055)}
+.animal-chess-cell.river{background:linear-gradient(145deg,rgba(44,137,177,.44),rgba(34,99,142,.52))}.animal-chess-cell.river:before{content:"";position:absolute;inset:14% 7%;border-top:1px solid rgba(183,226,255,.16);border-bottom:1px solid rgba(183,226,255,.1);transform:skewY(-7deg)}
+.animal-chess-cell.trap{background:linear-gradient(145deg,rgba(198,138,61,.22),rgba(118,78,35,.18))}.animal-chess-cell.den{background:radial-gradient(circle,rgba(224,185,82,.3),rgba(100,73,24,.2));box-shadow:inset 0 0 0 2px rgba(234,194,91,.2)}
+.animal-chess-terrain{position:absolute;left:4px;top:3px;color:rgba(255,255,255,.28);font-size:5px;font-weight:950;letter-spacing:.08em;pointer-events:none}
+.animal-chess-piece{position:relative;z-index:2;width:72%;aspect-ratio:1;display:grid;grid-template-columns:1fr auto;grid-template-rows:1fr auto;align-items:center;justify-items:center;padding:5%;border:2px solid currentColor;border-radius:50%;background:#111923;box-shadow:0 5px 12px rgba(0,0,0,.38);transition:transform .12s ease,box-shadow .12s ease}
+.animal-chess-piece.red{color:#ff757c;background:radial-gradient(circle at 40% 35%,#3c1c22,#171217 66%)}.animal-chess-piece.blue{color:#61baff;background:radial-gradient(circle at 40% 35%,#17304a,#101821 66%)}
+.animal-chess-piece.selected{transform:scale(1.08);box-shadow:0 0 0 4px rgba(255,255,255,.13),0 7px 16px rgba(0,0,0,.42)}
+.animal-chess-icon{grid-column:1/3;font-size:clamp(18px,2.2vw,31px);line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}.animal-chess-piece b{font-size:clamp(8px,.9vw,12px);line-height:1}.animal-chess-piece small{font-size:clamp(7px,.72vw,10px);font-weight:950;opacity:.72}
+.animal-chess-cell.move-target:after,.animal-chess-cell.capture-target:after{content:"";position:absolute;z-index:3;width:17%;aspect-ratio:1;border-radius:50%;background:rgba(116,231,174,.76);box-shadow:0 0 14px rgba(116,231,174,.35)}.animal-chess-cell.capture-target:after{width:72%;background:transparent;border:3px solid rgba(255,101,117,.78);box-shadow:inset 0 0 16px rgba(255,101,117,.12)}
+.animal-chess-cell>i{position:absolute;z-index:4;right:6px;bottom:3px;font-style:normal;font-size:10px;font-weight:950;color:#9cf4c5;pointer-events:none}.animal-chess-cell.capture-target>i{color:#ff8c99}
+.animal-chess-cell.last{box-shadow:inset 0 0 0 2px rgba(255,225,118,.25)}
+.animal-chess-rankbar{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:6px 8px;border:1px solid rgba(255,255,255,.07);border-radius:11px;background:rgba(255,255,255,.02);color:var(--muted);font-size:8px}.animal-chess-rankbar span{font-weight:950;letter-spacing:.08em}.animal-chess-rankbar b{font-size:9px;color:var(--text)}
+@media(max-width:900px){.animal-chess-board{width:min(100%,590px)}}
+@media(max-width:680px){body[data-game="animal-chess"] .game-layout{display:block}body[data-game="animal-chess"] .board-panel{margin-top:12px}.animal-chess-head{align-items:flex-start}.animal-chess-head>div:first-child{grid-template-columns:1fr}.animal-chess-kicker{grid-row:auto;width:max-content}.animal-chess-head small{display:none}.animal-chess-board{width:100%;border-radius:14px}.animal-chess-piece{width:76%;border-width:1.5px}.animal-chess-turn{align-items:flex-start}.animal-chess-turn span{max-width:58%}}
+@media(max-width:430px){.animal-chess-actions button{padding:6px 8px;font-size:9px}.animal-chess-rankbar{gap:5px}.animal-chess-rankbar b{font-size:8px}.animal-chess-terrain{font-size:4px}}
