@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import {
   ANIMAL_CHESS_PIECES,
   createAnimalChessState,
+  generateAnimalChess,
   animalChessLegalMoves,
   applyAnimalChessMove,
   animalChessDenOwner,
@@ -23,6 +24,13 @@ test('Animal Chess starts with 16 pieces and Red to move',()=>{
   assert.equal(state.pieces.filter(piece=>piece.side==='blue').length,8);
 });
 
+test('Animal Chess deterministic generator exposes the standard starting board',()=>{
+  const a=generateAnimalChess('local','animal-chess:local:test'),b=generateAnimalChess('local','animal-chess:local:test');
+  assert.deepEqual(a,b);
+  assert.equal(a.difficulty,'local');
+  assert.equal(a.pieces.length,16);
+});
+
 test('Animal Chess board has the standard rivers, dens and traps',()=>{
   assert.equal([...Array(9)].flatMap((_,r)=>[...Array(7)].map((__,c)=>isAnimalChessRiver(r,c))).filter(Boolean).length,12);
   assert.equal(animalChessDenOwner(0,3),'blue');
@@ -36,6 +44,13 @@ test('Only the Rat enters river squares',()=>{
   assert.ok(moveTo(animalChessLegalMoves(ratState,'red-rat'),5,1));
   const dogState=baseState('red');dogState.pieces=[p('red','dog',6,1),p('blue','cat',0,0)];
   assert.equal(moveTo(animalChessLegalMoves(dogState,'red-dog'),5,1),false);
+});
+
+test('Rat still respects occupied river squares and can capture an enemy Rat there',()=>{
+  const blocked=baseState('red');blocked.pieces=[p('red','rat',4,1),p('red','cat',4,2),p('blue','cat',0,0)];
+  assert.equal(moveTo(animalChessLegalMoves(blocked,'red-rat'),4,2),false);
+  const capture=baseState('red');capture.pieces=[p('red','rat',4,1),p('blue','rat',4,2),p('blue','cat',0,0)];
+  assert.ok(moveTo(animalChessLegalMoves(capture,'red-rat'),4,2));
 });
 
 test('Rat can capture Elephant on land while Elephant cannot capture Rat',()=>{
@@ -62,6 +77,11 @@ test('Lion and Tiger jump a river unless a Rat blocks the water',()=>{
 test('Enemy piece in your trap loses rank and can be captured by Rat',()=>{
   const state=baseState('red');state.pieces=[p('red','rat',7,2),p('blue','elephant',7,3),p('blue','cat',0,0)];
   assert.ok(moveTo(animalChessLegalMoves(state,'red-rat'),7,3));
+});
+
+test('A trapped attacker has rank zero and cannot use the Rat versus Elephant exception',()=>{
+  const state=baseState('blue');state.pieces=[p('blue','rat',7,3),p('red','elephant',7,2),p('red','cat',8,6)];
+  assert.equal(moveTo(animalChessLegalMoves(state,'blue-rat'),7,2),false);
 });
 
 test('A player cannot enter their own den and wins by entering the enemy den',()=>{
