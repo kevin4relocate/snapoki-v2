@@ -3,6 +3,7 @@ body[data-game="animal-chess"] .board-panel{overflow:visible}
 body[data-game="animal-chess"] .difficulty-list{grid-template-columns:1fr}
 body[data-game="animal-chess"] .difficulty-button{cursor:default}
 body[data-game="animal-chess"] .daily-section{display:none!important}
+body[data-game="animal-chess"] .left-panel .control-stack{display:none!important}
 .animal-chess-app{display:grid;gap:10px;width:100%;min-width:0}
 .animal-chess-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px}
 .animal-chess-head>div:first-child{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:2px 10px}
