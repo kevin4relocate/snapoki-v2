@@ -46,11 +46,12 @@ function canCapture(state,attacker,defender,fromR,fromC,toR,toC){
   if(!defender||attacker.side===defender.side)return false;
   const fromWater=isAnimalChessRiver(fromR,fromC),toWater=isAnimalChessRiver(toR,toC);
   if((fromWater||toWater)&&attacker.type==='rat'&&fromWater!==toWater)return false;
-  const defenderRank=effectiveRank(defender,toR,toC);
+  const defenderRank=effectiveRank(defender,toR,toC),attackerRank=effectiveRank(attacker,fromR,fromC);
   if(defenderRank===0)return true;
+  if(attackerRank===0)return false;
   if(attacker.type==='rat'&&defender.type==='elephant')return !fromWater&&!toWater;
   if(attacker.type==='elephant'&&defender.type==='rat')return false;
-  return effectiveRank(attacker,fromR,fromC)>=defenderRank;
+  return attackerRank>=defenderRank;
 }
 
 function riverJump(state,pieceValue,dr,dc){
@@ -68,8 +69,7 @@ function riverJump(state,pieceValue,dr,dc){
 function candidateForDirection(state,pieceValue,dr,dc){
   let r=pieceValue.r+dr,c=pieceValue.c+dc,jump=false;
   if(!inBounds(r,c))return null;
-  if(isAnimalChessRiver(r,c)){
-    if(pieceValue.type==='rat')return{r,c,jump:false};
+  if(isAnimalChessRiver(r,c)&&pieceValue.type!=='rat'){
     const jumped=riverJump(state,pieceValue,dr,dc);
     if(!jumped)return null;
     ({r,c}=jumped);jump=true;
