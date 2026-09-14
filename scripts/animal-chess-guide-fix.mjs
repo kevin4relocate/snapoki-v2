@@ -43,4 +43,4 @@ for(const [pattern,replacement] of [
   home=home.replace(pattern,replacement);
 }
 await fs.writeFile(homeFile,home);
-console.log('Animal Chess V3 guide and homepage metadata normalized for launch.');
+console.log('Animal Chess V4 guide and homepage metadata normalized for launch.');
