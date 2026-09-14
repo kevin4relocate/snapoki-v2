@@ -31,12 +31,17 @@ test('Animal Chess Expert takes an immediate winning den move',()=>{
   assert.equal(won.winner,'blue');
 });
 
-test('Animal Chess Premium V3 shell includes CPU modes, tactical HUD, persistent preferences and keyboard board controls',()=>{
+test('Animal Chess Premium V4 removes demo chrome and keeps one compact game topbar',()=>{
   const source=fs.readFileSync('src/js/games/animal-chess.js','utf8');
-  for(const phrase of ['vs CPU','data-ai="easy"','data-ai="hard"','animal-chess-player','MOVE HISTORY','animalChessSound','animal-chess-result','animalChessTactical','snapoki:animal-chess:v3','ArrowUp','ArrowRight','requestAnimationFrame','minimax','mobilityScore','ownDenSafety'])assert.match(source,new RegExp(phrase));
+  for(const phrase of ['animal-chess-topbar','animalChessCpuSelect','animal-chess-playerstrip','animalChessBoardHud','animalChessRules','animal-chess-result','snapoki:animal-chess:v4','ArrowUp','ArrowRight','requestAnimationFrame','minimax','mobilityScore','ownDenSafety','navigator.vibrate','win-target'])assert.match(source,new RegExp(phrase));
+  for(const phrase of ['animal-chess-titleblock','DOU SHOU QI · 斗兽棋','Classic jungle strategy · premium board','animal-chess-matchbar','animalChessTactical','MOVE HISTORY'])assert.doesNotMatch(source,new RegExp(phrase));
 });
 
-test('Animal Chess Premium V3 board uses lacquer depth, stronger readability, keyboard focus and responsive motion polish',()=>{
+test('Animal Chess Premium V4 board is board-first, compact and responsive',()=>{
   const css=fs.readFileSync('src/styles/animal-chess.css','utf8');
-  for(const phrase of ['animal-chess-boardframe','animal-chess-han','animal-chess-captured','animalChessArrive','prefers-reduced-motion','animal-chess-water','COMPUTER THINKING','focus-visible','Songti SC','Source Han Serif SC','A9','animal-chess-piece:after'])assert.match(css,new RegExp(phrase));
+  for(const phrase of ['animal-chess-topbar','animal-chess-playerstrip','animal-chess-boardframe','animal-chess-boardhud','animal-chess-han','animal-chess-lost','animalChessArrive','animalChessWinTarget','animalChessDenDanger','prefers-reduced-motion','animal-chess-water','focus-visible','Songti SC','Source Han Serif SC','A9','animal-chess-piece:after'])assert.match(css,new RegExp(phrase));
+  assert.match(css,/body\[data-game="animal-chess"\] \.left-panel\{display:none!important\}/);
+  assert.match(css,/body\[data-game="animal-chess"\] \.board-toolbar\{display:none!important\}/);
+  assert.doesNotMatch(css,/\.animal-chess-titleblock/);
+  assert.doesNotMatch(css,/\.animal-chess-matchbar/);
 });
