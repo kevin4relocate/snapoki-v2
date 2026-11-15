@@ -28,5 +28,5 @@ test('two-row HUD keeps goal, delay and all wall rules visible without horizonta
 
 test('Echo Step built page loads the always-visible rule bar stylesheet',()=>{
   const page=fs.readFileSync('dist/echo-step/index.html','utf8');
-  assert.match(page,/\/assets\/styles\/echo-step-rulebar\.css/);
+  assert.match(page,/\/assets\/r\/[a-f0-9]{20}\/styles\/echo-step-rulebar\.css/);
 });
