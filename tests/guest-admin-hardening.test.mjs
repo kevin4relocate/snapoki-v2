@@ -30,6 +30,7 @@ test('public Maze SEO does not advertise retired Rankings feature',()=>{
 });
 test('Cloudflare static asset caching revalidates unchanged asset paths',()=>{
   const headers=readFileSync('public/_headers','utf8');
-  assert.match(headers,/\/assets\/\*\n\s+Cache-Control: public, max-age=0, must-revalidate/);
+  assert.match(headers,/\/assets\/js\/\*\n\s+Cache-Control: public, max-age=0, must-revalidate/);
+  assert.match(headers,/\/assets\/styles\/\*\n\s+Cache-Control: public, max-age=0, must-revalidate/);
   assert.match(headers,/Strict-Transport-Security: max-age=31536000/);
 });
