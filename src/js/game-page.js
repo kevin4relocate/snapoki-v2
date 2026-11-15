@@ -330,8 +330,17 @@ function renderDaily(){
     const mark=b.querySelector('i');if(mark)mark.textContent=complete?'✓ DONE':'✓';
   });
 }
+let currentDailyDate=utcDate();
 function updateCountdown(){
-  const now=new Date(),next=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1),seconds=Math.max(0,Math.floor((next-Date.now())/1000));
+  const now=new Date(),today=utcDate(now);
+  if(today!==currentDailyDate){
+    currentDailyDate=today;
+    loadLocalDailyProgress();
+    renderDaily();
+    // A board started yesterday must not count as today's Daily completion.
+    if(state.mode==='daily'&&!state.loading)void startPuzzle();
+  }
+  const next=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1),seconds=Math.max(0,Math.floor((next-now.getTime())/1000));
   $('#dailyCountdown').textContent=`${String(Math.floor(seconds/3600)).padStart(2,'0')}:${String(Math.floor((seconds%3600)/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
 }
 function finishPractice(message){
