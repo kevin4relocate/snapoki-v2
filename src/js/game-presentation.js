@@ -74,13 +74,17 @@ const DEFAULT_ROW_LABELS=['Start','Rule','Finish'];
 export function getGamePresentation(game){
   const custom=PRESENTATION[game.key]||{};
   const fallbackRows=(game.howTo||[]).slice(0,3).map((text,index)=>[DEFAULT_ROW_LABELS[index]||'Tip',text]);
+  const experienceType=game.experienceType||'puzzle';
+  const defaults=experienceType==='board'
+    ?{goal:{tokens:[String(game.name||'BOARD GAME').toUpperCase()],note:'Make legal moves'},tools:[['Move','follow the match rules'],['New Game','start again']],socialHook:`Who will win ${game.name}?`}
+    :experienceType==='simulation'
+      ?{goal:{tokens:[String(game.name||'SIMULATION').toUpperCase()],note:'Watch the session'},tools:[['Start','begin the session'],['Reset','start again']],socialHook:`What happens in ${game.name}?`}
+      :{goal:{tokens:[String(game.name||'PUZZLE').toUpperCase()],note:'Solve the board'},tools:[['Hint','next useful action'],['Solution','practice guide']],socialHook:`Can you solve ${game.name}?`};
   return {
     styles:[],
     solutionLabel:'Solution',
-    goal:{tokens:[String(game.name||'PUZZLE').toUpperCase()],note:'Solve the board'},
     rows:fallbackRows,
-    tools:[['Hint','next useful action'],['Solution','practice guide']],
-    socialHook:`Can you solve ${game.name}?`,
+    ...defaults,
     ...custom
   };
 }
