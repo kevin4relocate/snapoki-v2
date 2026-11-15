@@ -254,7 +254,7 @@ export function createGame({host,onMetrics=()=>{},onStatus=()=>{}}){
     renderPlayer('blue',bluePlayer);renderPlayer('red',redPlayer);renderHistory();renderResult();renderStatus();
     const hud=boardHudMessage();boardHud.hidden=!hud;if(hud){boardHud.className=`animal-chess-boardhud ${hud.tone}`;boardHud.textContent=hud.text;}
     undo.disabled=!history.length||busy;announce();
-    if(restoreBoardFocus){restoreBoardFocus=false;requestAnimationFrame(()=>board.querySelector(`[data-row="${focusCell.r}"][data-col="${focusCell.c}"]`)?.focus());}
+    if(restoreBoardFocus){restoreBoardFocus=false;board.querySelector(`[data-row="${focusCell.r}"][data-col="${focusCell.c}"]`)?.focus();}
   }
 
   function logMove(before,pieceId,toR,toC){const moving=before.pieces.find(p=>p.id===pieceId),captured=before.pieces.find(p=>p.r===toR&&p.c===toC&&p.side!==moving.side);moveLog.push({no:before.moves+1,side:moving.side,type:moving.type,from:coordinate(moving.r,moving.c),to:coordinate(toR,toC),capturedType:captured?.type||''});}
