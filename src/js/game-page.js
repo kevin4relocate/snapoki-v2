@@ -112,7 +112,7 @@ async function waitForAuth(){return {user:null,ready:true};}
 async function rankedAttempt(){return null;}
 async function loadEngineFactory(){
   if(state.engineFactory)return state.engineFactory;
-  const module=await import(`/assets/js/games/${game.slug}.js`);
+  const module=await import(`./games/${game.slug}.js`);
   if(typeof module.createGame!=='function')throw new Error(`${game.name} engine is missing createGame().`);
   state.engineFactory=module.createGame;
   return state.engineFactory;
