@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {GAMES,EXPERIENCE_TYPES} from '../src/js/games-config.js';
+import {GAMES,EXPERIENCE_TYPES,withContract} from '../src/js/games-config.js';
 import {getGameGuide} from '../src/js/game-guide.js';
 import {getGamePresentation} from '../src/js/game-presentation.js';
 
@@ -23,6 +23,19 @@ const boardFixture={
     ctaCopy:'Try Local 2P or a computer opponent, then make the opening move.'
   }
 };
+
+test('board and simulation defaults stay unranked without explicit overrides',()=>{
+  for(const type of ['board','simulation']){
+    const config=withContract({...boardFixture,experienceType:type,capabilities:undefined,ranking:undefined,guide:undefined});
+    assert.equal(config.experienceType,type);
+    for(const capability of ['hint','solution','solutionSteps','daily','ranking'])assert.equal(config.capabilities[capability],false);
+    assert.equal(config.ranking.enabled,false);
+    assert.equal(config.ranking.proofType,'none');
+  }
+  const puzzle=withContract({...boardFixture,experienceType:'puzzle',capabilities:undefined,ranking:undefined});
+  assert.equal(puzzle.capabilities.daily,true);
+  assert.equal(puzzle.capabilities.hint,true);
+});
 
 test('all registered games declare a supported type and compatible capabilities',()=>{
   assert.deepEqual([...EXPERIENCE_TYPES],['puzzle','board','simulation']);
