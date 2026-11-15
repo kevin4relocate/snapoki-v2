@@ -33,16 +33,19 @@ try{
     page.on('pageerror',error=>pageErrors.push(error.message));
     try{
       await page.goto(`http://127.0.0.1:${port}/${game.slug}/`,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>document.querySelector('#gameBoard')?.children.length>0,{timeout:30000});
-      await page.waitForFunction(()=>!document.querySelector('#gameBoard')?.hasAttribute('aria-busy'),{timeout:30000});
+      await page.waitForFunction(()=>document.querySelector('#gameBoard')?.children.length>0 || document.querySelector('#gameStatus')?.textContent?.includes('could not start'),null,{timeout:12000}).catch(async error=>{
+        const status=await page.locator('#gameStatus').textContent();
+        throw new Error(`Board did not render: ${status}; pageErrors: ${pageErrors.join('; ')||'none'}; ${error.message}`);
+      });
+      await page.waitForFunction(()=>!document.querySelector('#gameBoard')?.hasAttribute('aria-busy'),null,{timeout:12000});
       const status=await page.locator('#gameStatus').textContent();
-      if(status?.includes('could not start'))throw new Error(status);
+      if(status?.includes('could not start'))throw new Error(`Engine startup failed: ${status}; pageErrors: ${pageErrors.join('; ')||'none'}`);
       if(pageErrors.length)throw new Error(pageErrors.join('; '));
       if(game.capabilities?.daily!==false){
         const easy=page.locator('.difficulty-button[data-difficulty="easy"]');
         if(!(await easy.isVisible()))throw new Error('Missing puzzle difficulty controls');
         await page.locator('#newPuzzle').click();
-        await page.waitForFunction(()=>!document.querySelector('#gameBoard')?.hasAttribute('aria-busy'),{timeout:30000});
+        await page.waitForFunction(()=>!document.querySelector('#gameBoard')?.hasAttribute('aria-busy'),null,{timeout:12000});
         if(pageErrors.length)throw new Error(pageErrors.join('; '));
       }
       console.log(`PASS ${game.slug}: board rendered and controls initialized`);
