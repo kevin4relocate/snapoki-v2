@@ -3,7 +3,7 @@ export const EXPERIENCE_TYPES=Object.freeze(['puzzle','board','simulation']);
 
 // All games use one shell. Capability defaults depend on the experience type;
 // a board match or an ongoing simulation is not automatically a Daily puzzle.
-const withContract=config=>{
+export const withContract=config=>{
   const experienceType=config.experienceType||'puzzle';
   const puzzle=experienceType==='puzzle';
   return {
