@@ -463,21 +463,35 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
     if(ctx){try{await ctx.close();}catch{}}
     syncAudioUi();
   }
+  // Run the animation only while the race is visible and active. This avoids
+  // scheduling frames during setup, Pause, Stop or when the tab is hidden.
+  function scheduleFrame(){
+    if(!raf&&running&&document.visibilityState!=='hidden')raf=requestAnimationFrame(frame);
+  }
+  function haltFrame(){
+    if(raf)cancelAnimationFrame(raf);
+    raf=0;lastFrame=0;
+  }
   function frame(now){
-    raf=requestAnimationFrame(frame);ensureAudioSchedule();if(!running){lastFrame=now;return;}if(!lastFrame)lastFrame=now;
-    const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;elapsedMs+=dt*1000;stepRace(dt);renderHud();
+    raf=0;
+    if(!running||document.visibilityState==='hidden')return;
+    ensureAudioSchedule();
+    if(!lastFrame)lastFrame=now;
+    const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));
+    lastFrame=now;elapsedMs+=dt*1000;stepRace(dt);renderHud();
+    scheduleFrame();
   }
   async function releaseWakeLock(){const lock=wakeLock;wakeLock=null;if(lock){try{await lock.release();}catch{}}wakeHost.textContent='SCREEN MODE';}
   async function requestWakeLock(){
-    if(!started||!running||!navigator.wakeLock?.request){wakeHost.textContent='SCREEN MODE';return;}if(wakeLock){wakeHost.textContent='SCREEN AWAKE';return;}
+    if(!started||!running||document.visibilityState==='hidden'||!navigator.wakeLock?.request){wakeHost.textContent='SCREEN MODE';return;}if(wakeLock){wakeHost.textContent='SCREEN AWAKE';return;}
     try{wakeLock=await navigator.wakeLock.request('screen');wakeHost.textContent='SCREEN AWAKE';wakeLock.addEventListener('release',()=>{wakeLock=null;wakeHost.textContent='SCREEN MODE';},{once:true});}catch{wakeHost.textContent='SCREEN MODE';}
   }
   function beginSession(nextSeed){
-    closeCountryMenu();saveSelection();sessionRng=rngFromSeed(String(nextSeed)+':endless:v4');racers=buildWorldLoopRoster(sortWorldLoopCodes([...selected]),nextSeed,difficulty).map(racer=>({...racer,distance:0,surgeUntil:0,surgePower:0,node:null,distanceLabel:null}));elapsedMs=0;lastHudAt=-Infinity;cameraDistance=0;leaderCode='';leadChanges=0;running=true;started=true;pauseButton.disabled=false;restartButton.disabled=false;changeButton.disabled=false;fullscreenButton.disabled=false;soundToggleButton.disabled=false;soundMuteButton.disabled=false;volumeSlider.disabled=false;pauseButton.textContent='Pause';setup.hidden=true;buildLanes();const ordered=updateLeader();updatePositions(ordered);renderHud(true);lastFrame=performance.now();requestWakeLock();resumeBackgroundMusicAfterRace();onStatus('Endless race started. There is no finish line and no automatic reset.');
+    closeCountryMenu();saveSelection();sessionRng=rngFromSeed(String(nextSeed)+':endless:v4');racers=buildWorldLoopRoster(sortWorldLoopCodes([...selected]),nextSeed,difficulty).map(racer=>({...racer,distance:0,surgeUntil:0,surgePower:0,node:null,distanceLabel:null}));elapsedMs=0;lastHudAt=-Infinity;cameraDistance=0;leaderCode='';leadChanges=0;running=true;started=true;pauseButton.disabled=false;restartButton.disabled=false;changeButton.disabled=false;fullscreenButton.disabled=false;soundToggleButton.disabled=false;soundMuteButton.disabled=false;volumeSlider.disabled=false;pauseButton.textContent='Pause';setup.hidden=true;buildLanes();const ordered=updateLeader();updatePositions(ordered);renderHud(true);lastFrame=performance.now();scheduleFrame();requestWakeLock();resumeBackgroundMusicAfterRace();onStatus('Endless race started. There is no finish line and no automatic reset.');
   }
   function restartSession(){if(selected.size<4)return;restartCounter++;beginSession(String(seed)+':manual:'+restartCounter+':'+Date.now());}
-  function stopSession(){closeCountryMenu();running=false;started=false;releaseWakeLock();resetBackgroundMusic();setup.hidden=false;pauseButton.disabled=true;restartButton.disabled=true;changeButton.disabled=true;fullscreenButton.disabled=true;soundToggleButton.disabled=true;soundMuteButton.disabled=true;volumeSlider.disabled=true;pauseButton.textContent='Pause';leaderCode='';leadChanges=0;cameraDistance=0;renderPicker();onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});onStatus('Race stopped. Pick countries, then Start Endless Race to begin again from zero.');}
-  async function togglePause(){if(!started)return;running=!running;pauseButton.textContent=running?'Pause':'Resume';lastFrame=performance.now();if(running){requestWakeLock();await resumeBackgroundMusicAfterRace();onStatus('Race resumed.');}else{releaseWakeLock();await pauseBackgroundMusicForRace();onStatus('Race paused. Resume whenever you are ready.');}}
+  function stopSession(){closeCountryMenu();running=false;started=false;haltFrame();releaseWakeLock();resetBackgroundMusic();setup.hidden=false;pauseButton.disabled=true;restartButton.disabled=true;changeButton.disabled=true;fullscreenButton.disabled=true;soundToggleButton.disabled=true;soundMuteButton.disabled=true;volumeSlider.disabled=true;pauseButton.textContent='Pause';leaderCode='';leadChanges=0;cameraDistance=0;renderPicker();onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});onStatus('Race stopped. Pick countries, then Start Endless Race to begin again from zero.');}
+  async function togglePause(){if(!started)return;running=!running;pauseButton.textContent=running?'Pause':'Resume';if(running){lastFrame=performance.now();scheduleFrame();requestWakeLock();await resumeBackgroundMusicAfterRace();onStatus('Race resumed.');}else{haltFrame();releaseWakeLock();await pauseBackgroundMusicForRace();onStatus('Race paused. Resume whenever you are ready.');}}
   function fullscreenElement(){return document.fullscreenElement||document.webkitFullscreenElement||null;}
   function syncFullscreen(){const active=fullscreenElement()===app;app.classList.toggle('is-fullscreen',active);fullscreenButton.textContent=active?'⛶ Exit Full Screen':'⛶ Full Screen';fullscreenButton.setAttribute('aria-pressed',String(active));if(active)requestWakeLock();}
   async function toggleFullscreen(){
@@ -489,8 +503,19 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   pickerDocumentListener=event=>{if(!pickerWrap.contains(event.target))closeCountryMenu();};document.addEventListener('pointerdown',pickerDocumentListener);
   startButton.addEventListener('click',()=>{restartCounter++;beginSession(String(seed)+':start:'+restartCounter+':'+Date.now());});pauseButton.addEventListener('click',togglePause);restartButton.addEventListener('click',restartSession);changeButton.addEventListener('click',stopSession);soundToggleButton.addEventListener('click',toggleBackgroundMusic);soundMuteButton.addEventListener('click',toggleBackgroundMute);volumeSlider.addEventListener('input',setBackgroundVolume);fullscreenButton.addEventListener('click',toggleFullscreen);
   randomButton.addEventListener('click',()=>{selected=new Set(shuffle(WORLD_LOOP_COUNTRIES,Math.random).slice(0,8).map(country=>country.code));renderPicker();});clearButton.addEventListener('click',()=>{selected=new Set();renderPicker();});
-  fullscreenListener=syncFullscreen;document.addEventListener('fullscreenchange',fullscreenListener);document.addEventListener('webkitfullscreenchange',fullscreenListener);visibilityListener=()=>{if(document.visibilityState==='visible'&&started&&running)requestWakeLock();};document.addEventListener('visibilitychange',visibilityListener);
+  fullscreenListener=syncFullscreen;document.addEventListener('fullscreenchange',fullscreenListener);document.addEventListener('webkitfullscreenchange',fullscreenListener);visibilityListener=()=>{
+    if(document.visibilityState==='hidden'){
+      haltFrame();
+      releaseWakeLock();
+      void pauseBackgroundMusicForRace();
+    }else if(started&&running){
+      lastFrame=performance.now();
+      scheduleFrame();
+      requestWakeLock();
+      void resumeBackgroundMusicAfterRace();
+    }
+  };document.addEventListener('visibilitychange',visibilityListener);
 
-  loadSelection();renderPicker();onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});onStatus('');raf=requestAnimationFrame(frame);
-  return{supportsUndo:false,reset(){if(started)restartSession();},stop(){stopSession();},setDifficulty(nextDifficulty){cfg=LEVEL[nextDifficulty]||LEVEL.medium;},hint(){return false;},solution(){},hideSolution(){},previewScore(){return 0;},getResult(){const ordered=worldLoopOrder(racers);return{score:0,metadata:{elapsedMs,leadChanges,leader:ordered[0]?.code||'',racers:racers.map(racer=>({code:racer.code,distance:racer.distance}))}};},destroy(){cancelAnimationFrame(raf);running=false;releaseWakeLock();resetBackgroundMusic();if(fullscreenListener){document.removeEventListener('fullscreenchange',fullscreenListener);document.removeEventListener('webkitfullscreenchange',fullscreenListener);}if(visibilityListener)document.removeEventListener('visibilitychange',visibilityListener);if(pickerDocumentListener)document.removeEventListener('pointerdown',pickerDocumentListener);}};
+  loadSelection();renderPicker();onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});onStatus('');
+  return{supportsUndo:false,reset(){if(started)restartSession();},stop(){stopSession();},setDifficulty(nextDifficulty){cfg=LEVEL[nextDifficulty]||LEVEL.medium;},hint(){return false;},solution(){},hideSolution(){},previewScore(){return 0;},getResult(){const ordered=worldLoopOrder(racers);return{score:0,metadata:{elapsedMs,leadChanges,leader:ordered[0]?.code||'',racers:racers.map(racer=>({code:racer.code,distance:racer.distance}))}};},destroy(){haltFrame();running=false;releaseWakeLock();resetBackgroundMusic();if(fullscreenListener){document.removeEventListener('fullscreenchange',fullscreenListener);document.removeEventListener('webkitfullscreenchange',fullscreenListener);}if(visibilityListener)document.removeEventListener('visibilitychange',visibilityListener);if(pickerDocumentListener)document.removeEventListener('pointerdown',pickerDocumentListener);}};
 }
