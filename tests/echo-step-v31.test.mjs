@@ -57,7 +57,7 @@ test('Echo Step launch surfaces come from shared registries instead of Echo-only
   assert.match(guide,/Guide/);
   assert.doesNotMatch(headers,/\/echo-step\/\*[\s\S]*X-Robots-Tag: noindex/i);
   assert.doesNotMatch(headers,/\/blog\/how-to-play-echo-step\/\*[\s\S]*X-Robots-Tag: noindex/i);
-  assert.match(echoPage,/\/assets\/styles\/echo-step-polish\.css/);
-  assert.match(echoPage,/\/assets\/styles\/how-to-card\.css/);
+  assert.match(echoPage,/\/assets\/r\/[a-f0-9]{20}\/styles\/echo-step-polish\.css/);
+  assert.match(echoPage,/\/assets\/r\/[a-f0-9]{20}\/styles\/how-to-card\.css/);
   assert.doesNotMatch(echoPage,/echo-step-launch\.css/);
 });
