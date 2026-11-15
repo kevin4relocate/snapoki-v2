@@ -11,6 +11,8 @@ function adminEmails(env) {
 function writeIsSameOrigin(request) {
   if(['GET','HEAD','OPTIONS'].includes(request.method))return true;
   if(request.headers.get('sec-fetch-site')==='cross-site')return false;
+  // Same-site subdomains are not the same security origin as Content Desk.
+  if(request.headers.get('sec-fetch-site')==='same-site')return false;
   const origin=request.headers.get('origin');
   return origin===new URL(request.url).origin;
 }
