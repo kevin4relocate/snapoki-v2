@@ -33,7 +33,7 @@ test('Animal Chess Expert takes an immediate winning den move',()=>{
 
 test('Animal Chess Premium V4 removes demo chrome and keeps one compact game topbar',()=>{
   const source=fs.readFileSync('src/js/games/animal-chess.js','utf8');
-  for(const phrase of ['animal-chess-topbar','animalChessCpuSelect','animal-chess-playerstrip','animalChessBoardHud','animalChessRules','animal-chess-result','snapoki:animal-chess:v4','ArrowUp','ArrowRight','requestAnimationFrame','minimax','mobilityScore','ownDenSafety','navigator.vibrate','win-target'])assert.match(source,new RegExp(phrase));
+  for(const phrase of ['animal-chess-topbar','animalChessCpuSelect','animal-chess-playerstrip','animalChessBoardHud','animalChessRules','animal-chess-result','snapoki:animal-chess:v4','ArrowUp','ArrowRight','restoreBoardFocus','minimax','mobilityScore','ownDenSafety','navigator.vibrate','win-target'])assert.match(source,new RegExp(phrase));
   for(const phrase of ['animal-chess-titleblock','DOU SHOU QI · 斗兽棋','Classic jungle strategy · premium board','animal-chess-matchbar','animalChessTactical','MOVE HISTORY'])assert.doesNotMatch(source,new RegExp(phrase));
 });
 
