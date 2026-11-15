@@ -48,6 +48,38 @@ async function verifyMobileLayout(page,game){
     if(game.capabilities?.daily!==false&&!(await page.locator('#newPuzzle').isVisible()))throw new Error('Puzzle controls hidden on mobile');
   }
 }
+async function verifyAnimalChess(page){
+  const board=page.locator('#animalChessBoard');
+  if(await board.locator('.animal-chess-cell').count()!==63)throw new Error('Animal Chess must render a 7x9 board');
+  const releaseCss=await page.locator('link[href*="/assets/r/"][href$="/styles/animal-chess.css"]').count();
+  if(!releaseCss)throw new Error('Animal Chess stylesheet is missing from the fingerprinted release');
+  if(await page.locator('link[href="/assets/styles/animal-chess.css"]').count())throw new Error('Unversioned Animal Chess stylesheet detected');
+  const tiger=board.locator('[data-row="8"][data-col="0"]'),advance=()=>board.locator('[data-row="7"][data-col="0"]');
+  await tiger.click();
+  await advance().click();
+  if(await board.locator('[data-row="7"][data-col="0"] .animal-chess-piece.red').count()!==1)throw new Error('Local 2P did not move red Tiger');
+  if(await page.locator('#animalChessHistory .animal-chess-movechip').count()!==1)throw new Error('Local 2P move history was not updated');
+  await page.locator('#animalChessUndo').click();
+  if(await board.locator('[data-row="8"][data-col="0"] .animal-chess-piece.red').count()!==1)throw new Error('Undo did not restore starting Tiger square');
+  await tiger.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Enter');
+  if(await board.locator('[data-row="7"][data-col="0"] .animal-chess-piece.red').count()!==1)throw new Error('Keyboard arrows/Enter cannot move a piece');
+  await page.locator('#animalChessRestart').click();
+  if(await board.locator('[data-row="8"][data-col="0"] .animal-chess-piece.red').count()!==1)throw new Error('New Game did not reset board');
+  await page.locator('.animal-chess-segment [data-mode="cpu"]').click();
+  await page.locator('#animalChessCpuSelect').selectOption('easy');
+  await tiger.click();
+  await advance().click();
+  await page.waitForFunction(()=>document.querySelectorAll('#animalChessHistory .animal-chess-movechip').length>=2,null,{timeout:12000});
+  if(await page.locator('#animalChessHistory .animal-chess-movechip').count()<2)throw new Error('CPU failed to make its reply');
+  await page.locator('#animalChessUndo').click();
+  if(await board.locator('[data-row="8"][data-col="0"] .animal-chess-piece.red').count()!==1)throw new Error('CPU Undo did not restore human turn');
+  const status=await page.locator('#animalChessStatus').textContent();
+  if(!status?.includes('Red'))throw new Error('CPU Undo did not restore Red turn');
+  console.log('PASS animal-chess: local play, Undo, keyboard, CPU reply, reset, versioned CSS');
+}
 async function verifyWorldLoopAnimation(page){
   await page.evaluate(()=>{
     const native=window.requestAnimationFrame.bind(window);
@@ -108,6 +140,7 @@ try{
         await page.waitForFunction(()=>!document.querySelector('#gameBoard')?.hasAttribute('aria-busy'),null,{timeout:12000});
         if(pageErrors.length)throw new Error(pageErrors.join('; '));
       }
+      if(game.key==='animal-chess')await verifyAnimalChess(page);
       if(game.key==='world-loop')await verifyWorldLoopAnimation(page);
       await verifyMobileLayout(page,game);
       if(pageErrors.length)throw new Error(pageErrors.join('; '));
