@@ -14,7 +14,7 @@ test('every registered game uses the shared scan-first How to Play card',()=>{
     assert.match(page,/class="game-howto-goal"/);
     assert.match(page,/class="game-howto-row"/);
     assert.match(page,/class="game-howto-tools"/);
-    assert.match(page,/\/assets\/styles\/how-to-card\.css/);
+    assert.match(page,/\/assets\/r\/[a-f0-9]{20}\/styles\/how-to-card\.css/);
     assert.doesNotMatch(page,/<p><strong>[1-4]\.<\/strong>/);
   }
 });
