@@ -53,6 +53,6 @@ test('shared game runtime delegates status rendering to game-status instead of i
 test('every game page loads the shared board status stylesheet',()=>{
   for(const game of GAMES){
     const html=fs.readFileSync(`dist/${game.slug}/index.html`,'utf8');
-    assert.match(html,/\/assets\/styles\/board-status\.css/,`${game.slug} should load board-status.css`);
+    assert.match(html,/\/assets\/r\/[a-f0-9]{20}\/styles\/board-status\.css/,`${game.slug} should load board-status.css`);
   }
 });

@@ -14,7 +14,7 @@ test('Daily sections no longer use the ambiguous same-boards eyebrow',()=>{
 });
 
 test('all game pages load shared long-number overflow safety',()=>{
-  for(const game of GAMES)assert.match(read(`dist/${game.slug}/index.html`),/assets\/styles\/ui-safety\.css/);
+  for(const game of GAMES)assert.match(read(`dist/${game.slug}/index.html`),/assets\/r\/[a-f0-9]{20}\/styles\/ui-safety\.css/);
   const css=read('src/styles/ui-safety.css');
   assert.match(css,/\.right-panel \.ranking-row>strong/);
   assert.match(css,/\.profile-stats b/);

@@ -17,7 +17,8 @@ test('every registered game has one engine entry and generated launch surfaces',
     assert.ok(fs.existsSync(`dist/${game.slug}/index.html`),`${game.key}: built page`);
     assert.ok(fs.existsSync(`dist/blog/how-to-play-${game.slug}/index.html`),`${game.key}: guide`);
     const page=read(`dist/${game.slug}/index.html`);
-    for(const asset of ['how-to-card.css','board-status.css','board-contract.css'])assert.match(page,new RegExp(`/assets/styles/${asset.replace('.','\\.')}`),`${game.key}: ${asset}`);
+    const release=JSON.parse(read('dist/release.json'));
+    for(const asset of ['how-to-card.css','board-status.css','board-contract.css'])assert.ok(page.includes(`${release.assetsBase}styles/${asset}`),`${game.key}: versioned ${asset}`);
   }
 });
 
@@ -59,9 +60,9 @@ test('repository syntax check is generic instead of hard-coded to one game',()=>
   assert.doesNotMatch(check,/bridges|echo-step|number-path|color-connect|lights-out|loop-puzzle/);
 });
 
-test('platform audit is the final build gate',()=>{
+test('platform audit precedes final immutable asset packaging',()=>{
   const pkg=JSON.parse(read('package.json'));
-  assert.match(pkg.scripts.build,/scripts\/platform-audit\.mjs$/);
+  assert.match(pkg.scripts.build,/scripts\/platform-audit\.mjs && node scripts\/version-assets\.mjs$/);
   const audit=read('scripts/platform-audit.mjs');
   for(const contract of ['dead internal reference','missing server result verifier','guide content is too thin','canonical missing from sitemap','public page links to private Content Desk'])assert.match(audit,new RegExp(contract));
 });

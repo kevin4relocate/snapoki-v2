@@ -95,7 +95,7 @@ test('Echo Step launch help is goal-first, compact and plain-language',()=>{
   assert.match(page,/Purple blocks YOU · Cyan blocks Echo · Dark blocks both\./);
   assert.match(page,/<strong>Avoid<\/strong>/);
   assert.match(page,/If Echo hits a blocked cell, leaves the board, or hits YOU, use Retry\./);
-  assert.match(page,/\/assets\/styles\/how-to-card\.css/);
+  assert.match(page,/\/assets\/r\/[a-f0-9]{20}\/styles\/how-to-card\.css/);
   assert.doesNotMatch(page,/marked Y|marked E|Purple phase walls|Cyan phase walls|not synced|timeline failed/i);
   assert.match(guide,/How to Play Echo Step/);
   assert.match(guide,/Purple, cyan and dark striped cells|Purple.*YOU.*cyan.*Echo/i);

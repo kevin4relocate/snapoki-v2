@@ -81,7 +81,7 @@ npm run build
 npm test
 ```
 
-The build pipeline syntax-checks runtime code, validates Content Desk plugin contracts, generates the site and guides, audits public routes/SEO/internal links, and runs the test suite.
+The build pipeline syntax-checks runtime code, validates Content Desk plugin contracts, generates the site and guides, audits public routes/SEO/internal links, then creates content-addressed JS/CSS asset URLs and a `dist/release.json` build manifest. GitHub CI also runs Chromium smoke tests for every registered game. See [Stage 3 release and rollback guide](docs/STAGE3_CLOUDFLARE_RELEASE.md).
 
 ## Cloudflare Pages
 
@@ -93,7 +93,7 @@ Build command: npm run build
 Build output directory: dist
 ```
 
-Production deployment remains a separate release decision from GitHub validation.
+Production deployment remains a separate release decision from GitHub validation. After deployment, verify the live site and its immutable assets with `npm run verify:production -- --url https://snapoki.com --expected-commit <main-SHA>`; this read-only check does not access D1.
 
 ## Cloudflare D1
 

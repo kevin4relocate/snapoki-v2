@@ -31,7 +31,7 @@ test('all static and reference content pages share the same centered 1080px widt
   for(const route of ['about','help','privacy','terms','how-to-play','daily-challenges']){
     const html=read(`dist/${route}/index.html`);
     assert.match(html,/<body class="content-shell"/);
-    assert.ok(html.indexOf('/assets/styles/content.css')<html.indexOf('/assets/styles/launch.css'),`${route}: content.css must load before launch.css`);
+    assert.ok(html.indexOf('/styles/content.css')<html.indexOf('/styles/launch.css'),`${route}: content.css must load before launch.css`);
   }
 });
 

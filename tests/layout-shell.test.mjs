@@ -22,8 +22,8 @@ test('all generated content pages load the shared content stylesheet',()=>{
     const html=fs.readFileSync(file,'utf8');
     if(!html.includes('class="content-page'))continue;
     const rel=path.relative(dist,file);
-    assert.match(html,/\/assets\/styles\/content\.css/,`${rel}: missing content.css`);
-    assert.match(html,/\/assets\/styles\/launch\.css/,`${rel}: missing launch.css`);
+    assert.match(html,/\/assets\/r\/[a-f0-9]{20}\/styles\/content\.css/,`${rel}: missing content.css`);
+    assert.match(html,/\/assets\/r\/[a-f0-9]{20}\/styles\/launch\.css/,`${rel}: missing launch.css`);
   }
 });
 
