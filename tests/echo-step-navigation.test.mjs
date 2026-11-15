@@ -21,8 +21,8 @@ test('Echo Step is public in header, footer, homepage and Guides',()=>{
 test('Echo Step and its guide are indexable launch routes with shared How to Play styles',()=>{
   const html=fs.readFileSync('dist/echo-step/index.html','utf8');
   assert.match(html,/data-game="echo-step"/);
-  assert.match(html,/\/assets\/styles\/echo-step\.css/);
-  assert.match(html,/\/assets\/styles\/how-to-card\.css/);
+  assert.match(html,/\/assets\/r\/[a-f0-9]{20}\/styles\/echo-step\.css/);
+  assert.match(html,/\/assets\/r\/[a-f0-9]{20}\/styles\/how-to-card\.css/);
   assert.ok(fs.existsSync('dist/assets/styles/how-to-card.css'));
   assert.equal(fs.existsSync('dist/assets/styles/echo-step-launch.css'),false);
   assert.ok(fs.existsSync('dist/blog/how-to-play-echo-step/index.html'));
