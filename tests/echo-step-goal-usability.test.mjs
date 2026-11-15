@@ -36,7 +36,7 @@ test('Echo Step How to Play uses the shared goal-first card with no orphan numbe
   assert.match(page,/<strong>Avoid<\/strong>/);
   assert.match(page,/<b>Hint<\/b> · next 3 moves/);
   assert.match(page,/<b>Guide<\/b> · step-by-step practice/);
-  assert.match(page,/\/assets\/styles\/how-to-card\.css/);
+  assert.match(page,/\/assets\/r\/[a-f0-9]{20}\/styles\/how-to-card\.css/);
   assert.doesNotMatch(page,/<p><strong>1\.<\/strong>/);
   assert.doesNotMatch(page,/not synced|timeline failed|phase wall/i);
 });
