@@ -9,10 +9,11 @@ function adminEmails(env) {
 }
 
 function writeIsSameOrigin(request) {
-  if(['GET','HEAD','OPTIONS'].includes(request.method))return true;
+  // GET can create a fresh Content Desk pack; check the initiating site first.
   if(request.headers.get('sec-fetch-site')==='cross-site')return false;
   // Same-site subdomains are not the same security origin as Content Desk.
   if(request.headers.get('sec-fetch-site')==='same-site')return false;
+  if(['GET','HEAD','OPTIONS'].includes(request.method))return true;
   const origin=request.headers.get('origin');
   return origin===new URL(request.url).origin;
 }
