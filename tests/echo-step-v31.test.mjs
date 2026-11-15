@@ -44,7 +44,9 @@ test('Echo Step launch surfaces come from shared registries instead of Echo-only
   assert.match(presentation,/styles:\['echo-step\.css','echo-step-polish\.css','echo-step-rulebar\.css'\]/);
   assert.match(presentation,/spotlight:/);
   assert.match(launch,/key==='echo-step'/);
-  assert.match(launch,/'echo-step':\{focus:/);
+  assert.match(launch,/getGameGuide\(g\)/);
+  const editorial=fs.readFileSync('src/js/game-guide.js','utf8');
+  assert.match(editorial,/'echo-step':\{focus:/);
   assert.equal(fs.existsSync('scripts/echo-step-integration.mjs'),false);
   assert.equal(fs.existsSync('scripts/echo-launch-final.mjs'),false);
 
