@@ -1,9 +1,18 @@
 export const DIFFICULTY_REWARDS={easy:1,medium:3,hard:5};
-const withContract=config=>({
-  ...config,
-  capabilities:{hint:true,solution:true,solutionSteps:true,drag:false,daily:true,ranking:true,...(config.capabilities||{})},
-  ranking:{enabled:true,proofType:'generic',scoreModel:'performance',...(config.ranking||{})}
-});
+export const EXPERIENCE_TYPES=Object.freeze(['puzzle','board','simulation']);
+
+// All games use one shell. Capability defaults depend on the experience type;
+// a board match or an ongoing simulation is not automatically a Daily puzzle.
+export const withContract=config=>{
+  const experienceType=config.experienceType||'puzzle';
+  const puzzle=experienceType==='puzzle';
+  return {
+    ...config,
+    experienceType,
+    capabilities:{hint:puzzle,solution:puzzle,solutionSteps:puzzle,drag:false,daily:puzzle,ranking:puzzle,...(config.capabilities||{})},
+    ranking:{enabled:puzzle,proofType:puzzle?'generic':'none',scoreModel:puzzle?'performance':'none',...(config.ranking||{})}
+  };
+};
 
 export const GAMES = [
   withContract({key:'echo-step',slug:'echo-step',name:'Echo Step',featured:true,category:'Logic',tagline:'Move now. Echo follows later.',description:'Move purple YOU while cyan Echo repeats each accepted move after a delay. Medium and Hard add crooked timing routes, false shortcuts and delayed traps before YOU and Echo can finish together.',socialInsight:'Every move matters twice. A step that is safe for YOU now can fail when Echo repeats it later, so plan for both positions before committing.',heroPills:['YOU → P · Echo → E','Echo repeats later','Same-turn finish'],metrics:[['time','TIME'],['moves','MOVES'],['delay','ECHO DELAY'],['score','SCORE']],levels:[['easy','Easy','6×6 · learn the 2-step delay'],['medium','Medium','8×8 · false routes · 3-step delay'],['hard','Hard','10×10 · deep traps · 4-step delay']],howTo:['Move purple YOU toward P. Echo repeats each accepted move after the displayed delay.','Purple striped cells block YOU only. Cyan striped cells block Echo only. Dark striped cells block both.','Reach YOU → P and Echo → E on the same turn. Reaching one goal alone does not finish the puzzle. Medium and Hard may require leaving P and returning at the right moment.','If Echo repeats into a blocked cell, leaves the board, or hits YOU, use Retry. Hint shows the next three moves; Guide teaches the puzzle step by step.'],seoTitle:'Echo Step – Free Delayed-Movement Puzzle Game | Snapoki',seoDescription:'Play Echo Step free online with delayed Echo movement, false shortcuts, timing traps and same-turn P/E finishes across Easy, Medium and Hard.',capabilities:{solutionSteps:false},ranking:{proofType:'actions',scoreModel:'timeline-efficiency'}}),
@@ -16,6 +25,7 @@ export const GAMES = [
 withContract({
     key:'world-loop',
     slug:'world-loop',
+    experienceType:'simulation',
     name:'World Loop',
     featured:false,
     category:'Simulation',

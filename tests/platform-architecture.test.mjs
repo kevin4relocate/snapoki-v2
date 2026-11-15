@@ -47,7 +47,9 @@ test('shared runtime owns status and presentation instead of game-specific build
 test('guide and social systems have safe generic fallbacks for a future game',()=>{
   const launch=read('scripts/launch-readiness.mjs'),social=read('src/js/social-game-board.js'),shared=read('src/js/social-renderers/shared.js');
   assert.match(launch,/return svgShell\(name,/,'guide artwork must have a generic fallback');
-  assert.match(launch,/const extra=GUIDE\[g\.key\]\|\|/,'guide copy must have a generic fallback');
+  const guide=read('src/js/game-guide.js');
+  assert.match(launch,/const extra=getGameGuide\(g\)/,'guide generation must use a typed editorial contract');
+  assert.match(guide,/export function getGameGuide\(game\)/,'guide copy must have a generic fallback');
   assert.match(social,/import \{drawFallback\} from '\.\/social-renderers\/shared\.js'/);
   assert.match(shared,/export function drawFallback/);
   assert.match(social,/if\(!generated\)\{drawFallback/);

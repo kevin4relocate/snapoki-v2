@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {GAMES} from '../src/js/games-config.js';
+import {GAMES,EXPERIENCE_TYPES} from '../src/js/games-config.js';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const failures=[];
@@ -28,6 +28,26 @@ for(const game of GAMES){
   if(slugs.has(game.slug))fail(`${game.slug}: duplicate Game Registry slug.`);else slugs.add(game.slug);
   if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(game.key))fail(`${game.key}: game key must use lowercase kebab-case.`);
   if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(game.slug))fail(`${game.slug}: game slug must use lowercase kebab-case.`);
+  if(!EXPERIENCE_TYPES.includes(game.experienceType))fail(`${game.key}: unsupported experienceType '${game.experienceType}'. Use puzzle, board or simulation.`);
+  if(game.experienceType!=='puzzle'&&(game.capabilities?.daily!==false||game.capabilities?.ranking!==false||game.ranking?.enabled!==false))
+    fail(`${game.key}: non-puzzle experiences cannot inherit Daily or ranked gameplay.`);
+  if(!Array.isArray(game.howTo)||game.howTo.length<3||game.howTo.some(step=>typeof step!=='string'||!step.trim()))
+    fail(`${game.key}: provide at least three nonempty gameplay instructions.`);
+  if(!Array.isArray(game.levels)||!game.levels.length||game.levels.some(level=>!Array.isArray(level)||level.length!==3||level.some(part=>typeof part!=='string'||!part.trim())))
+    fail(`${game.key}: provide at least one complete [key, label, detail] control level.`);
+  if(game.guide){
+    const guide=game.guide;
+    if(typeof guide!=='object'||Array.isArray(guide))fail(`${game.key}: guide override must be an object.`);
+    else {
+      for(const key of ['focus','difficultyCopy','ctaCopy'])if(guide[key]!==undefined&&(typeof guide[key]!=='string'||!guide[key].trim()))
+        fail(`${game.key}: guide.${key} must be nonempty text.`);
+      for(const key of ['tips','mistakes'])if(guide[key]!==undefined&&(!Array.isArray(guide[key])||guide[key].length<2||guide[key].some(text=>typeof text!=='string'||!text.trim())))
+        fail(`${game.key}: guide.${key} must contain at least two nonempty entries.`);
+      for(const key of ['controls','format'])if(guide[key]!==undefined&&(!guide[key]||typeof guide[key].heading!=='string'||!guide[key].heading.trim()||typeof guide[key].body!=='string'||!guide[key].body.trim()))
+        fail(`${game.key}: guide.${key} requires heading and body strings.`);
+    }
+  }
+
 
   for(const literal of [`'${game.key}'`,`"${game.key}"`,`'${game.slug}'`,`"${game.slug}"`])if(coreText.includes(literal))fail(`${game.key}: Content Desk core contains a game-specific literal; move it into the game plugin/registry.`);
 
