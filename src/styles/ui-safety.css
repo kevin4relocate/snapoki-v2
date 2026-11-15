@@ -47,3 +47,24 @@
   #userName{max-width:10ch}
   .right-panel .ranking-row{grid-template-columns:28px 26px minmax(0,1fr) minmax(0,70px)}
 }
+
+/* Keyboard navigation must remain visible on dark game pages and mobile menus. */
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:3px solid #9bdfff;
+  outline-offset:3px;
+}
+@media(max-width:620px){
+  .mobile-menu-toggle,.mobile-menu a,.games-dropdown a,
+  .game-page .difficulty-button,.game-page .mode-button,
+  .game-page .daily-level,.game-page .board-toolbar button{
+    min-height:44px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  html:focus-within{scroll-behavior:auto}
+  .button,.game-card,.world-loop-race-actions button,
+  .world-loop-selected-chip,.world-loop-country-option{
+    transition:none!important;
+  }
+  .world-loop-live i{animation:none}
+}

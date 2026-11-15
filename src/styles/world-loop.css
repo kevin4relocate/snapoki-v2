@@ -30,3 +30,21 @@ body[data-game="world-loop"] .left-panel .control-stack{display:none!important}
 @media(max-width:680px){.world-loop-audio-controls{order:3;width:100%;justify-content:flex-end}.world-loop-volume input{width:64px}body[data-game="world-loop"] .game-layout{display:block}body[data-game="world-loop"] .board-panel{margin-top:12px}.world-loop-racebar{align-items:flex-start}.world-loop-title small{display:none}.world-loop-race-actions{max-width:230px}.world-loop-race-actions button{padding:6px 7px}.world-loop-orderbar{grid-template-columns:1fr;gap:5px}.world-loop-order-label{display:flex;justify-content:space-between;min-width:0}.world-loop-orderbar li{min-width:88px}.world-loop-viewport{height:500px}.world-loop-lane-label{width:12%;left:.8%}.world-loop-lane-label span{font-size:17px}.world-loop-selected{grid-template-columns:repeat(2,minmax(0,1fr))}.world-loop-country-options{max-height:104px}.world-loop-story-grid{grid-template-columns:1fr}.world-loop-story-grid article{padding:8px 9px}}
 @media(max-width:460px){.world-loop-race-actions{max-width:180px}.world-loop-setup-card{padding:10px}.world-loop-country-menu{left:-2px;right:-2px;max-height:158px}.world-loop-country-options{max-height:96px}.world-loop-race-actions button{font-size:9px}.world-loop-viewport{height:520px}.world-loop-track-top{padding:0 8px}.world-loop-track-top small{display:none}.world-loop-lane-label b{font-size:8px}.world-loop-lane-label small{font-size:6px}.world-loop-lane-label span{font-size:15px}.world-loop-orderbar li{min-width:82px;padding:4px 6px}.world-loop-orderbar li span{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.world-loop-live i{animation:none}}
+
+/* Compact layouts: readable touch targets and a race toolbar that wraps rather
+   than forcing horizontal page scrolling on narrow mobile screens. */
+@media(max-width:680px){
+  .world-loop-race-actions button,.world-loop-start,
+  .world-loop-country-trigger,.world-loop-selected-chip,
+  .world-loop-country-option,.world-loop-pick-head button{min-height:44px}
+  .world-loop-racebar{flex-wrap:wrap}
+  .world-loop-race-actions{flex:1 1 100%;max-width:none;justify-content:flex-start}
+  .world-loop-audio-controls{justify-content:flex-start}
+  .world-loop-viewport{max-width:100%}
+}
+@media(max-width:460px){
+  .world-loop-title{flex:1 1 auto;min-width:0}
+  .world-loop-race-actions{max-width:none}
+  .world-loop-country-options{max-height:120px}
+  .world-loop-story-grid{min-width:0}
+}

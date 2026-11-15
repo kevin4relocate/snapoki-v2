@@ -102,7 +102,7 @@ function tick(){
   setMetric('time',formatTime(ms));
   if(state.engine?.previewScore&&metricElement('score'))setMetric('score',Number(state.engine.previewScore(ms,state.hints)).toLocaleString());
 }
-function beginTimer(){stopTimer();state.startedAt=Date.now();tick();state.timer=setInterval(tick,250);}
+function beginTimer(){stopTimer();state.startedAt=Date.now();tick();if(document.visibilityState!=='hidden')state.timer=setInterval(tick,250);}
 function guestSeed(reuseSeed=false,previousSeed=''){
   if(review)return review.seed;
   if(reuseSeed&&previousSeed)return previousSeed;
@@ -358,7 +358,20 @@ async function finishPuzzle(){
   openResult(result);await saveResult(result);
 }
 
-function scrollBoardIntoView(){requestAnimationFrame(()=>$('.board-panel')?.scrollIntoView({behavior:'smooth',block:'start'}));}
+let dailyCountdownInterval=null;
+function syncVisibleTimers(){
+  if(document.visibilityState==='hidden'){
+    stopTimer();
+    if(dailyCountdownInterval){clearInterval(dailyCountdownInterval);dailyCountdownInterval=null;}
+    return;
+  }
+  updateCountdown();
+  if(!dailyCountdownInterval)dailyCountdownInterval=setInterval(updateCountdown,1000);
+  if(!state.timer&&state.startedAt&&!state.completed&&!state.loading&&!state.engineLocked){
+    tick();state.timer=setInterval(tick,250);
+  }
+}
+function scrollBoardIntoView(){const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;requestAnimationFrame(()=>$('.board-panel')?.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'}));}
 async function runSmartNext(){
   const action=state.smartNext;closeResult(false);
   if(action){
@@ -418,7 +431,7 @@ window.addEventListener('snapoki:game-lock',event=>{
 });
 
 async function init(){
-  decorateRewards();applyCapabilities();applyQueryState();ensureReviewPanel();setupControls();loadLocalDailyProgress();updateActiveControls();renderDaily();updateCountdown();setInterval(updateCountdown,1000);
+  decorateRewards();applyCapabilities();applyQueryState();ensureReviewPanel();setupControls();loadLocalDailyProgress();updateActiveControls();renderDaily();syncVisibleTimers();document.addEventListener('visibilitychange',syncVisibleTimers);
   await startPuzzle();
 }
 init();

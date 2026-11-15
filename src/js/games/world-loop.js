@@ -215,7 +215,7 @@ const DEFAULT_CODES=['VN','JP','US','BR','FR','KR','DE','GB'];
 export const WORLD_LOOP_AUDIO_SRC='/audio/world-loop/endless-circuit.mp3';
 export const WORLD_LOOP_CROSSFADE_SECONDS=10;
 const WORLD_LOOP_AUDIO_DEFAULT_VOLUME=.55;
-const WORLD_LOOP_AUDIO_SCHEDULE_AHEAD=900;
+const WORLD_LOOP_AUDIO_SCHEDULE_AHEAD=25;
 
 export function buildWorldLoopRoster(codes=DEFAULT_CODES,seed='world-loop:preview',difficulty='medium'){
   const cfg=LEVEL[difficulty]||LEVEL.medium,rng=rngFromSeed(String(seed)+':roster:v4');
@@ -266,7 +266,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
     '<div class="world-loop-racebar"><div class="world-loop-title"><span class="world-loop-live"><i></i> ENDLESS RACE</span><strong>World Loop</strong><small id="worldLoopRaceMeta"></small></div><div class="world-loop-race-actions"><button id="worldLoopPause" type="button" disabled>Pause</button><button id="worldLoopRestart" type="button" disabled>Restart</button><button id="worldLoopChange" type="button" disabled>■ Stop</button><div class="world-loop-audio-controls" aria-label="Background music"><button id="worldLoopSoundToggle" class="world-loop-sound-toggle" type="button" disabled>♪ Play Sound</button><button id="worldLoopSoundMute" class="world-loop-sound-mute" type="button" aria-pressed="false" title="Mute sound" disabled>🔊</button><label class="world-loop-volume" title="Music volume"><input id="worldLoopVolume" type="range" min="0" max="100" step="1" value="55" aria-label="Music volume" disabled><span id="worldLoopVolumeValue">55%</span></label></div><button id="worldLoopFullscreen" class="world-loop-fullscreen" type="button" aria-pressed="false" disabled>⛶ Full Screen</button></div></div>'+
     '<div class="world-loop-orderbar"><div class="world-loop-order-label"><span>CURRENT ORDER</span><small id="worldLoopLeaderLabel">NO FINISH LINE</small></div><ol id="worldLoopOrder"></ol></div>'+
     '<div class="world-loop-viewport"><div class="world-loop-track-top"><div><span>ENDLESS TRACK →</span><small id="worldLoopTrackDetail">Distance keeps increasing until you restart.</small></div><div id="worldLoopWake" class="world-loop-wake">SCREEN MODE</div></div><div id="worldLoopLanes" class="world-loop-lanes" aria-label="Endless lane race"></div>'+
-      '<div id="worldLoopSetup" class="world-loop-setup"><div class="world-loop-setup-card"><h2>Pick 4–12 countries</h2><div class="world-loop-pick-head"><strong id="worldLoopPickCount">0 / 12 selected</strong><div><button id="worldLoopRandom" type="button">Random 8</button><button id="worldLoopClear" type="button">Clear</button></div></div><div id="worldLoopSelected" class="world-loop-selected"></div><div id="worldLoopCountryPicker" class="world-loop-country-picker"><button id="worldLoopAddCountry" class="world-loop-country-trigger" type="button" aria-expanded="false"><b>+ Add country</b><span>Search 196 countries</span></button><div id="worldLoopCountryMenu" class="world-loop-country-menu" hidden><input id="worldLoopCountrySearch" type="search" autocomplete="off" placeholder="Search country or code" aria-label="Search countries"><div id="worldLoopCountryOptions" class="world-loop-country-options"></div></div></div><button id="worldLoopStart" class="world-loop-start" type="button">Start Endless Race →</button></div></div>'+    '</div>'+
+      '<div id="worldLoopSetup" class="world-loop-setup"><div class="world-loop-setup-card"><h2>Pick 4–12 countries</h2><div class="world-loop-pick-head"><strong id="worldLoopPickCount">0 / 12 selected</strong><div><button id="worldLoopRandom" type="button">Random 8</button><button id="worldLoopClear" type="button">Clear</button></div></div><div id="worldLoopSelected" class="world-loop-selected"></div><div id="worldLoopCountryPicker" class="world-loop-country-picker"><button id="worldLoopAddCountry" class="world-loop-country-trigger" type="button" aria-controls="worldLoopCountryMenu" aria-expanded="false"><b>+ Add country</b><span>Search 196 countries</span></button><div id="worldLoopCountryMenu" class="world-loop-country-menu" hidden><input id="worldLoopCountrySearch" type="search" autocomplete="off" placeholder="Search country or code" aria-label="Search countries"><div id="worldLoopCountryOptions" class="world-loop-country-options"></div></div></div><button id="worldLoopStart" class="world-loop-start" type="button">Start Endless Race →</button></div></div>'+    '</div>'+
     '<div class="world-loop-story-grid"><article><span>CURRENT LEADER</span><strong id="worldLoopLeader">—</strong><small id="worldLoopLeaderMeta">Waiting for the race to start.</small></article><article><span>P1 → P2 GAP</span><strong id="worldLoopGap">0 m</strong><small id="worldLoopChanges">0 lead changes</small></article><article><span>SESSION</span><strong id="worldLoopSession">00:00</strong><small>Distance never resets automatically.</small></article></div>'+
   '</div>';
 
@@ -289,8 +289,8 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
     if(!matches.length){countryOptions.innerHTML='<div class="world-loop-country-empty">No countries found.</div>';return;}
     for(const country of matches){
       const button=document.createElement('button'),isSelected=selected.has(country.code);
-      button.type='button';button.className='world-loop-country-option'+(isSelected?' selected':'');button.dataset.code=country.code;button.innerHTML='<span>'+country.flag+'</span><strong class="world-loop-country-name">'+country.name+'</strong><small>'+country.code+'</small><i>'+(isSelected?'✓':'')+'</i>';
-      button.addEventListener('click',()=>{if(isSelected)selected.delete(country.code);else if(selected.size<12)selected.add(country.code);renderPicker();});
+      button.type='button';button.className='world-loop-country-option'+(isSelected?' selected':'');button.dataset.code=country.code;button.setAttribute('aria-pressed',String(isSelected));button.innerHTML='<span>'+country.flag+'</span><strong class="world-loop-country-name">'+country.name+'</strong><small>'+country.code+'</small><i>'+(isSelected?'✓':'')+'</i>';
+      button.addEventListener('click',()=>{if(isSelected)selected.delete(country.code);else if(selected.size<12)selected.add(country.code);renderPicker();const replacement=[...countryOptions.querySelectorAll('button')].find(option=>option.dataset.code===country.code);if(replacement&&!addCountryButton.disabled)replacement.focus();else{closeCountryMenu();addCountryButton.focus();}});
       countryOptions.appendChild(button);
     }
   }
@@ -298,8 +298,8 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
     selectedHost.innerHTML='';
     for(const code of sortWorldLoopCodes([...selected])){
       const country=COUNTRY_MAP.get(code),chip=document.createElement('button');
-      chip.type='button';chip.className='world-loop-selected-chip';chip.title='Remove '+country.name;chip.innerHTML='<span>'+country.flag+'</span><strong>'+country.name+'</strong><i>×</i>';
-      chip.addEventListener('click',()=>{selected.delete(code);renderPicker();});selectedHost.appendChild(chip);
+      chip.type='button';chip.className='world-loop-selected-chip';chip.title='Remove '+country.name;chip.setAttribute('aria-label','Remove '+country.name);chip.innerHTML='<span>'+country.flag+'</span><strong>'+country.name+'</strong><i>×</i>';
+      chip.addEventListener('click',()=>{selected.delete(code);renderPicker();addCountryButton.focus();});selectedHost.appendChild(chip);
     }
     pickCount.textContent=selected.size+' / 12 selected';addCountryButton.disabled=selected.size>=12;startButton.disabled=selected.size<4;renderCountryOptions();
   }
@@ -463,21 +463,35 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
     if(ctx){try{await ctx.close();}catch{}}
     syncAudioUi();
   }
+  // Run the animation only while the race is visible and active. This avoids
+  // scheduling frames during setup, Pause, Stop or when the tab is hidden.
+  function scheduleFrame(){
+    if(!raf&&running&&document.visibilityState!=='hidden')raf=requestAnimationFrame(frame);
+  }
+  function haltFrame(){
+    if(raf)cancelAnimationFrame(raf);
+    raf=0;lastFrame=0;
+  }
   function frame(now){
-    raf=requestAnimationFrame(frame);ensureAudioSchedule();if(!running){lastFrame=now;return;}if(!lastFrame)lastFrame=now;
-    const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;elapsedMs+=dt*1000;stepRace(dt);renderHud();
+    raf=0;
+    if(!running||document.visibilityState==='hidden')return;
+    ensureAudioSchedule();
+    if(!lastFrame)lastFrame=now;
+    const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));
+    lastFrame=now;elapsedMs+=dt*1000;stepRace(dt);renderHud();
+    scheduleFrame();
   }
   async function releaseWakeLock(){const lock=wakeLock;wakeLock=null;if(lock){try{await lock.release();}catch{}}wakeHost.textContent='SCREEN MODE';}
   async function requestWakeLock(){
-    if(!started||!running||!navigator.wakeLock?.request){wakeHost.textContent='SCREEN MODE';return;}if(wakeLock){wakeHost.textContent='SCREEN AWAKE';return;}
+    if(!started||!running||document.visibilityState==='hidden'||!navigator.wakeLock?.request){wakeHost.textContent='SCREEN MODE';return;}if(wakeLock){wakeHost.textContent='SCREEN AWAKE';return;}
     try{wakeLock=await navigator.wakeLock.request('screen');wakeHost.textContent='SCREEN AWAKE';wakeLock.addEventListener('release',()=>{wakeLock=null;wakeHost.textContent='SCREEN MODE';},{once:true});}catch{wakeHost.textContent='SCREEN MODE';}
   }
   function beginSession(nextSeed){
-    closeCountryMenu();saveSelection();sessionRng=rngFromSeed(String(nextSeed)+':endless:v4');racers=buildWorldLoopRoster(sortWorldLoopCodes([...selected]),nextSeed,difficulty).map(racer=>({...racer,distance:0,surgeUntil:0,surgePower:0,node:null,distanceLabel:null}));elapsedMs=0;lastHudAt=-Infinity;cameraDistance=0;leaderCode='';leadChanges=0;running=true;started=true;pauseButton.disabled=false;restartButton.disabled=false;changeButton.disabled=false;fullscreenButton.disabled=false;soundToggleButton.disabled=false;soundMuteButton.disabled=false;volumeSlider.disabled=false;pauseButton.textContent='Pause';setup.hidden=true;buildLanes();const ordered=updateLeader();updatePositions(ordered);renderHud(true);lastFrame=performance.now();requestWakeLock();resumeBackgroundMusicAfterRace();onStatus('Endless race started. There is no finish line and no automatic reset.');
+    closeCountryMenu();saveSelection();sessionRng=rngFromSeed(String(nextSeed)+':endless:v4');racers=buildWorldLoopRoster(sortWorldLoopCodes([...selected]),nextSeed,difficulty).map(racer=>({...racer,distance:0,surgeUntil:0,surgePower:0,node:null,distanceLabel:null}));elapsedMs=0;lastHudAt=-Infinity;cameraDistance=0;leaderCode='';leadChanges=0;running=true;started=true;pauseButton.disabled=false;restartButton.disabled=false;changeButton.disabled=false;fullscreenButton.disabled=false;soundToggleButton.disabled=false;soundMuteButton.disabled=false;volumeSlider.disabled=false;pauseButton.textContent='Pause';setup.hidden=true;buildLanes();const ordered=updateLeader();updatePositions(ordered);renderHud(true);lastFrame=performance.now();scheduleFrame();requestWakeLock();resumeBackgroundMusicAfterRace();onStatus('Endless race started. There is no finish line and no automatic reset.');
   }
   function restartSession(){if(selected.size<4)return;restartCounter++;beginSession(String(seed)+':manual:'+restartCounter+':'+Date.now());}
-  function stopSession(){closeCountryMenu();running=false;started=false;releaseWakeLock();resetBackgroundMusic();setup.hidden=false;pauseButton.disabled=true;restartButton.disabled=true;changeButton.disabled=true;fullscreenButton.disabled=true;soundToggleButton.disabled=true;soundMuteButton.disabled=true;volumeSlider.disabled=true;pauseButton.textContent='Pause';leaderCode='';leadChanges=0;cameraDistance=0;renderPicker();onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});onStatus('Race stopped. Pick countries, then Start Endless Race to begin again from zero.');}
-  async function togglePause(){if(!started)return;running=!running;pauseButton.textContent=running?'Pause':'Resume';lastFrame=performance.now();if(running){requestWakeLock();await resumeBackgroundMusicAfterRace();onStatus('Race resumed.');}else{releaseWakeLock();await pauseBackgroundMusicForRace();onStatus('Race paused. Resume whenever you are ready.');}}
+  function stopSession(){closeCountryMenu();running=false;started=false;haltFrame();releaseWakeLock();resetBackgroundMusic();setup.hidden=false;pauseButton.disabled=true;restartButton.disabled=true;changeButton.disabled=true;fullscreenButton.disabled=true;soundToggleButton.disabled=true;soundMuteButton.disabled=true;volumeSlider.disabled=true;pauseButton.textContent='Pause';leaderCode='';leadChanges=0;cameraDistance=0;renderPicker();onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});onStatus('Race stopped. Pick countries, then Start Endless Race to begin again from zero.');}
+  async function togglePause(){if(!started)return;running=!running;pauseButton.textContent=running?'Pause':'Resume';if(running){lastFrame=performance.now();scheduleFrame();requestWakeLock();await resumeBackgroundMusicAfterRace();onStatus('Race resumed.');}else{haltFrame();releaseWakeLock();await pauseBackgroundMusicForRace();onStatus('Race paused. Resume whenever you are ready.');}}
   function fullscreenElement(){return document.fullscreenElement||document.webkitFullscreenElement||null;}
   function syncFullscreen(){const active=fullscreenElement()===app;app.classList.toggle('is-fullscreen',active);fullscreenButton.textContent=active?'⛶ Exit Full Screen':'⛶ Full Screen';fullscreenButton.setAttribute('aria-pressed',String(active));if(active)requestWakeLock();}
   async function toggleFullscreen(){
@@ -485,12 +499,23 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
     try{if(fullscreenElement()){const exit=document.exitFullscreen||document.webkitExitFullscreen;if(exit)await exit.call(document);return;}const request=app.requestFullscreen||app.webkitRequestFullscreen;if(!request){onStatus('Full screen is not available in this browser.');return;}try{await request.call(app,{navigationUI:'hide'});}catch{await request.call(app);}requestWakeLock();}catch{onStatus('Full screen could not be opened.');}
   }
 
-  addCountryButton.addEventListener('click',toggleCountryMenu);countrySearch.addEventListener('input',renderCountryOptions);countrySearch.addEventListener('keydown',event=>{if(event.key==='Escape')closeCountryMenu();});
+  addCountryButton.addEventListener('click',toggleCountryMenu);countrySearch.addEventListener('input',renderCountryOptions);countrySearch.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();closeCountryMenu();addCountryButton.focus();}});
   pickerDocumentListener=event=>{if(!pickerWrap.contains(event.target))closeCountryMenu();};document.addEventListener('pointerdown',pickerDocumentListener);
   startButton.addEventListener('click',()=>{restartCounter++;beginSession(String(seed)+':start:'+restartCounter+':'+Date.now());});pauseButton.addEventListener('click',togglePause);restartButton.addEventListener('click',restartSession);changeButton.addEventListener('click',stopSession);soundToggleButton.addEventListener('click',toggleBackgroundMusic);soundMuteButton.addEventListener('click',toggleBackgroundMute);volumeSlider.addEventListener('input',setBackgroundVolume);fullscreenButton.addEventListener('click',toggleFullscreen);
   randomButton.addEventListener('click',()=>{selected=new Set(shuffle(WORLD_LOOP_COUNTRIES,Math.random).slice(0,8).map(country=>country.code));renderPicker();});clearButton.addEventListener('click',()=>{selected=new Set();renderPicker();});
-  fullscreenListener=syncFullscreen;document.addEventListener('fullscreenchange',fullscreenListener);document.addEventListener('webkitfullscreenchange',fullscreenListener);visibilityListener=()=>{if(document.visibilityState==='visible'&&started&&running)requestWakeLock();};document.addEventListener('visibilitychange',visibilityListener);
+  fullscreenListener=syncFullscreen;document.addEventListener('fullscreenchange',fullscreenListener);document.addEventListener('webkitfullscreenchange',fullscreenListener);visibilityListener=()=>{
+    if(document.visibilityState==='hidden'){
+      haltFrame();
+      releaseWakeLock();
+      void pauseBackgroundMusicForRace();
+    }else if(started&&running){
+      lastFrame=performance.now();
+      scheduleFrame();
+      requestWakeLock();
+      void resumeBackgroundMusicAfterRace();
+    }
+  };document.addEventListener('visibilitychange',visibilityListener);
 
-  loadSelection();renderPicker();onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});onStatus('');raf=requestAnimationFrame(frame);
-  return{supportsUndo:false,reset(){if(started)restartSession();},stop(){stopSession();},setDifficulty(nextDifficulty){cfg=LEVEL[nextDifficulty]||LEVEL.medium;},hint(){return false;},solution(){},hideSolution(){},previewScore(){return 0;},getResult(){const ordered=worldLoopOrder(racers);return{score:0,metadata:{elapsedMs,leadChanges,leader:ordered[0]?.code||'',racers:racers.map(racer=>({code:racer.code,distance:racer.distance}))}};},destroy(){cancelAnimationFrame(raf);running=false;releaseWakeLock();resetBackgroundMusic();if(fullscreenListener){document.removeEventListener('fullscreenchange',fullscreenListener);document.removeEventListener('webkitfullscreenchange',fullscreenListener);}if(visibilityListener)document.removeEventListener('visibilitychange',visibilityListener);if(pickerDocumentListener)document.removeEventListener('pointerdown',pickerDocumentListener);}};
+  loadSelection();renderPicker();onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});onStatus('');
+  return{supportsUndo:false,reset(){if(started)restartSession();},stop(){stopSession();},setDifficulty(nextDifficulty){cfg=LEVEL[nextDifficulty]||LEVEL.medium;},hint(){return false;},solution(){},hideSolution(){},previewScore(){return 0;},getResult(){const ordered=worldLoopOrder(racers);return{score:0,metadata:{elapsedMs,leadChanges,leader:ordered[0]?.code||'',racers:racers.map(racer=>({code:racer.code,distance:racer.distance}))}};},destroy(){haltFrame();running=false;releaseWakeLock();resetBackgroundMusic();if(fullscreenListener){document.removeEventListener('fullscreenchange',fullscreenListener);document.removeEventListener('webkitfullscreenchange',fullscreenListener);}if(visibilityListener)document.removeEventListener('visibilitychange',visibilityListener);if(pickerDocumentListener)document.removeEventListener('pointerdown',pickerDocumentListener);}};
 }
