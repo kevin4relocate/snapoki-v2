@@ -120,7 +120,7 @@ test('World Loop country search floats upward without expanding the setup card',
   assert.match(styles,/\.world-loop-country-menu\{[^}]*position:absolute;[^}]*bottom:calc\(100% \+ 6px\);[^}]*max-height:172px/);
   assert.match(styles,/\.world-loop-country-options\{[^}]*max-height:118px;[^}]*overflow-y:auto/);
   assert.doesNotMatch(styles,/\.world-loop-country-menu\{[^}]*position:relative/);
-  assert.match(source,/onStatus\(''\);raf=requestAnimationFrame\(frame\)/);
+  assert.match(source,/onMetrics\(\{distance:'0 m'[\s\S]*?onStatus\(''\);/);
   assert.doesNotMatch(source,/Pick 4–12 flags, then start the endless 24\/7 race\./);
 });
 
@@ -160,7 +160,7 @@ test('World Loop schedules a true 10-second Web Audio crossfade instead of hard-
   assert.match(source,/duration-crossfade/);
   assert.match(source,/linearRampToValueAtTime\(1,startTime\+fadeIn\)/);
   assert.match(source,/linearRampToValueAtTime\(0,startTime\+duration\)/);
-  assert.match(source,/WORLD_LOOP_AUDIO_SCHEDULE_AHEAD=900/);
+  assert.match(source,/WORLD_LOOP_AUDIO_SCHEDULE_AHEAD=25/);
   assert.doesNotMatch(source,/\.loop=true/);
 });
 
