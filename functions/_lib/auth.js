@@ -4,11 +4,13 @@ const COOKIE = 'snapoki_session';
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
 
 function parseCookies(header = '') {
-  const out = {};
+  const out = Object.create(null);
   for (const part of header.split(';')) {
     const index = part.indexOf('=');
     if (index < 0) continue;
-    out[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
+    const key=part.slice(0,index).trim();
+    if(!key||Object.hasOwn(out,key))continue;
+    try{out[key]=decodeURIComponent(part.slice(index+1).trim());}catch{/* Malformed cookie must not break admin auth. */}
   }
   return out;
 }
@@ -34,7 +36,8 @@ export function clearSessionCookie() {
 
 export async function getSession(request, env) {
   const token = parseCookies(request.headers.get('cookie') || '')[COOKIE];
-  if (!token) return null;
+  // Admin-issued tokens contain 32 bytes encoded as 43 base64url characters.
+  if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
   const id = await sha256(token);
   const row = await env.DB.prepare(`
     SELECT s.id AS session_id, s.expires_at,
