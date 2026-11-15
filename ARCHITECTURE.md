@@ -1,4 +1,6 @@
-# Snapoki V2 Architecture
+# Snapoki V2 Architecture — Historical Ranking Design
+
+> **Historical reference (not the current public product).** This document records the former account-bound rankings architecture. Snapoki now uses guest-only play with browser-local Daily streaks, while Google authentication remains exclusively for the private Content Desk. The current product and registry contract are documented in [README.md](README.md). Legacy D1 tables and API code may remain for compatibility but must not be re-enabled as public gameplay features without a separate security and product review.
 
 ## Design goal
 
