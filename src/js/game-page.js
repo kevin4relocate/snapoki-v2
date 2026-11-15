@@ -70,7 +70,7 @@ function updateActiveControls(){
 
 function decorateRewards(){
   if(game.ranking?.enabled===false||game.capabilities?.ranking===false)return;
-  for(const button of $('.difficulty-button')){
+  for(const button of $$('.difficulty-button')){
     if(button.querySelector('.difficulty-reward'))continue;
     const mult=DIFFICULTY_REWARDS[button.dataset.difficulty]||1,reward=document.createElement('em');
     reward.className='difficulty-reward';
