@@ -28,7 +28,8 @@ The first seven games are puzzle experiences. World Loop intentionally uses the 
 
 Canonical registries:
 
-- `src/js/games-config.js` — game ids, slugs, navigation metadata, metrics, capabilities, SEO and control labels.
+- `src/js/games-config.js` — game ids, slugs, explicit `experienceType` (`puzzle`, `board`, `simulation`), capabilities, SEO and control labels.
+- `src/js/game-guide.js` — type-aware editorial guide copy and optional per-game `guide` overrides, without post-build HTML patches.
 - `src/js/game-presentation.js` — presentation overrides and game-specific stylesheet registration.
 - `functions/_lib/scoring.js` → `RESULT_VERIFIERS` — one verifier entry per registered game. Non-scoring simulations may expose a verifier that always rejects submissions so registry parity remains explicit.
 
@@ -71,7 +72,7 @@ Every registered game must provide:
 4. A matching key in `RESULT_VERIFIERS`.
 5. Mechanic-specific tests.
 
-The Content Desk audit fails the build when these contracts drift.
+The Content Desk audit fails the build when these contracts drift, including invalid experience types or missing guide metadata. New board games should declare `experienceType:'board'` and configure their match guide instead of inheriting World Loop copy. See [Stage 4 Game Plugin Contract](docs/STAGE4_GAME_CONTRACT.md).
 
 ## Local validation
 
