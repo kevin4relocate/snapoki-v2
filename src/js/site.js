@@ -30,7 +30,7 @@ function setupGamesSearch(gamesMenu){
 
 function warmGameModule(link){
   const slug=new URL(link.href,location.origin).pathname.split('/').filter(Boolean)[0];
-  if(slug)import(`/assets/js/games/${slug}.js`).catch(()=>{});
+  if(slug)import(`./games/${slug}.js`).catch(()=>{});
 }
 
 function setupNavigationWarmup(){
