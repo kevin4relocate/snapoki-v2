@@ -4,7 +4,7 @@ const COOKIE = 'snapoki_session';
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
 
 function parseCookies(header = '') {
-  const out = {};
+  const out = Object.create(null);
   for (const part of header.split(';')) {
     const index = part.indexOf('=');
     if (index < 0) continue;
