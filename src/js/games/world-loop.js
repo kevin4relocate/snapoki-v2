@@ -215,7 +215,7 @@ const DEFAULT_CODES=['VN','JP','US','BR','FR','KR','DE','GB'];
 export const WORLD_LOOP_AUDIO_SRC='/audio/world-loop/endless-circuit.mp3';
 export const WORLD_LOOP_CROSSFADE_SECONDS=10;
 const WORLD_LOOP_AUDIO_DEFAULT_VOLUME=.55;
-const WORLD_LOOP_AUDIO_SCHEDULE_AHEAD=900;
+const WORLD_LOOP_AUDIO_SCHEDULE_AHEAD=25;
 
 export function buildWorldLoopRoster(codes=DEFAULT_CODES,seed='world-loop:preview',difficulty='medium'){
   const cfg=LEVEL[difficulty]||LEVEL.medium,rng=rngFromSeed(String(seed)+':roster:v4');
