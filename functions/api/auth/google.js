@@ -20,7 +20,8 @@ function publicFirstName(token) {
 export async function onRequest(context) {
   const {request, env} = context;
   if (request.method !== 'POST') return methodNotAllowed();
-  if (request.headers.get('sec-fetch-site') === 'cross-site') return error('Cross-site sign-in is not allowed.', 403, 'CROSS_SITE_BLOCKED');
+  const origin=request.headers.get('origin');
+  if (request.headers.get('sec-fetch-site') === 'cross-site' || origin!==new URL(request.url).origin) return error('Cross-site sign-in is not allowed.', 403, 'CROSS_SITE_BLOCKED');
 
   const allowed = adminEmails(env);
   if (!allowed.length) return error('Admin sign-in is not configured.', 503, 'ADMIN_AUTH_NOT_CONFIGURED');
