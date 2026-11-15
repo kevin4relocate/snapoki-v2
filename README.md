@@ -44,7 +44,9 @@ Shared runtime:
 
 Generated public output is written to `dist/`.
 
-For performance, responsive layout and keyboard-accessibility regression checks, see [Stage 5 Performance & Accessibility](docs/STAGE5_PERFORMANCE_ACCESSIBILITY.md).\n\n## World Loop
+For performance, responsive layout and keyboard-accessibility regression checks, see [Stage 5 Performance & Accessibility](docs/STAGE5_PERFORMANCE_ACCESSIBILITY.md).
+
+## World Loop
 
 World Loop is deliberately different from the puzzle catalog:
 
