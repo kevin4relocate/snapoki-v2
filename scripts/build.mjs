@@ -14,6 +14,15 @@ await fs.rm(dist,{recursive:true,force:true});
 await fs.mkdir(dist,{recursive:true});
 async function copyDir(from,to){await fs.mkdir(to,{recursive:true});for(const entry of await fs.readdir(from,{withFileTypes:true})){const src=path.join(from,entry.name),dest=path.join(to,entry.name);if(entry.isDirectory())await copyDir(src,dest);else await fs.copyFile(src,dest);}}
 await copyDir(path.join(root,'public'),dist);await copyDir(path.join(root,'src','js'),path.join(dist,'assets','js'));await copyDir(path.join(root,'src','styles'),path.join(dist,'assets','styles'));
+// Keep historical leaderboard/profile modules in git for migration tests, but never
+// publish their client entry points on the guest-only website.
+for(const asset of [
+  'assets/js/api.js',
+  'assets/js/profile-page.js',
+  'assets/js/global-leaderboard.js',
+  'assets/styles/account-profile.css',
+  'assets/styles/global-leaderboard.css'
+])await fs.rm(path.join(dist,asset),{force:true});
 
 function header(){
   const featured=FEATURED_GAMES.map(g=>`<a class="desktop-game-link" data-game-link="${g.key}" href="/${g.slug}/">${esc(g.name)}</a>`).join('');
