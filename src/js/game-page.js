@@ -358,7 +358,7 @@ async function finishPuzzle(){
   openResult(result);await saveResult(result);
 }
 
-function scrollBoardIntoView(){requestAnimationFrame(()=>$('.board-panel')?.scrollIntoView({behavior:'smooth',block:'start'}));}
+function scrollBoardIntoView(){const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;requestAnimationFrame(()=>$('.board-panel')?.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'}));}
 async function runSmartNext(){
   const action=state.smartNext;closeResult(false);
   if(action){
