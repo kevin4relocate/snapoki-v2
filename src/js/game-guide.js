@@ -44,6 +44,7 @@ export function getGameGuide(game){
   const howTo=Array.isArray(game.howTo)?game.howTo:[];
   const format=custom.format||{
     ...defaults.format,
+    heading:type==='puzzle'&&game.capabilities?.daily===false?'Play format':defaults.format.heading,
     body:type==='puzzle'&&game.capabilities?.daily!==false
       ?`The Daily Challenge gives every player the same ${game.name} board for a given UTC date and difficulty. Complete Easy, Medium and Hard to finish that game’s daily set. Progress is stored only in this browser.`
       :type==='puzzle'
