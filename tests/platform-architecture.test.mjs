@@ -60,9 +60,9 @@ test('repository syntax check is generic instead of hard-coded to one game',()=>
   assert.doesNotMatch(check,/bridges|echo-step|number-path|color-connect|lights-out|loop-puzzle/);
 });
 
-test('platform audit is the final build gate',()=>{
+test('platform audit precedes final immutable asset packaging',()=>{
   const pkg=JSON.parse(read('package.json'));
-  assert.match(pkg.scripts.build,/scripts\/platform-audit\.mjs$/);
+  assert.match(pkg.scripts.build,/scripts\/platform-audit\.mjs && node scripts\/version-assets\.mjs$/);
   const audit=read('scripts/platform-audit.mjs');
   for(const contract of ['dead internal reference','missing server result verifier','guide content is too thin','canonical missing from sitemap','public page links to private Content Desk'])assert.match(audit,new RegExp(contract));
 });
