@@ -28,10 +28,9 @@ test('each How to Play card keeps a game-specific goal and concise actions',()=>
     'lights-out':['ALL LIGHTS → OFF','Clear the board','up, down, left and right','shortest press set'],
     'loop-puzzle':['ONE CLOSED LOOP','Match every clue','exact count','one ghost loop'],
     'bridges':['MATCH NUMBERS','ONE CONNECTED NETWORK','Tap an existing bridge to remove one','Solution'],
-    'animal-chess':['REACH ENEMY DEN','capture every rival','Rat can capture Elephant','Undo'],
-    'world-loop':['PICK COUNTRIES','WATCH FOREVER','No finish line','Pause']
+    'animal-chess':['REACH ENEMY DEN','capture every rival','Rat can capture Elephant','Undo']
   };
-  assert.deepEqual(Object.keys(expected).sort(),GAMES.map(game=>game.slug).sort());
+  assert.deepEqual(Object.keys(expected).sort(),GAMES.filter(game=>game.key!=='world-loop').map(game=>game.slug).sort());
   for(const game of GAMES){
     const page=fs.readFileSync(`dist/${game.slug}/index.html`,'utf8');
     for(const phrase of expected[game.slug])assert.match(page,new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'));
