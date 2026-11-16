@@ -18,7 +18,7 @@ test('every registered game has one engine entry and generated launch surfaces',
     assert.ok(fs.existsSync(`dist/blog/how-to-play-${game.slug}/index.html`),`${game.key}: guide`);
     const page=read(`dist/${game.slug}/index.html`);
     const release=JSON.parse(read('dist/release.json'));
-    const assets=game.experienceType==='simulation'?['board-status.css','world-loop.css']:['how-to-card.css','board-status.css','board-contract.css'];
+    const assets=game.experienceType==='simulation'?['board-status.css',...getGamePresentation(game).styles]:['how-to-card.css','board-status.css','board-contract.css'];
     for(const asset of assets)assert.ok(page.includes(`${release.assetsBase}styles/${asset}`),`${game.key}: versioned ${asset}`);
   }
 });
