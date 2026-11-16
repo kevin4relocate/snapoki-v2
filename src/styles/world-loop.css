@@ -53,8 +53,10 @@ body[data-game="world-loop"] .left-panel .control-stack{display:none!important}
 /* Ambient screensaver layout: keep the entire race in one immersive column. */
 body[data-game="world-loop"] .game-layout.world-loop-layout,
 body[data-game="world-loop"] .game-hero.world-loop-hero{
-  width:min(calc(100% - 32px),1640px);
-  max-width:none;
+  /* Mirror .footer-inner: a 1280px outer container with 24px gutters. */
+  width:100%;
+  max-width:1280px;
+  padding-inline:24px;
   margin-left:auto;
   margin-right:auto;
 }
@@ -72,7 +74,7 @@ body[data-game="world-loop"] .world-loop-panel{
   box-shadow:none;
   min-width:0;
 }
-body[data-game="world-loop"] .game-hero.world-loop-hero{padding:26px 0 18px}
+body[data-game="world-loop"] .game-hero.world-loop-hero{padding-block:26px 18px}
 body[data-game="world-loop"] .game-hero.world-loop-hero h1{
   font-size:clamp(25px,3.2vw,43px);
   margin:7px 0 10px;
@@ -126,9 +128,9 @@ body[data-game="world-loop"] .world-loop-viewport{height:clamp(540px,72vh,940px)
 @media(max-width:680px){
   body[data-game="world-loop"] .game-layout.world-loop-layout,
   body[data-game="world-loop"] .game-hero.world-loop-hero{
-    width:calc(100% - 24px);
+    padding-inline:16px;
   }
-  body[data-game="world-loop"] .game-hero.world-loop-hero{padding:24px 0 14px}
+  body[data-game="world-loop"] .game-hero.world-loop-hero{padding-block:24px 14px}
   body[data-game="world-loop"] .world-loop-viewport{height:clamp(510px,75vh,760px)}
   .world-loop-pace{order:1;width:100%;justify-content:center;box-sizing:border-box}
   .world-loop-pace button{flex:1;min-height:44px;min-width:0}
