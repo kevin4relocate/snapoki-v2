@@ -8,7 +8,7 @@ test('every registered game uses the shared scan-first How to Play card',()=>{
   assert.match(css,/\.game-howto-goal/);
   assert.match(css,/\.game-howto-row/);
   assert.match(css,/\.game-howto-tools/);
-  for(const game of GAMES.filter(game=>game.key!=='world-loop')){
+  for(const game of GAMES.filter(game=>game.experienceType!=='simulation')){
     const page=fs.readFileSync(`dist/${game.slug}/index.html`,'utf8');
     assert.match(page,new RegExp(`class="game-howto game-howto--${game.slug}"`));
     assert.match(page,/class="game-howto-goal"/);
@@ -30,8 +30,8 @@ test('each How to Play card keeps a game-specific goal and concise actions',()=>
     'bridges':['MATCH NUMBERS','ONE CONNECTED NETWORK','Tap an existing bridge to remove one','Solution'],
     'animal-chess':['REACH ENEMY DEN','capture every rival','Rat can capture Elephant','Undo']
   };
-  assert.deepEqual(Object.keys(expected).sort(),GAMES.filter(game=>game.key!=='world-loop').map(game=>game.slug).sort());
-  for(const game of GAMES.filter(game=>game.key!=='world-loop')){
+  assert.deepEqual(Object.keys(expected).sort(),GAMES.filter(game=>game.experienceType!=='simulation').map(game=>game.slug).sort());
+  for(const game of GAMES.filter(game=>game.experienceType!=='simulation')){
     const page=fs.readFileSync(`dist/${game.slug}/index.html`,'utf8');
     for(const phrase of expected[game.slug])assert.match(page,new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'));
   }
