@@ -40,7 +40,7 @@ test('board and simulation defaults stay unranked without explicit overrides',()
 test('all registered games declare a supported type and compatible capabilities',()=>{
   assert.deepEqual([...EXPERIENCE_TYPES],['puzzle','board','simulation']);
   assert.equal(GAMES.filter(g=>g.experienceType==='puzzle').length,7);
-  assert.equal(GAMES.filter(g=>g.experienceType==='simulation').length,2);
+  assert.equal(GAMES.filter(g=>g.experienceType==='simulation').length,3);
   for(const game of GAMES){
     assert.ok(EXPERIENCE_TYPES.includes(game.experienceType),game.key);
     if(game.experienceType!=='puzzle'){
