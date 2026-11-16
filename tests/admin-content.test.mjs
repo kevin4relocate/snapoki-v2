@@ -105,7 +105,7 @@ test('Content Desk core is game-agnostic and registered games plug in by naming 
   for(const game of GAMES){
     const rendererFile=`src/js/social-renderers/${game.slug}.js`;
     const rendererSource=await fs.readFile(rendererFile,'utf8');
-    assert.match(rendererSource,/export function drawSocialBoard\(/,`${game.key} must expose the social renderer convention`);
+    assert.match(rendererSource,/export (?:function drawSocialBoard\(|\{drawSocialBoard\})/,`${game.key} must expose the social renderer convention`);
     execFileSync(process.execPath,['--check',rendererFile],{stdio:'pipe'});
     for(const literal of [game.key,game.slug]){
       assert.doesNotMatch(client,new RegExp(`['\"]${literal}['\"]`),`admin client must not hard-code ${literal}`);
