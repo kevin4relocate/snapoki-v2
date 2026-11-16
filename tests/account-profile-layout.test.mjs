@@ -15,8 +15,13 @@ test('public pages are guest-only with no account or Profile surface',()=>{
   for(const game of GAMES){
     const html=read(`dist/${game.slug}/index.html`);
     assert.doesNotMatch(html,/class="panel profile"|id="profileBody"|class="panel rankings"|id="rankingList"/);
-    assert.match(html,/class="panel how-to"/);
-    assert.match(html,/class="section daily-section"/);
+    if(game.key==='world-loop'){
+      assert.match(html,/class="game-layout world-loop-layout"/);
+      assert.doesNotMatch(html,/class="panel how-to"|class="section daily-section"/);
+    }else{
+      assert.match(html,/class="panel how-to"/);
+      assert.match(html,/class="section daily-section"/);
+    }
   }
 });
 
