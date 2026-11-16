@@ -13,19 +13,35 @@ export const WORLD_LOOP_CROSSFADE_SECONDS=10;
 const WORLD_LOOP_AUDIO_DEFAULT_VOLUME=.55;
 const WORLD_LOOP_AUDIO_SCHEDULE_AHEAD=25;
 
-export function buildWorldLoopRoster(codes=DEFAULT_CODES,seed='world-loop:preview',difficulty='medium'){
+export function buildEndlessRaceRoster(theme,codes=theme.defaultCodes,seed='endless-race:preview',difficulty='medium'){
   const cfg=LEVEL[difficulty]||LEVEL.medium,rng=rngFromSeed(String(seed)+':roster:v4');
+  const lookup=new Map(theme.items.map(item=>[item.code,item]));
   return codes.map((code,index)=>{
-    const country=COUNTRY_MAP.get(code)||WORLD_LOOP_COUNTRIES[index%WORLD_LOOP_COUNTRIES.length];
+    const entry=lookup.get(code)||theme.items[index%theme.items.length];
     return{
-      code:country.code,flag:country.flag,name:country.name,index,
+      code:entry.code,flag:entry.flag||entry.emoji,name:entry.name,
+      label:theme.mode==='animal'?entry.name:entry.code,index,
       baseSpeed:cfg.base*(.985+rng()*.03),
-      acceleration:.90+rng()*.20,
-      burstSkill:.88+rng()*.24,
+      acceleration:.90+rng()*.20,burstSkill:.88+rng()*.24,
       phase:rng()*Math.PI*2,
-      mascot:WORLD_LOOP_MASCOTS[Math.floor(rng()*WORLD_LOOP_MASCOTS.length)]
+      mascot:theme.mode==='animal'?entry.emoji:theme.mascots[Math.floor(rng()*theme.mascots.length)]
     };
   });
+}
+export function buildWorldLoopRoster(codes=FLAG_THEME.defaultCodes,seed='world-loop:preview',difficulty='medium'){
+  return buildEndlessRaceRoster(FLAG_THEME,codes,seed,difficulty);
+}
+export function sortRaceCodes(theme,codes=[]){
+  if(theme.mode==='flag')return sortWorldLoopCodes(codes);
+  const lookup=new Map(theme.items.map(item=>[item.code,item]));
+  return [...codes].filter(code=>lookup.has(code)).sort((a,b)=>lookup.get(a).name.localeCompare(lookup.get(b).name,'en'));
+}
+export function restoreRaceSelection(theme,raw){
+  let stored;
+  try{stored=JSON.parse(raw||'[]');}catch{stored=[];}
+  const valid=Array.isArray(stored)?stored.filter(code=>typeof code==='string'):[];
+  const codes=sortRaceCodes(theme,[...new Set(valid)].slice(0,12));
+  return codes.length>=4?codes:sortRaceCodes(theme,theme.defaultCodes);
 }
 export function worldLoopOrder(racers=[]){return [...racers].sort((a,b)=>Number(b.distance||0)-Number(a.distance||0)||a.index-b.index);}
 export function worldLoopGap(racers=[]){
