@@ -14,7 +14,10 @@ test('World Loop is built as a full-width ambient screensaver, without puzzle si
     assert.ok(!html.includes(legacy),`World Loop still contains puzzle-only UI ${legacy}`);
   }
   assert.match(css,/\.game-layout\.world-loop-layout\s*\{/);
-  assert.match(css,/width:min\(calc\(100% - 32px\),1640px\)/);
+  assert.match(css,/body\\[data-game="world-loop"\\] \\.game-layout\\.world-loop-layout,/);
+  assert.match(css,/max-width:1280px;/);
+  assert.match(css,/padding-inline:24px;/);
+  assert.doesNotMatch(css,/1640px|width:min\\(calc\\(100% - 32px\\),1640px\\)/);
   assert.match(css,/\.world-loop-viewport\{height:clamp\(540px,72vh,940px\)\}/);
   const puzzle=read('dist/maze/index.html');
   assert.match(puzzle,/class="panel left-panel"/);
