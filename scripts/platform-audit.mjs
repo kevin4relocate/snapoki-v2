@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {GAMES} from '../src/js/games-config.js';
+import {gameStyleSheets} from '../src/js/game-presentation.js';
 import {RESULT_VERIFIERS} from '../functions/_lib/scoring.js';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -94,7 +95,10 @@ for(const game of GAMES){
       if(!html.includes('class="game-layout world-loop-layout"'))fail(`${game.key}: full-width screensaver layout is missing`);
       if(/class="panel left-panel"|class="right-panel"|class="game-howto|class="section daily-section"/.test(html))
         fail(`${game.key}: legacy puzzle sidebars or Daily section were generated`);
-      if(!html.includes('/assets/styles/world-loop.css'))fail(`${game.key}: immersive race stylesheet is missing`);
+       const themeStyles=gameStyleSheets(game);
+       if(!themeStyles.length)fail(`${game.key}: simulation must register an immersive stylesheet`);
+       for(const stylesheet of themeStyles)
+         if(!html.includes('/assets/styles/'+stylesheet))fail(`${game.key}: missing simulation stylesheet ${stylesheet}`);
       if(!html.includes('id="gameBoard"'))fail(`${game.key}: race board is missing`);
     }else{
       if(!html.includes('class="game-howto '))fail(`${game.key}: missing shared How to Play component`);
