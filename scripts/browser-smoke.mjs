@@ -82,19 +82,52 @@ async function verifyAnimalChess(page){
 }
 async function verifyWorldLoopAnimation(page){
   const restored=await page.locator('#worldLoopSelected .world-loop-selected-chip').count();
-  if(restored!==8)throw new Error('World Loop did not recover its default eight racers after malformed saved settings');
+  if(restored!==8)throw new Error('World Loop must recover its default eight racers');
+  if(await page.locator('.left-panel,.right-panel,.game-howto').count())throw new Error('Screensaver still has puzzle side panels');
+  const layout=await page.locator('.world-loop-layout').boundingBox();
+  if(!layout||layout.width<page.viewportSize().width*.90)throw new Error('World Loop race canvas did not expand to page width');
+  if(await page.locator('#worldLoopSetup').isVisible())throw new Error('Ambient race should auto-start with default countries');
+  if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==8)throw new Error('Auto-start race has wrong racer count');
+  const pace=page.locator('#worldLoopPace [data-pace]');
+  if(await pace.count()!==3)throw new Error('Missing live pace switch');
+  const speed=key=>page.locator('#worldLoopPace [data-pace="'+key+'"]');
+  if(await speed('easy').getAttribute('aria-pressed')!=='true')throw new Error('Cruise should be initially selected');
   await page.evaluate(()=>{
     const native=window.requestAnimationFrame.bind(window);
     window.__wlRafCalls=0;
     window.requestAnimationFrame=callback=>{window.__wlRafCalls++;return native(callback);};
   });
   const count=()=>page.evaluate(()=>window.__wlRafCalls);
-  const idle=await count();
-  await page.waitForTimeout(160);
-  if(await count()>idle+1)throw new Error('World Loop keeps requesting animation frames during setup');
-  await page.locator('#worldLoopStart').click();
-  await page.waitForTimeout(240);
-  if(await count()<idle+4)throw new Error('World Loop did not start its animation');
+  const running=await count();
+  await page.waitForTimeout(210);
+  if(await count()<=running+2)throw new Error('Ambient World Loop animation is not running');
+  const distance=async()=>Number.parseFloat((await page.locator('#worldLoopLeaderMeta').textContent()).replace(/,/g,''))||0;
+  await page.waitForTimeout(1100);
+  const before=await distance();
+  const sessionBefore=await page.locator('#worldLoopSession').textContent();
+  await speed('hard').click();
+  if(await speed('hard').getAttribute('aria-pressed')!=='true')throw new Error('Sprint does not activate immediately');
+  await page.waitForTimeout(500);
+  const after=await distance();
+  if(after<before+5)throw new Error('Switching to Sprint stopped or reset distance accumulation');
+  if(await page.locator('#worldLoopSession').textContent()==='00:00')throw new Error('Changing pace reset the session timer');
+  await speed('medium').click();
+  if(await speed('medium').getAttribute('aria-pressed')!=='true')throw new Error('Dynamic did not activate instantly');
+  await speed('easy').click();
+  if(await speed('easy').getAttribute('aria-pressed')!=='true')throw new Error('Cruise did not activate instantly');
+
+  const sound=page.locator('#worldLoopSoundToggle');
+  await sound.click();
+  await page.waitForFunction(()=>document.querySelector('#worldLoopSoundToggle')?.getAttribute('aria-pressed')==='true',null,{timeout:12000});
+  const mute=page.locator('#worldLoopSoundMute');
+  await mute.click();
+  if(await mute.getAttribute('aria-pressed')!=='true')throw new Error('Mute did not apply immediately');
+  await page.locator('#worldLoopVolume').evaluate(el=>{el.value='18';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  if(await page.locator('#worldLoopVolumeValue').textContent()!=='18%')throw new Error('Sound volume did not update live');
+  await sound.click();
+  await page.waitForFunction(()=>document.querySelector('#worldLoopSoundToggle')?.getAttribute('aria-pressed')==='false');
+  if(await distance()<after)throw new Error('Sound interaction reset the race');
+
   await page.locator('#worldLoopPause').click();
   await page.waitForTimeout(80);
   const paused=await count();
@@ -111,14 +144,19 @@ async function verifyWorldLoopAnimation(page){
   const stopped=await count();
   await page.waitForTimeout(160);
   if(await count()>stopped+1)throw new Error('World Loop RAF continues after Stop');
+  if(!(await page.locator('#worldLoopSetup').isVisible()))throw new Error('Stop did not return to the country picker');
   const add=page.locator('#worldLoopAddCountry');
   await add.focus();
   await page.keyboard.press('Enter');
-  if(await add.getAttribute('aria-expanded')!=='true')throw new Error('Country picker not accessible by keyboard');
+  if(await add.getAttribute('aria-expanded')!=='true')throw new Error('Country picker not keyboard-accessible');
   await page.keyboard.press('Escape');
   if(await add.getAttribute('aria-expanded')!=='false')throw new Error('Escape did not close country picker');
   if(await page.evaluate(()=>document.activeElement?.id)!=='worldLoopAddCountry')throw new Error('Country picker focus not restored');
+  await page.locator('#worldLoopStart').click();
+  if(await page.locator('#worldLoopSetup').isVisible())throw new Error('Start after Stop failed');
+  console.log('PASS world-loop: auto-start, full width, live 3-speed switch, sound, Stop and resume');
 }
+
 try{
   browser=await chromium.launch({headless:true});
   for(const game of GAMES){

@@ -26,6 +26,12 @@ test('header and footer are identical everywhere',()=>{
 test('all game pages retain shared platform controls rail daily and result contracts',()=>{
   for(const g of GAMES){
     const html=read(`dist/${g.slug}/index.html`);
+    if(g.key==='world-loop'){
+      assert.match(html,/class="game-layout world-loop-layout"/);
+      assert.doesNotMatch(html,/class="panel left-panel"|class="right-panel"|class="section daily-section"/);
+      assert.match(html,/id="gameBoard"/);
+      continue;
+    }
     for(const id of ['newPuzzle','hint','solution','resetPuzzle','dailyProgress','resultModal'])assert.match(html,new RegExp(`id="${id}"`));
     assert.doesNotMatch(html,/id="undoAction"|id="rankingList"|id="profileBody"/);
     assert.match(html,/class="panel left-panel"/);
@@ -41,7 +47,8 @@ test('game status stays under board while game pages stay play-first and guides 
     assert.ok(status>board,`${g.key}: status belongs below board`);
     assert.match(html,/class="board-feedback"/);
     assert.doesNotMatch(html,/class="section game-seo"|class="section game-learn-more"/);
-    assert.match(html,/class="section daily-section"/);
+    if(g.key==='world-loop')assert.doesNotMatch(html,/class="section daily-section"/);
+    else assert.match(html,/class="section daily-section"/);
     assert.match(guide,/Rules and controls/);
     assert.match(guide,/Strategy that helps/);
     assert.match(guide,/Common mistakes/);
