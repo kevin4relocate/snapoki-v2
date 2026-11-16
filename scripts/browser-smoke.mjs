@@ -42,7 +42,7 @@ async function verifyMobileLayout(page,game){
       width:document.documentElement.clientWidth
     }));
     if(metrics.scroll>metrics.width+2)throw new Error(`${width}px mobile horizontal overflow: ${metrics.scroll}px scroll vs ${metrics.width}px viewport`);
-    if(['world-loop','animal-loop','aquarium-loop'].includes(game.key)){
+    if(['world-loop','animal-loop'].includes(game.key)){
       await page.locator('#worldLoopChange').click();
       const picker=await page.evaluate(()=>{
         const card=document.querySelector('.world-loop-setup-card').getBoundingClientRect();
@@ -467,7 +467,7 @@ try{
         await page.waitForFunction(()=>!document.querySelector('#gameBoard')?.hasAttribute('aria-busy'),null,{timeout:12000});
         if(pageErrors.length)throw new Error(pageErrors.join('; '));
       }
-      if(['world-loop','animal-loop'].includes(game.key)){
+      if(['world-loop','animal-loop','aquarium-loop'].includes(game.key)){
         await page.waitForTimeout(450);
         await capturePreview(page,game.slug,'desktop');
       }
