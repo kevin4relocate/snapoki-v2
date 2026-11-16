@@ -287,3 +287,17 @@ body[data-game="world-loop"] .world-loop-viewport{height:clamp(540px,72vh,940px)
   .world-loop-order-label{width:100%;min-width:0}
   .world-loop-orderbar li{min-width:166px}
 }
+
+
+/* Leader changes and growing metre counts must not change toolbar geometry. */
+.world-loop-title{flex:0 0 240px;width:240px;min-width:0}
+.world-loop-title small{
+  width:100%;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+@media(max-width:680px){
+  .world-loop-title{flex:1 1 100%;width:100%;max-width:100%}
+}
