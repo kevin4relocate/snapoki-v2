@@ -34,6 +34,15 @@ async function verifyMobileLayout(page,game){
       width:document.documentElement.clientWidth
     }));
     if(metrics.scroll>metrics.width+2)throw new Error(`${width}px mobile horizontal overflow: ${metrics.scroll}px scroll vs ${metrics.width}px viewport`);
+    if(game.key==='world-loop'){
+      const align=await page.evaluate(()=>({
+        raceLeft:document.querySelector('.world-loop-panel').getBoundingClientRect().left,
+        headerLeft:document.querySelector('.site-header-inner').getBoundingClientRect().left+
+          parseFloat(getComputedStyle(document.querySelector('.site-header-inner')).paddingLeft)
+      }));
+      if(Math.abs(align.raceLeft-align.headerLeft)>1)
+        throw new Error(`${width}px screensaver is not aligned with the header gutter`);
+    }
     const menu=page.locator('#mobileMenuToggle');
     if(!(await menu.isVisible()))throw new Error(`${width}px mobile navigation toggle not visible`);
     if(width===390){
@@ -86,6 +95,27 @@ async function verifyWorldLoopAnimation(page){
   if(await page.locator('.left-panel,.right-panel,.game-howto').count())throw new Error('Screensaver still has puzzle side panels');
   const layout=await page.locator('.world-loop-layout').boundingBox();
   if(!layout||layout.width<page.viewportSize().width*.90)throw new Error('World Loop race canvas did not expand to page width');
+  // On wide desktop viewports, the race must align with the footer's
+  // established 1280px content container instead of stretching edge-to-edge.
+  await page.setViewportSize({width:1600,height:900});
+  const alignment=await page.evaluate(()=>{
+    const race=document.querySelector('.world-loop-panel').getBoundingClientRect();
+    const hero=document.querySelector('.world-loop-hero');
+    const heroRect=hero.getBoundingClientRect(),heroStyle=getComputedStyle(hero);
+    const footer=document.querySelector('.footer-inner');
+    const footerRect=footer.getBoundingClientRect(),footerStyle=getComputedStyle(footer);
+    return {
+      raceLeft:race.left,raceRight:race.right,
+      heroLeft:heroRect.left+parseFloat(heroStyle.paddingLeft),
+      footerLeft:footerRect.left+parseFloat(footerStyle.paddingLeft),
+      footerRight:footerRect.right-parseFloat(footerStyle.paddingRight)
+    };
+  });
+  if(Math.abs(alignment.raceLeft-alignment.footerLeft)>1||
+     Math.abs(alignment.raceRight-alignment.footerRight)>1||
+     Math.abs(alignment.heroLeft-alignment.footerLeft)>1)
+    throw new Error('Wide desktop World Loop is not aligned with footer content gutters: '+JSON.stringify(alignment));
+  await page.setViewportSize({width:1280,height:900});
   if(await page.locator('#worldLoopSetup').isVisible())throw new Error('Ambient race should auto-start with default countries');
   if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==8)throw new Error('Auto-start race has wrong racer count');
   const pace=page.locator('#worldLoopPace [data-pace]');
