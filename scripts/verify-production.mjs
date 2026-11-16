@@ -27,7 +27,7 @@ const get=async route=>{
 const assert=(condition,message)=>{if(!condition)throw new Error(message);};
 async function verify(){
   const manifestRes=await get('/release.json?verify='+Date.now());
-  assert(manifestRes.status===200,'release.json not deployed: HTTP '+manifestRes.status);
+  assert(manifestRes.status===200,'release.json missing (HTTP '+manifestRes.status+'). Production likely uses an old/wrong Cloudflare Pages deployment; GitHub CI alone does not publish the site.');
   const release=await manifestRes.json();
   assert(/^[a-f0-9]{20}$/.test(release.releaseId||''),'Invalid or missing release fingerprint');
   assert(release.assetsBase===`/assets/r/${release.releaseId}/`,'Invalid versioned asset base');
@@ -44,9 +44,14 @@ async function verify(){
     assert(html.includes(release.assetsBase),`${route}: HTML does not point to current release assets`);
     assert(!/\/assets\/(?:js|styles)\/[a-z0-9/_-]+\.(?:js|css)/i.test(html),`${route}: unversioned HTML asset URL`);
     if(route==='/snapdesk-74kq/')assert(/noindex,nofollow,noarchive/.test(html),'Content Desk noindex is missing');
+    if(route==='/world-loop/'){
+      assert(html.includes('data-game="world-loop"'),'World Loop route serves the wrong HTML page');
+      assert(html.includes(release.assetsBase+'styles/world-loop.css'),'World Loop CSS missing from its page');
+      assert(html.includes(release.assetsBase+'js/game-page.js'),'World Loop engine bootstrap missing');
+    }
     console.log(`PASS ${route}: release URLs present`);
   }
-  for(const name of ['js/site.js','js/game-page.js','js/admin-content.js','styles/site.css','styles/launch.css']){
+  for(const name of ['js/site.js','js/game-page.js','js/games/world-loop.js','js/social-renderers/world-loop.js','js/admin-content.js','styles/site.css','styles/launch.css','styles/world-loop.css']){
     const entry=release.assets[name];
     assert(entry&&/^[a-f0-9]{64}$/.test(entry.sha256),`Missing manifest digest for ${name}`);
     const result=await get(release.assetsBase+name);
@@ -60,6 +65,9 @@ async function verify(){
     assert(response.status===status,`${route}: expected HTTP ${status}, got ${response.status}`);
     console.log(`PASS ${route}: HTTP ${status}`);
   }
+  const audio=await fetch(new URL('/audio/world-loop/endless-circuit.mp3',base),{method:'HEAD',signal:AbortSignal.timeout(15000),redirect:'follow'});
+  assert(audio.status===200,'World Loop music is missing on production: HTTP '+audio.status);
+  console.log('PASS World Loop audio: HTTP 200.');
   const config=await get('/api/config');
   assert(config.status===200,'Guest-only config API not reachable');
   assert((await config.json()).accountsEnabled===false,'Public accounts unexpectedly enabled');
