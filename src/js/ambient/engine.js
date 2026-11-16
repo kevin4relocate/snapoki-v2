@@ -137,10 +137,10 @@ export function createAmbientExperience({host,theme=AQUARIUM_THEME,difficulty='m
       const item=swimmer.element;if(!item)continue;
       item.style.left=(swimmer.x*100).toFixed(3)+'%';
       item.style.top=(swimmer.y*100).toFixed(3)+'%';
-      item.style.transform='translate(-50%,-50%) scale('+(swimmer.size*swimmer.depth).toFixed(2)+') rotate('+swimmer.angle.toFixed(2)+'deg)';
+      item.style.transform='translate(-50%,-50%) scale('+(swimmer.size*swimmer.depth).toFixed(2)+')';
       // Most side-view fish emoji point left. Flip the icon only, never the text label.
       if(Math.abs(swimmer.vx)>.004)swimmer.facing=swimmer.vx>0?1:-1;
-      swimmer.icon.style.transform=swimmer.facing===1?'scaleX(-1)':'none';
+      swimmer.icon.style.transform=(swimmer.facing===1?'scaleX(-1) ':'')+'rotate('+swimmer.angle.toFixed(2)+'deg)';
     }
   }
   function updateUi(){
