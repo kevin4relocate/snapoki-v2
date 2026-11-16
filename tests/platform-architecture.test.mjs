@@ -18,7 +18,8 @@ test('every registered game has one engine entry and generated launch surfaces',
     assert.ok(fs.existsSync(`dist/blog/how-to-play-${game.slug}/index.html`),`${game.key}: guide`);
     const page=read(`dist/${game.slug}/index.html`);
     const release=JSON.parse(read('dist/release.json'));
-    for(const asset of ['how-to-card.css','board-status.css','board-contract.css'])assert.ok(page.includes(`${release.assetsBase}styles/${asset}`),`${game.key}: versioned ${asset}`);
+    const assets=game.key==='world-loop'?['board-status.css','world-loop.css']:['how-to-card.css','board-status.css','board-contract.css'];
+    for(const asset of assets)assert.ok(page.includes(`${release.assetsBase}styles/${asset}`),`${game.key}: versioned ${asset}`);
   }
 });
 
