@@ -211,9 +211,13 @@ export function restoreWorldLoopSelection(raw){
   return codes.length>=4?codes:sortWorldLoopCodes(DEFAULT_CODES);
 }
 export const WORLD_LOOP_MASCOTS=['🏎️','🚀','🐇','🦊','🤖','🛸','🐝','⚡','🐲','🦅','🐬','🦖'];
-// Emoji racing cars face left in common browser fonts; mirror only the racer
-// mascot (never the country's flag) to match the left-to-right track.
+// Audit the full mascot pool for a left-to-right race. These icons commonly
+// point left in platform emoji artwork, so mirror just the mascot span (not the
+// country's flag). Rocket 🚀 already points up/right; UFO 🛸, robot 🤖 and
+// lightning ⚡ have no horizontal facing that needs correction. Emoji artwork
+// is platform-dependent, so keep this explicit inventory easy to revisit.
 export const WORLD_LOOP_FACE_RIGHT_MASCOTS=new Set(['🏎️','🐇','🦊','🐝','🐲','🦅','🐬','🦖']);
+export const WORLD_LOOP_ALREADY_RIGHT_OR_NEUTRAL_MASCOTS=new Set(['🚀','🤖','🛸','⚡']);
 
 const LEVEL={
   easy:{base:12.5,variance:.52,catchup:.046,maxCatchup:2.7,burst:1.7,burstChance:.032},
@@ -273,7 +277,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
 
   host.innerHTML='<div class="world-loop-app">'+
     '<div class="world-loop-racebar"><div class="world-loop-title"><span class="world-loop-live"><i></i> ENDLESS RACE</span><strong>World Loop</strong><small id="worldLoopRaceMeta"></small></div><div class="world-loop-race-actions"><div class="world-loop-session-controls"><div id="worldLoopPace" class="world-loop-pace" role="group" aria-label="Race pace"><button type="button" data-pace="easy" aria-pressed="false" title="Cruise: gentle movement">Cruise</button><button type="button" data-pace="medium" aria-pressed="false" title="Dynamic: changing leads">Dynamic</button><button type="button" data-pace="hard" aria-pressed="false" title="Sprint: faster bursts">Sprint</button></div><button id="worldLoopPause" type="button" disabled>Pause</button><button id="worldLoopRestart" type="button" disabled>Restart</button><button id="worldLoopChange" type="button" disabled>■ Stop</button></div><div class="world-loop-audio-controls" aria-label="Background music"><button id="worldLoopSoundToggle" class="world-loop-sound-toggle" type="button" disabled>♪ Play Sound</button><button id="worldLoopSoundMute" class="world-loop-sound-mute" type="button" aria-pressed="false" title="Mute sound" disabled>🔊</button><label class="world-loop-volume" title="Music volume"><input id="worldLoopVolume" type="range" min="0" max="100" step="1" value="55" aria-label="Music volume" disabled><span id="worldLoopVolumeValue">55%</span></label></div><button id="worldLoopFullscreen" class="world-loop-fullscreen" type="button" aria-pressed="false" disabled>⛶ Full Screen</button></div></div>'+
-    '<div class="world-loop-orderbar"><div class="world-loop-order-label"><span>CURRENT ORDER</span><small id="worldLoopLeaderLabel">NO FINISH LINE</small></div><ol id="worldLoopOrder"></ol></div>'+
+    '<div class="world-loop-orderbar"><div class="world-loop-order-label"><span>CURRENT ORDER</span><small id="worldLoopLeaderLabel">NO FINISH LINE</small></div><ol id="worldLoopOrder" aria-label="Top five countries"></ol></div>'+
     '<div class="world-loop-viewport"><div class="world-loop-track-top"><div><span>ENDLESS TRACK →</span><small id="worldLoopTrackDetail">Distance keeps increasing until you restart.</small></div><div id="worldLoopWake" class="world-loop-wake">SCREEN MODE</div></div><div id="worldLoopLanes" class="world-loop-lanes" aria-label="Endless lane race"></div>'+
       '<div id="worldLoopSetup" class="world-loop-setup"><div class="world-loop-setup-card"><h2>Pick 4–12 countries</h2><div class="world-loop-pick-head"><strong id="worldLoopPickCount">0 / 12 selected</strong><div><button id="worldLoopRandom" type="button">Random 8</button><button id="worldLoopClear" type="button">Clear</button></div></div><div id="worldLoopSelected" class="world-loop-selected"></div><div id="worldLoopCountryPicker" class="world-loop-country-picker"><button id="worldLoopAddCountry" class="world-loop-country-trigger" type="button" aria-controls="worldLoopCountryMenu" aria-expanded="false"><b>+ Add country</b><span>Search 196 countries</span></button><div id="worldLoopCountryMenu" class="world-loop-country-menu" hidden><input id="worldLoopCountrySearch" type="search" autocomplete="off" placeholder="Search country or code" aria-label="Search countries"><div id="worldLoopCountryOptions" class="world-loop-country-options"></div></div></div><button id="worldLoopStart" class="world-loop-start" type="button">Start Endless Race →</button></div></div>'+    '</div>'+
     '<div class="world-loop-story-grid"><article><span>CURRENT LEADER</span><strong id="worldLoopLeader">—</strong><small id="worldLoopLeaderMeta">Waiting for the race to start.</small></article><article><span>P1 → P2 GAP</span><strong id="worldLoopGap">0 m</strong><small id="worldLoopChanges">0 lead changes</small></article><article><span>SESSION</span><strong id="worldLoopSession">00:00</strong><small>Distance never resets automatically.</small></article></div>'+
@@ -380,7 +384,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   // Reuse the same ranking cards while flags, positions and metres change.
   // Rebuilding their DOM every HUD tick caused visible flicker and width shifts.
   function renderOrder(ordered){
-    const visible=Math.min(3,ordered.length),hasMore=ordered.length>3;
+    const visible=Math.min(5,ordered.length),hasMore=ordered.length>5;
     if(orderHost.children.length!==visible+(hasMore?1:0)){
       orderHost.replaceChildren();
       for(let index=0;index<visible;index++){
@@ -405,7 +409,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
       if(metres.textContent!==distance)metres.textContent=distance;
     }
     if(hasMore){
-      const more=orderHost.lastElementChild,count='+'+(ordered.length-3);
+      const more=orderHost.lastElementChild,count='+'+(ordered.length-5);
       if(more.children[1].textContent!==count)more.children[1].textContent=count;
     }
   }

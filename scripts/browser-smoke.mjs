@@ -128,8 +128,20 @@ async function verifyWorldLoopAnimation(page){
   // Changing leader flags/metres must never resize the scoreboard or recreate
   // ranking cards on every HUD tick.
   const order=page.locator('#worldLoopOrder li');
-  if(await order.count()!==4)throw new Error('Expected three stable ranking cards and More');
-  await page.evaluate(()=>{window.__wlOrderNodes=[...document.querySelectorAll('#worldLoopOrder li')];});
+  if(await order.count()!==6)throw new Error('Expected five stable ranking cards and More');
+  if(await page.locator('#worldLoopOrder').getAttribute('aria-label')!=='Top five countries')throw new Error('Top 5 label missing for assistive technology');
+  const ranks=await page.locator('#worldLoopOrder li:not(.more) b').allTextContents();
+  if(ranks.join(',')!=='1,2,3,4,5')throw new Error('CURRENT ORDER does not show ranks one through five: '+ranks.join(','));
+  if(await page.locator('#worldLoopOrder li.more strong').textContent()!=='+3')
+    throw new Error('Eight racers must show five ranks plus three more');
+  // All five rankings and the remainder badge should fit without a horizontal
+  // ranking scrollbar on the standard desktop width; mobile may scroll.
+  const fit=await page.evaluate(()=>{
+    const container=document.getElementById('worldLoopOrder');
+    return {client:container.clientWidth,scroll:container.scrollWidth};
+  });
+  if(fit.scroll>fit.client+2)throw new Error('Top 5 does not fit the desktop race width: '+JSON.stringify(fit));
+    await page.evaluate(()=>{window.__wlOrderNodes=[...document.querySelectorAll('#worldLoopOrder li')];});
   await page.waitForTimeout(350);
   const unchanged=await page.evaluate(()=>window.__wlOrderNodes.every((node,i)=>node===document.querySelectorAll('#worldLoopOrder li')[i]));
   if(!unchanged)throw new Error('World Loop recreated ranking cards between HUD updates');
@@ -269,8 +281,16 @@ async function verifyWorldLoopAnimation(page){
   await page.keyboard.press('Escape');
   if(await add.getAttribute('aria-expanded')!=='false')throw new Error('Escape did not close country picker');
   if(await page.evaluate(()=>document.activeElement?.id)!=='worldLoopAddCountry')throw new Error('Country picker focus not restored');
+  // Four-player sessions show exactly four ranks and no More badge.
+  for(let removed=0;removed<4;removed++)
+    await page.locator('#worldLoopSelected .world-loop-selected-chip').last().click();
+  if(await page.locator('#worldLoopSelected .world-loop-selected-chip').count()!==4)
+    throw new Error('Could not set up the minimum four-player session');
   await page.locator('#worldLoopStart').click();
   if(await page.locator('#worldLoopSetup').isVisible())throw new Error('Start after Stop failed');
+  if(await page.locator('#worldLoopOrder li').count()!==4||
+     await page.locator('#worldLoopOrder li.more').count()!==0)
+    throw new Error('A four-player session should show four ranks without a remainder item');
   // On wide desktop viewports, the race must align with the footer's
   // established 1280px content container instead of stretching edge-to-edge.
   await page.setViewportSize({width:1600,height:900});

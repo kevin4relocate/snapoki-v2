@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {WORLD_LOOP_MASCOTS,WORLD_LOOP_FACE_RIGHT_MASCOTS} from '../src/js/games/world-loop.js';
+import {WORLD_LOOP_MASCOTS,WORLD_LOOP_FACE_RIGHT_MASCOTS,WORLD_LOOP_ALREADY_RIGHT_OR_NEUTRAL_MASCOTS} from '../src/js/games/world-loop.js';
 const source=readFileSync('src/js/games/world-loop.js','utf8');
 const css=readFileSync('src/styles/world-loop.css','utf8');
 
@@ -37,4 +37,16 @@ test('responsive popup reduces chip columns and maintains a scrollable list on m
   assert.match(css,/@media\(max-width:680px\)\{[\s\S]*?\.world-loop-selected\{\s*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/@media\(max-width:360px\)\{[\s\S]*?\.world-loop-selected\{grid-template-columns:1fr;max-height:215px\}/);
   assert.match(css,/\.world-loop-setup\{\s*padding:clamp\(18px,4vh,42px\) 16px 16px;\s*overflow-y:auto/);
+});
+
+test('all twelve racer icons have a reviewed facing direction',()=>{
+  const mirrored=['🏎️','🐇','🦊','🐝','🐲','🦅','🐬','🦖'];
+  const unchanged=['🚀','🤖','🛸','⚡'];
+  assert.equal(WORLD_LOOP_MASCOTS.length,12);
+  assert.deepEqual([...WORLD_LOOP_FACE_RIGHT_MASCOTS],mirrored);
+  assert.deepEqual([...WORLD_LOOP_ALREADY_RIGHT_OR_NEUTRAL_MASCOTS],unchanged);
+  assert.deepEqual([...new Set([...mirrored,...unchanged])].sort(),[...WORLD_LOOP_MASCOTS].sort(),
+    'A new racer icon must be audited for left-to-right orientation');
+  assert.equal(mirrored.includes('🚀'),false,'Rocket already points up/right');
+  assert.equal(mirrored.includes('🛸'),false,'Symmetric UFO should not be mirrored');
 });
