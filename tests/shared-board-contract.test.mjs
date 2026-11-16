@@ -45,6 +45,10 @@ test('Echo chrome cannot widen the grid track or pull the square board off cente
 test('every built game page loads the shared board contract last',async()=>{
   for(const game of GAMES){
     const html=await read(`dist/${game.slug}/index.html`);
+    if(game.key==='world-loop'){
+      assert.doesNotMatch(html,/\/styles\/board-contract\.css/,'screensaver must not load puzzle board geometry');
+      continue;
+    }
     const contract=html.lastIndexOf('/styles/board-contract.css');
     assert.ok(contract>=0,`${game.slug} must load board-contract.css`);
     assert.ok(contract>html.lastIndexOf('/styles/games.css'),`${game.slug} board contract must load after games.css`);
