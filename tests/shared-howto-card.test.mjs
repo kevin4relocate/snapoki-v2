@@ -31,7 +31,7 @@ test('each How to Play card keeps a game-specific goal and concise actions',()=>
     'animal-chess':['REACH ENEMY DEN','capture every rival','Rat can capture Elephant','Undo']
   };
   assert.deepEqual(Object.keys(expected).sort(),GAMES.filter(game=>game.key!=='world-loop').map(game=>game.slug).sort());
-  for(const game of GAMES){
+  for(const game of GAMES.filter(game=>game.key!=='world-loop')){
     const page=fs.readFileSync(`dist/${game.slug}/index.html`,'utf8');
     for(const phrase of expected[game.slug])assert.match(page,new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'));
   }
