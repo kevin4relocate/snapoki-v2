@@ -1,0 +1,67 @@
+/* Animal Loop reuses the full World Loop layout and common race controls. */
+body[data-game="animal-loop"] .board-panel{overflow:visible;border:0;background:transparent;box-shadow:none;border-radius:0}
+body[data-game="animal-loop"] .board-toolbar{display:none!important}
+body[data-game="animal-loop"] .game-board{max-width:none;width:100%;padding:0;background:transparent}
+body[data-game="animal-loop"] .board-feedback{max-width:100%}
+body[data-game="animal-loop"] .game-layout.world-loop-layout,
+body[data-game="animal-loop"] .game-hero.world-loop-hero{
+  width:100%;
+  max-width:1280px;
+  padding-inline:24px;
+  margin-inline:auto;
+}
+body[data-game="animal-loop"] .game-layout.world-loop-layout{display:block;grid-template-columns:none;gap:0}
+body[data-game="animal-loop"] .world-loop-panel{width:100%;padding:0;margin:0;background:transparent;border:0;box-shadow:none;min-width:0}
+body[data-game="animal-loop"] .game-hero.world-loop-hero{padding-block:26px 18px}
+body[data-game="animal-loop"] .game-hero.world-loop-hero h1{font-size:clamp(25px,3.2vw,43px);margin:7px 0 10px}
+body[data-game="animal-loop"] .game-hero.world-loop-hero p{font-size:14px}
+body[data-game="animal-loop"] .game-hero.world-loop-hero .hero-pills{margin-top:12px}
+body[data-game="animal-loop"] .world-loop-viewport{height:clamp(540px,72vh,940px)}
+.world-loop-app[data-race-theme="animal"]{
+  --wl-accent:#43d8a5;
+  --wl-accent2:#f6c86a;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-live{color:#7eeab3}
+.world-loop-app[data-race-theme="animal"] .world-loop-viewport{background:#10231f}
+.world-loop-app[data-race-theme="animal"] .world-loop-lanes{background-color:#28403c}
+.world-loop-app[data-race-theme="animal"] .world-loop-lane:nth-child(odd){background:rgba(110,208,163,.025)}
+.world-loop-app[data-race-theme="animal"] .world-loop-lane:nth-child(even){background:rgba(1,17,15,.095)}
+.world-loop-app[data-race-theme="animal"] .world-loop-selected:empty:before{content:"No animals selected yet."}
+.world-loop-app[data-race-theme="animal"] .world-loop-racer{gap:0}
+.world-loop-app[data-race-theme="animal"] .world-loop-orderbar li{
+  flex:0 0 190px;
+  width:190px;
+  min-width:190px;
+  max-width:190px;
+  grid-template-columns:12px 26px minmax(0,1fr) 52px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-orderbar li strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-orderbar li.more{
+  flex:0 0 98px;width:98px;min-width:98px;max-width:98px;
+  grid-template-columns:18px 25px 1fr;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-lane-label{
+  grid-template-columns:22px minmax(0,1fr);
+  width:12%;min-width:70px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-lane-label b{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-track-top{
+  background:linear-gradient(90deg,rgba(67,216,165,.1),rgba(246,200,106,.05));
+}
+@media(max-width:900px){
+  body[data-game="animal-loop"] .world-loop-viewport{height:clamp(510px,68vh,780px)}
+}
+@media(max-width:680px){
+  body[data-game="animal-loop"] .game-layout.world-loop-layout,
+  body[data-game="animal-loop"] .game-hero.world-loop-hero{padding-inline:16px}
+  body[data-game="animal-loop"] .game-hero.world-loop-hero{padding-block:24px 14px}
+  body[data-game="animal-loop"] .world-loop-viewport{height:clamp(510px,75vh,760px)}
+  .world-loop-app[data-race-theme="animal"] .world-loop-orderbar li{min-width:180px}
+}
