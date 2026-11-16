@@ -14,7 +14,7 @@ test('World Loop is built as a full-width ambient screensaver, without puzzle si
     assert.ok(!html.includes(legacy),`World Loop still contains puzzle-only UI ${legacy}`);
   }
   assert.match(css,/\.game-layout\.world-loop-layout\s*\{/);
-  assert.match(css,/body\\[data-game="world-loop"\\] \\.game-layout\\.world-loop-layout,/);
+  assert.ok(css.includes('body[data-game="world-loop"] .game-layout.world-loop-layout,'));
   assert.match(css,/max-width:1280px;/);
   assert.match(css,/padding-inline:24px;/);
   assert.ok(!css.includes('1640px'),'screensaver must not overflow the site content container');
