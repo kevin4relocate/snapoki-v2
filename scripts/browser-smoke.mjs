@@ -134,10 +134,16 @@ async function verifyAnimalChess(page){
 async function verifyAquariumLoop(page){
   if(await page.locator('.ambient-app[data-ambient-theme="aquarium"]').count()!==1)
     throw new Error('Aquarium must render the standalone Ambient Engine');
-  if(await page.locator('#ambientPicker').isVisible())
-    throw new Error('Aquarium should auto-start its saved/default roster');
+  if(!(await page.locator('#ambientPicker').isVisible()))
+    throw new Error('Aquarium must open with the creature picker');
+  if(await page.locator('.ambient-swimmer').count()!==0)
+    throw new Error('Aquarium should not swim before user clicks Start');
+  if(await page.locator('.ambient-selected-chip').count()!==8)
+    throw new Error('Aquarium should preselect eight creatures for editing');
+  await capturePreview(page,'aquarium-loop','chooser');
+  await page.locator('#ambientStart').click();
   if(await page.locator('.ambient-swimmer').count()!==8)
-    throw new Error('Aquarium must auto-start eight 2-D swimmers');
+    throw new Error('Aquarium did not start with the preselected eight swimmers');
   if(await page.locator('.world-loop-lane, .world-loop-orderbar, .world-loop-racer-flag').count())
     throw new Error('Aquarium incorrectly contains race lanes, rankings or country flags');
   const bubbles=await page.locator('.ambient-bubble').count();
@@ -191,10 +197,16 @@ async function verifyAquariumLoop(page){
 async function verifyAnimalLoop(page){
   if(await page.locator('.world-loop-app[data-race-theme="animal"]').count()!==1)
     throw new Error('Animal Loop is not using the shared themed race runtime');
-  if(await page.locator('#worldLoopSetup').isVisible())
-    throw new Error('Animal Loop should auto-start its default eight animals');
+  if(!(await page.locator('#worldLoopSetup').isVisible()))
+    throw new Error('Animal Loop must open with the animal picker');
+  if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==0)
+    throw new Error('Animal Loop must not race before user clicks Start');
+  if(await page.locator('.world-loop-selected-chip').count()!==8)
+    throw new Error('Animal Loop should preselect eight animals for editing');
+  await capturePreview(page,'animal-loop','chooser');
+  await page.locator('#worldLoopStart').click();
   if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==8)
-    throw new Error('Animal Loop is missing its eight starting lanes');
+    throw new Error('Animal Loop did not start the eight selected animals');
   if(await page.locator('.world-loop-racer-flag').count())
     throw new Error('Animal Loop should not display miniature country flags');
   const first=await page.locator('.world-loop-lane-label span').first().textContent();
