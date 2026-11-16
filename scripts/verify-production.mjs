@@ -39,7 +39,7 @@ async function verify(){
   // Each Loop route must be on the same versioned release, not merely return 200.
   const loops=[
     {slug:'world-loop',entry:'js/games/world-loop.js',style:'styles/world-loop.css',dependencies:['js/endless-race/engine.js','js/endless-race/themes/flag.js']},
-    {slug:'animal-loop',entry:'js/games/animal-loop.js',style:'styles/world-loop.css',dependencies:['js/endless-race/engine.js','js/endless-race/themes/animal.js']},
+    {slug:'animal-loop',entry:'js/games/animal-loop.js',style:'styles/world-loop.css',dependencies:['styles/animal-loop.css','js/endless-race/engine.js','js/endless-race/themes/animal.js']},
     {slug:'aquarium-loop',entry:'js/games/aquarium-loop.js',style:'styles/aquarium-loop.css',dependencies:['js/ambient/engine.js','js/ambient/swim.js','js/ambient/themes/aquarium.js']}
   ];
   const pages=['/','/echo-step/','/maze/','/bridges/',...loops.map(loop=>'/'+loop.slug+'/'),'/snapdesk-74kq/'];
@@ -54,6 +54,7 @@ async function verify(){
     if(loop){
       assert(html.includes('data-game="'+loop.slug+'"'),loop.slug+': route serves the wrong game HTML');
       assert(html.includes(release.assetsBase+loop.style),loop.slug+': versioned CSS missing');
+      if(loop.slug==='animal-loop')assert(html.includes(release.assetsBase+'styles/animal-loop.css'),'Animal Loop theme CSS missing');
       assert(html.includes(release.assetsBase+'js/game-page.js'),loop.slug+': versioned game bootstrap missing');
     }
     console.log(`PASS ${route}: release URLs present`);
