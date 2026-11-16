@@ -88,11 +88,21 @@ for(const game of GAMES){
   if(!verifierKeys.has(game.key))fail(`${game.key}: missing server result verifier`);
   if(await exists(page)){
     const html=await fs.readFile(page,'utf8');
-    if(!html.includes('class="game-howto '))fail(`${game.key}: missing shared How to Play component`);
-    if(!html.includes('/assets/styles/how-to-card.css'))fail(`${game.key}: missing shared How to Play stylesheet`);
-    if(!html.includes('/assets/styles/board-contract.css'))fail(`${game.key}: missing shared board contract`);
+    if(game.key==='world-loop'){
+      // Ambient screensaver has its own immersive shell; puzzle rails and Daily
+      // placeholders must not be generated merely to satisfy a generic audit.
+      if(!html.includes('class="game-layout world-loop-layout"'))fail('world-loop: full-width screensaver layout is missing');
+      if(/class="panel left-panel"|class="right-panel"|class="game-howto|class="section daily-section"/.test(html))
+        fail('world-loop: legacy puzzle sidebars or Daily section were generated');
+      if(!html.includes('/assets/styles/world-loop.css'))fail('world-loop: immersive race stylesheet is missing');
+      if(!html.includes('id="gameBoard"'))fail('world-loop: race board is missing');
+    }else{
+      if(!html.includes('class="game-howto '))fail(`${game.key}: missing shared How to Play component`);
+      if(!html.includes('/assets/styles/how-to-card.css'))fail(`${game.key}: missing shared How to Play stylesheet`);
+      if(!html.includes('/assets/styles/board-contract.css'))fail(`${game.key}: missing shared board contract`);
+      if(!html.includes('class="section daily-section"'))fail(`${game.key}: missing Daily section`);
+    }
     if(!html.includes('/assets/styles/board-status.css'))fail(`${game.key}: missing shared board status styles`);
-    if(!html.includes('class="section daily-section"'))fail(`${game.key}: missing Daily section`);
     if(/class="section game-seo"|class="section game-learn-more"/.test(html))fail(`${game.key}: game page contains editorial filler that belongs in the dedicated guide`);
   }
   if(await exists(guide)){
