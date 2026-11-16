@@ -115,6 +115,37 @@ withContract({
     ranking:{enabled:false,proofType:'none',scoreModel:'none'},
     modeLabel:'Endless Race',
     ui:{controlTitle:'Race pace',controlHint:'Choose the mood',guideControlTitle:'Race pace presets',newLabel:'Change Animals',resetLabel:'Restart Race'}
+  }),
+  withContract({
+    key:'aquarium-loop',slug:'aquarium-loop',experienceType:'simulation',
+    name:'Aquarium Loop',featured:false,category:'Simulation',
+    tagline:'Choose your sea creatures. Watch them swim.',
+    description:'Build a peaceful underwater aquarium with 4–12 sea creatures from 16 choices. Watch naturally wandering fish, slow bubbles and swaying seaweed. No races, points, winners or finish line.',
+    socialInsight:'An ambient underwater scene that never ends: each sea creature wanders through a fluid 2D space, gradually turning and softly avoiding its neighbors.',
+    heroPills:['16 sea creatures · choose 4–12','Relaxing underwater swim','Drift / Flow / Playful · Ocean sound'],
+    metrics:[['swimmers','CREATURES'],['flow','SWIM PACE'],['time','SESSION'],['scene','SCENE']],
+    levels:[['easy','Drift','very calm, slow swimming'],['medium','Flow','natural, balanced motion'],['hard','Playful','lively but gentle swimming']],
+    howTo:[
+      'Watch a starting group of eight sea creatures swim freely in a colorful underwater environment, or press Change to select your own group of four to twelve.',
+      'Choose from 16 sea creatures, including tropical fish, dolphins, sea turtles, jellyfish and octopuses. Creatures wander through the tank without race lanes, rankings or species speed bonuses.',
+      'Switch Drift, Flow or Playful live to adjust the swim pace without restarting. Fish change direction gradually, stay inside the aquarium and gently avoid their neighbors.',
+      'Pause to freeze the scene, Restart to create a fresh swimming session with your chosen creatures, or Change to edit the roster. Ocean Sound is off until you turn it on. Full Screen provides a quiet screensaver.'
+    ],
+    guide:{
+      focus:'Aquarium Loop is an interactive 2D ambient aquarium, made for relaxing rather than winning. Watch 4–12 sea creatures drift and change direction naturally, with optional Web Audio ocean ambience and no download or account.',
+      tips:['Start with eight species for a balanced tank and use Drift for a softer screensaver.','Try a combination of larger creatures and tiny fish for an interesting visual mix.','Enter Full Screen and enable Ocean Sound only if you want audio. The aquarium stays silent by default.'],
+      mistakes:['Expecting race rankings or a finish line; Aquarium Loop is not a race.','Thinking each species has special speed advantages; swim motion is generated independently of species.','Using Restart when you only intend to pause the scene; Pause and Resume preserve the ongoing session.'],
+      controls:{heading:'Aquarium controls',body:'Drift, Flow and Playful change motion immediately. Pause and Resume freeze and continue the same session; Restart creates new movement paths for the same selected creatures. Change opens the sea creature picker. Ocean Sound and Volume work independently, and Full Screen expands the aquarium.'},
+      format:{heading:'Natural Swim ambient format',body:'Swimmers move continuously in two dimensions, choose soft steering targets, stay within the scene and use gentle local separation. No lanes, scoreboard, finish line, scoring, timed challenges or public rankings. Your chosen sea creature list stays in this browser.'},
+      difficultyCopy:'The three options are visual motion settings rather than challenge levels. Drift is slower, Flow is balanced and Playful is quicker; they do not change the chosen animals.',
+      ctaCopy:'Choose four to twelve sea creatures, select your preferred swim pace and enjoy a relaxing aquarium screensaver.'
+    },
+    seoTitle:'Aquarium Loop – Relaxing Underwater Screensaver | Snapoki',
+    seoDescription:'Relax with a free underwater aquarium screensaver. Choose from 16 sea creatures, watch natural 2D swimming, bubbles and swaying plants, and try optional ocean ambience.',
+    capabilities:{hint:false,solution:false,solutionSteps:false,drag:false,daily:false,ranking:false},
+    ranking:{enabled:false,proofType:'none',scoreModel:'none'},
+    modeLabel:'Ambient Swim',
+    ui:{controlTitle:'Swim pace',controlHint:'Choose the mood',guideControlTitle:'Swim modes',newLabel:'Change Creatures',resetLabel:'Restart Aquarium'}
   })
 
 ];

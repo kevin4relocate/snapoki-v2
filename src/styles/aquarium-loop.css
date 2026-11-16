@@ -1,0 +1,298 @@
+/* Aquarium Loop: a standalone Ambient / Swim renderer with the same public
+   1280px content gutters as the two race simulations. No race tracks or flags. */
+body[data-game="aquarium-loop"] .board-panel{overflow:visible;border:0;background:transparent;box-shadow:none;border-radius:0}
+body[data-game="aquarium-loop"] .board-toolbar{display:none!important}
+body[data-game="aquarium-loop"] .game-board{max-width:none;width:100%;padding:0;background:transparent}
+body[data-game="aquarium-loop"] .board-feedback{max-width:100%}
+body[data-game="aquarium-loop"] .game-layout.world-loop-layout,
+body[data-game="aquarium-loop"] .game-hero.world-loop-hero{
+  box-sizing:border-box;width:100%;max-width:1280px;padding-inline:24px;margin-inline:auto
+}
+body[data-game="aquarium-loop"] .game-layout.world-loop-layout{display:block;grid-template-columns:none;gap:0}
+body[data-game="aquarium-loop"] .world-loop-panel{width:100%;min-width:0;padding:0;margin:0;background:transparent;border:0;box-shadow:none}
+body[data-game="aquarium-loop"] .game-hero.world-loop-hero{padding-block:26px 18px}
+body[data-game="aquarium-loop"] .game-hero.world-loop-hero h1{font-size:clamp(25px,3.2vw,43px);margin:7px 0 10px}
+body[data-game="aquarium-loop"] .game-hero.world-loop-hero p{font-size:14px}
+body[data-game="aquarium-loop"] .game-hero.world-loop-hero .hero-pills{margin-top:12px}
+
+.ambient-app{
+  --ambient-line:rgba(135,229,233,.17);
+  --ambient-ink:#e9fffc;
+  --ambient-muted:#a4cfce;
+  display:grid;gap:10px;width:100%;min-width:0;
+  color:var(--ambient-ink);font-family:inherit
+}
+.ambient-app *{box-sizing:border-box}
+.ambient-toolbar{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;
+  padding:12px 16px;border:1px solid var(--ambient-line);border-radius:17px;
+  background:linear-gradient(120deg,#0e1e2c,#101927);box-shadow:0 7px 25px rgba(0,0,0,.12)
+}
+.ambient-brand{display:flex;flex-direction:column;gap:2px;flex:0 0 190px;min-width:0}
+.ambient-brand>span{
+  color:#56e7ba;letter-spacing:.16em;font-weight:900;font-size:10px
+}
+.ambient-brand>strong{font-size:19px;letter-spacing:-.02em}
+.ambient-brand>small{font-size:11px;color:var(--ambient-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ambient-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex:1 1 740px;flex-wrap:wrap;min-width:0}
+.ambient-controls button,.ambient-picker button{
+  font:inherit;cursor:pointer;transition:background .2s,border-color .2s,color .2s;
+}
+.ambient-controls>button,.ambient-audio>button{
+  flex:0 0 auto;min-width:66px;min-height:42px;padding:9px 11px;
+  color:#e2f1f8;background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.12);border-radius:11px;
+  font-size:11px;font-weight:750;white-space:nowrap
+}
+.ambient-controls button:hover:enabled,.ambient-picker button:hover:enabled{
+  background:rgba(79,199,208,.15);border-color:rgba(84,232,207,.48)
+}
+.ambient-controls button:disabled,.ambient-picker button:disabled{opacity:.42;cursor:not-allowed}
+.ambient-controls button:focus-visible,.ambient-picker button:focus-visible,
+.ambient-picker input:focus-visible,.ambient-audio input:focus-visible{
+  outline:3px solid #73f9d7;outline-offset:2px
+}
+.ambient-pace{
+  display:flex;flex:0 0 auto;gap:3px;padding:3px;
+  border:1px solid rgba(120,243,222,.22);border-radius:13px;background:rgba(8,20,30,.72)
+}
+.ambient-pace button{
+  flex:0 0 70px;min-height:38px;border:1px solid transparent;border-radius:9px;
+  background:transparent;color:#a9cbd2;font-size:11px;font-weight:850
+}
+.ambient-pace button[aria-pressed="true"]{
+  background:linear-gradient(135deg,#115d71,#198f7a);color:#fff;
+  box-shadow:0 2px 10px rgba(3,13,31,.35)
+}
+.ambient-audio{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.ambient-audio #ambientSound{width:112px;min-width:112px}
+.ambient-audio #ambientSound[aria-pressed="true"]{
+  color:#a9ffe6;border-color:rgba(68,238,189,.62);
+  background:rgba(68,238,189,.12)
+}
+.ambient-audio #ambientMute{min-width:43px;width:43px;padding:7px}
+.ambient-audio label{
+  display:flex;align-items:center;gap:5px;color:#a6cfce;font-size:10px;white-space:nowrap
+}
+.ambient-audio input{width:64px;accent-color:#40cba8;cursor:pointer}
+.ambient-controls #ambientFullscreen{
+  min-width:116px;color:#c1e6ff;border-color:rgba(125,164,236,.35)
+}
+
+.ambient-scene{
+  position:relative;isolation:isolate;overflow:hidden;
+  width:100%;height:clamp(540px,72vh,840px);min-height:0;
+  border:1px solid rgba(122,226,222,.22);border-radius:22px;
+  background:
+    radial-gradient(ellipse 76% 55% at 50% 7%,rgba(34,203,219,.23),transparent 76%),
+    radial-gradient(ellipse 35% 40% at 88% 40%,rgba(27,121,152,.26),transparent 86%),
+    linear-gradient(180deg,#164f66 0%,#124b64 19%,#0b364f 55%,#082331 82%,#071d29 100%);
+  box-shadow:inset 0 0 90px rgba(1,14,32,.34),0 16px 45px rgba(0,0,0,.18)
+}
+.ambient-scene::before{
+  content:"";position:absolute;z-index:0;inset:-5% 0 0;pointer-events:none;
+  background:repeating-linear-gradient(102deg,
+    transparent 0 18%,rgba(119,236,219,.045) 19%,transparent 25%);
+  clip-path:polygon(20% 0,87% 0,100% 100%,0 100%);
+  opacity:.5
+}
+.ambient-scene::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(1,11,26,.25),transparent 21%,transparent 79%,rgba(1,11,26,.26));
+}
+.ambient-light{position:absolute;z-index:0;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 45% 17% at 48% -2%,rgba(112,247,241,.17),transparent);
+}
+.ambient-watermark{
+  position:absolute;z-index:0;left:0;right:0;top:51%;pointer-events:none;
+  font-size:clamp(22px,4vw,60px);font-weight:950;letter-spacing:-.06em;
+  text-align:center;color:rgba(222,255,249,.055);user-select:none
+}
+.ambient-bubbles{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.ambient-bubble{
+  position:absolute;left:var(--bubble-left);bottom:-30px;
+  width:calc(10px*var(--bubble-scale));height:calc(10px*var(--bubble-scale));
+  border:1px solid rgba(154,247,241,.4);border-radius:50%;
+  background:radial-gradient(circle at 28% 25%,rgba(235,255,254,.26),transparent 75%);
+  opacity:0;will-change:transform;
+  animation:ambient-rise var(--bubble-duration) linear var(--bubble-delay) infinite
+}
+@keyframes ambient-rise{
+  0%{transform:translate3d(0,20px,0);opacity:0}
+  15%{opacity:.28}83%{opacity:.23}
+  100%{transform:translate3d(22px,-850px,0);opacity:0}
+}
+.ambient-reef{
+  position:absolute;inset:auto 0 0;height:22%;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 18% 22% at 8% 100%,#225448 0%,transparent 100%),
+    radial-gradient(ellipse 18% 27% at 90% 100%,#1b494d 0%,transparent 100%),
+    linear-gradient(180deg,transparent 40%,rgba(13,43,39,.45) 88%,rgba(12,43,43,.88))
+}
+.ambient-reef::after{
+  content:"";position:absolute;left:-4%;right:-4%;bottom:-11px;height:36px;
+  border-radius:50% 50% 0 0;background:linear-gradient(180deg,#37585b,#1b4247);
+  box-shadow:0 -6px 19px rgba(3,25,32,.2)
+}
+.ambient-reef i{
+  display:block;position:absolute;bottom:18px;z-index:1;
+  width:7px;height:clamp(48px,8vw,115px);
+  border-radius:60% 20% 55% 15%;background:linear-gradient(90deg,#147668,#35a889);
+  transform-origin:50% 100%;opacity:.75;
+  animation:ambient-sway 8s ease-in-out infinite alternate
+}
+.ambient-reef i:nth-child(1){left:4%;height:95px}
+.ambient-reef i:nth-child(2){left:9%;height:66px;animation-delay:-3s}
+.ambient-reef i:nth-child(3){left:15%;height:110px;animation-delay:-1s}
+.ambient-reef i:nth-child(4){left:79%;height:80px;animation-delay:-4s}
+.ambient-reef i:nth-child(5){left:84%;height:120px;animation-delay:-2s}
+.ambient-reef i:nth-child(6){left:89%;height:72px;animation-delay:-5s}
+.ambient-reef i:nth-child(7){left:96%;height:104px;animation-delay:-2.5s}
+@keyframes ambient-sway{from{transform:rotate(-7deg)}to{transform:rotate(8deg)}}
+.ambient-swimmers{position:absolute;inset:0;z-index:3;pointer-events:none}
+.ambient-swimmer{
+  position:absolute;display:flex;align-items:center;flex-direction:column;gap:5px;
+  will-change:left,top,transform;
+  opacity:calc(.67 + var(--depth)*.33);
+  filter:drop-shadow(0 7px 12px rgba(0,8,20,.3))
+}
+.ambient-swimmer-icon{display:inline-block;line-height:1;font-size:clamp(34px,4.1vw,65px);transform-origin:center;will-change:transform}
+.ambient-swimmer-label{
+  max-width:130px;padding:4px 9px;color:#e4fff9;background:rgba(2,27,38,.55);
+  border:1px solid rgba(136,252,234,.16);border-radius:999px;
+  text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:10px;font-weight:800;line-height:1.15
+}
+.ambient-scene-caption{
+  position:absolute;left:16px;right:16px;top:15px;z-index:4;
+  display:flex;align-items:center;gap:9px;
+  pointer-events:none;text-shadow:0 1px 8px rgba(0,20,35,.55)
+}
+.ambient-scene-caption strong{
+  font-weight:950;font-size:11px;letter-spacing:.12em;color:#c3fff0
+}
+.ambient-scene-caption span{font-size:10px;color:#a4e1d6}
+.ambient-scene-caption em{
+  margin-left:auto;font-size:9px;font-weight:850;letter-spacing:.11em;
+  font-style:normal;color:#6af9bc;white-space:nowrap
+}
+.ambient-footer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.ambient-footer>div{
+  min-width:0;display:flex;flex-direction:column;gap:4px;
+  padding:12px 14px;border:1px solid rgba(146,219,223,.15);
+  border-radius:14px;background:#101822
+}
+.ambient-footer span{font-size:9px;letter-spacing:.11em;font-weight:900;color:#9ebcc8}
+.ambient-footer strong{font-size:16px;font-weight:950;font-variant-numeric:tabular-nums;color:#e2fff8}
+
+/* Picker stays centered, readable and scrollable instead of blocking the water. */
+.ambient-picker[hidden]{display:none!important}
+.ambient-picker{
+  position:absolute;inset:0;z-index:8;overflow-y:auto;overscroll-behavior:contain;
+  display:grid;place-items:center;padding:16px;
+  background:rgba(4,16,27,.68);backdrop-filter:blur(9px)
+}
+.ambient-picker-card{
+  width:min(1020px,100%);max-width:100%;margin:auto;padding:24px;
+  border:1px solid rgba(135,243,229,.25);border-radius:20px;
+  background:linear-gradient(135deg,rgba(12,30,41,.98),rgba(8,24,37,.98));
+  box-shadow:0 22px 65px rgba(0,0,0,.45)
+}
+.ambient-picker h2{margin:0 0 15px;font-size:clamp(21px,2.2vw,28px);letter-spacing:-.025em}
+.ambient-picker-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px
+}
+.ambient-picker-heading>span{color:#b1e6dc;font-size:12px;font-weight:850}
+.ambient-picker-heading>div{display:flex;gap:9px}
+.ambient-picker-heading button{
+  padding:9px 15px;min-height:42px;color:#e1faf8;
+  background:rgba(255,255,255,.06);border:1px solid rgba(159,247,233,.18);
+  border-radius:10px;font-size:12px;font-weight:800
+}
+.ambient-selected{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:14px}
+.ambient-selected-chip{
+  display:grid;grid-template-columns:27px minmax(0,1fr) 15px;align-items:center;gap:8px;
+  min-width:0;min-height:48px;padding:8px 11px;border:1px solid rgba(158,242,225,.15);
+  border-radius:10px;background:rgba(255,255,255,.04);color:#ebfffa;text-align:left
+}
+.ambient-selected-chip span{font-size:23px}
+.ambient-selected-chip strong{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ambient-selected-chip i{font-size:18px;opacity:.66;font-style:normal}
+.ambient-search-label{display:block;margin-bottom:7px;font-size:11px;font-weight:850;color:#a9e8da}
+.ambient-picker input[type="search"]{
+  display:block;width:100%;height:47px;padding:0 14px;margin:0 0 12px;
+  border:1px solid rgba(133,237,212,.25);border-radius:11px;
+  background:#0b1e2b;color:#e8fff7;font:inherit;font-size:12px
+}
+.ambient-species-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+  max-height:212px;overflow-y:auto;overscroll-behavior:contain
+}
+.ambient-species-choice{
+  display:grid;grid-template-columns:30px minmax(0,1fr) 18px;align-items:center;
+  gap:7px;min-width:0;min-height:47px;padding:7px 9px;
+  border:1px solid rgba(148,217,223,.12);border-radius:10px;
+  color:#e0f5f2;background:rgba(255,255,255,.025);text-align:left
+}
+.ambient-species-choice[aria-pressed="true"]{
+  background:rgba(52,200,167,.15);border-color:rgba(94,244,213,.42)
+}
+.ambient-species-choice>span{font-size:22px}
+.ambient-species-choice strong{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ambient-species-choice i{text-align:center;font-size:13px;font-style:normal;color:#86f9d7}
+.ambient-search-empty{grid-column:1/-1;color:#b5d7d5;font-size:12px}
+.ambient-start{
+  display:block;width:100%;min-height:50px;margin-top:14px;padding:12px 16px;
+  border:0;border-radius:12px;color:#073033;
+  font-size:13px;font-weight:950;background:linear-gradient(110deg,#79d5ef,#46e4ad)
+}
+
+.ambient-app:fullscreen,.ambient-app.is-fullscreen{
+  width:100vw;height:100dvh;max-width:none;overflow:hidden;
+  padding:12px;background:#061725;grid-template-rows:auto minmax(0,1fr) auto
+}
+.ambient-app:fullscreen .ambient-scene,.ambient-app.is-fullscreen .ambient-scene{height:100%;min-height:0}
+@media(max-width:1080px){
+  .ambient-controls{flex:1 1 100%;justify-content:flex-start}
+  .ambient-brand{flex:1 1 100%}
+}
+@media(max-width:800px){
+  .ambient-selected,.ambient-species-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .ambient-scene{height:clamp(510px,68vh,760px)}
+}
+@media(max-width:680px){
+  body[data-game="aquarium-loop"] .game-layout.world-loop-layout,
+  body[data-game="aquarium-loop"] .game-hero.world-loop-hero{padding-inline:16px}
+  .ambient-toolbar{padding:12px}
+  .ambient-pace{flex:1 1 auto;justify-content:stretch}
+  .ambient-pace button{flex:1 1 0;min-width:0}
+  .ambient-audio{flex:1 1 100%;flex-wrap:wrap}
+  .ambient-controls{gap:7px}
+  .ambient-controls>button{flex:1 1 75px}
+  .ambient-scene{height:clamp(540px,75vh,770px)}
+  .ambient-scene-caption span{display:none}
+  .ambient-swimmer-icon{font-size:clamp(31px,9vw,54px)}
+  .ambient-swimmer-label{font-size:9px;max-width:100px}
+  .ambient-picker{padding:10px}
+  .ambient-picker-card{padding:16px}
+  .ambient-selected,.ambient-species-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .ambient-selected{max-height:160px;overflow-y:auto}
+  .ambient-species-grid{max-height:235px}
+  .ambient-footer>div{padding:9px 10px}
+  .ambient-footer strong{font-size:13px}
+  .ambient-picker-heading button{padding:8px 10px}
+}
+@media(max-width:360px){
+  .ambient-controls>button{font-size:10px}
+  .ambient-audio label{font-size:9px}
+  .ambient-picker-card{padding:12px}
+  .ambient-selected{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ambient-selected-chip{padding:7px;gap:5px}
+  .ambient-selected-chip strong{font-size:10px}
+  .ambient-species-choice{gap:4px;padding:6px 7px}
+  .ambient-species-choice strong{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .ambient-bubble,.ambient-reef i{animation:none!important}
+  .ambient-controls button,.ambient-picker button{transition:none}
+}

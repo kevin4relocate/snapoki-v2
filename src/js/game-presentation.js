@@ -60,6 +60,14 @@ const PRESENTATION={
     tools:[['Undo','take back one move'],['Restart','new local game']],
     socialHook:'Can you reach the enemy den?'
   },
+  'aquarium-loop':{
+    styles:['aquarium-loop.css'],
+    solutionLabel:'Guide',
+    goal:{tokens:['CHOOSE CREATURES','WATCH THEM SWIM'],joiner:'→',note:'No race or winner'},
+    rows:[['Choose','Select 4–12 sea creatures from the aquarium.'],['Relax','Fish wander in 2D, turn gently and stay within the tank.'],['Adjust','Change Drift, Flow or Playful without starting over.']],
+    tools:[['Pause','freeze / resume'],['Full Screen','calm underwater mode'],['Ocean Sound','optional ambience']],
+    socialHook:'Who is swimming in your aquarium today?'
+  },
   'animal-loop':{
     styles:['world-loop.css','animal-loop.css'],
     solutionLabel:'Guide',

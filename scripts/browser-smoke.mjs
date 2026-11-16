@@ -27,8 +27,9 @@ let browser;
 const failures=[];
 const screenshots=process.env.SNAPOKI_PREVIEW_SCREENSHOTS==='1';
 async function capturePreview(page,slug,mode){
-  if(!screenshots||!['world-loop','animal-loop'].includes(slug))return;
+  if(!screenshots||!['world-loop','animal-loop','aquarium-loop'].includes(slug))return;
   await mkdir('preview-screenshots',{recursive:true});
+  await page.evaluate(()=>window.scrollTo(0,0));
   await page.screenshot({path:`preview-screenshots/${slug}-${mode}.png`,fullPage:true,animations:'disabled'});
 }
 
@@ -42,7 +43,7 @@ async function verifyMobileLayout(page,game){
       width:document.documentElement.clientWidth
     }));
     if(metrics.scroll>metrics.width+2)throw new Error(`${width}px mobile horizontal overflow: ${metrics.scroll}px scroll vs ${metrics.width}px viewport`);
-    if(game.experienceType==='simulation'){
+    if(['world-loop','animal-loop'].includes(game.key)){
       await page.locator('#worldLoopChange').click();
       const picker=await page.evaluate(()=>{
         const card=document.querySelector('.world-loop-setup-card').getBoundingClientRect();
@@ -70,6 +71,19 @@ async function verifyMobileLayout(page,game){
       }));
       if(Math.abs(align.raceLeft-align.headerLeft)>1)
         throw new Error(`${width}px screensaver is not aligned with the header gutter`);
+    }
+    if(game.key==='aquarium-loop'){
+      const scene=await page.locator('#ambientScene').boundingBox();
+      const frame=await page.locator('.world-loop-panel').boundingBox();
+      if(!scene||!frame||scene.width>width+2||frame.x<0||frame.x+frame.width>width+2)
+        throw new Error(`${width}px Aquarium overflows the screen`);
+      await page.locator('#ambientStop').click();
+      const card=await page.locator('.ambient-picker-card').boundingBox();
+      if(!card||card.x<0||card.x+card.width>width+1)
+        throw new Error(`${width}px Aquarium picker overflows the viewport`);
+      await page.locator('#ambientStart').click();
+      if(!(await page.locator('#ambientScene').isVisible()))
+        throw new Error('Aquarium failed to restart on mobile');
     }
     const menu=page.locator('#mobileMenuToggle');
     if(!(await menu.isVisible()))throw new Error(`${width}px mobile navigation toggle not visible`);
@@ -116,6 +130,63 @@ async function verifyAnimalChess(page){
   const status=await page.locator('#animalChessStatus').textContent();
   if(!status?.includes('Red'))throw new Error('CPU Undo did not restore Red turn');
   console.log('PASS animal-chess: local play, Undo, keyboard, CPU reply, reset, versioned CSS');
+}
+async function verifyAquariumLoop(page){
+  if(await page.locator('.ambient-app[data-ambient-theme="aquarium"]').count()!==1)
+    throw new Error('Aquarium must render the standalone Ambient Engine');
+  if(await page.locator('#ambientPicker').isVisible())
+    throw new Error('Aquarium should auto-start its saved/default roster');
+  if(await page.locator('.ambient-swimmer').count()!==8)
+    throw new Error('Aquarium must auto-start eight 2-D swimmers');
+  if(await page.locator('.world-loop-lane, .world-loop-orderbar, .world-loop-racer-flag').count())
+    throw new Error('Aquarium incorrectly contains race lanes, rankings or country flags');
+  const bubbles=await page.locator('.ambient-bubble').count();
+  if(bubbles<10)throw new Error('Aquarium bubbles are missing');
+  const before=await page.locator('.ambient-swimmer').first().evaluate(el=>({x:parseFloat(el.style.left),y:parseFloat(el.style.top)}));
+  await page.waitForTimeout(470);
+  const after=await page.locator('.ambient-swimmer').first().evaluate(el=>({x:parseFloat(el.style.left),y:parseFloat(el.style.top)}));
+  if(Math.hypot(after.x-before.x,after.y-before.y)<.02)
+    throw new Error('Aquarium fish are not moving in 2-D');
+  if(await page.locator('#ambientSound').getAttribute('aria-pressed')!=='false')
+    throw new Error('Ocean sound must be opt-in');
+  await page.locator('#ambientSound').click();
+  await page.waitForFunction(()=>document.getElementById('ambientSound')?.getAttribute('aria-pressed')==='true',{timeout:8000});
+  await page.locator('#ambientVolume').evaluate(el=>{el.value='25';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('#ambientMute').click();
+  if(await page.locator('#ambientMute').getAttribute('aria-pressed')!=='true')
+    throw new Error('Aquarium mute switch failed');
+  await page.locator('#ambientSound').click();
+  await page.waitForFunction(()=>document.getElementById('ambientSound')?.getAttribute('aria-pressed')==='false',{timeout:8000});
+  await page.locator('.ambient-pace [data-pace="hard"]').click();
+  if(await page.locator('.ambient-pace [data-pace="hard"]').getAttribute('aria-pressed')!=='true')
+    throw new Error('Playful pace did not activate immediately');
+  await page.locator('#ambientPause').click();
+  const paused=await page.locator('.ambient-swimmer').first().getAttribute('style');
+  const pausedTimer=await page.locator('#ambientElapsed').textContent();
+  await page.waitForTimeout(230);
+  if(await page.locator('.ambient-swimmer').first().getAttribute('style')!==paused||
+     await page.locator('#ambientElapsed').textContent()!==pausedTimer)
+    throw new Error('Aquarium continued moving during Pause');
+  await page.locator('#ambientPause').click();
+  await page.waitForTimeout(220);
+  if(await page.locator('.ambient-swimmer').first().getAttribute('style')===paused)
+    throw new Error('Aquarium did not resume swimming');
+  await page.locator('#ambientStop').click();
+  await capturePreview(page,'aquarium-loop','chooser');
+  if(!(await page.locator('#ambientPicker').isVisible()))
+    throw new Error('Change failed to open the aquarium picker');
+  if(!/Choose 4–12 sea creatures/.test(await page.locator('.ambient-picker h2').textContent()))
+    throw new Error('Aquarium picker has incorrect copy');
+  await page.locator('#ambientSearch').fill('Shark');
+  await page.locator('.ambient-species-choice[data-code="SH"]').click();
+  if(await page.locator('.ambient-selected-chip').count()!==9)
+    throw new Error('Adding shark did not update the selected roster');
+  await page.locator('#ambientStart').click();
+  if(await page.locator('.ambient-swimmer').count()!==9)
+    throw new Error('Aquarium did not start with selected creatures');
+  const stored=await page.evaluate(()=>localStorage.getItem('snapoki:aquarium-loop:roster:v1'));
+  if(!stored?.includes('SH'))throw new Error('Aquarium did not persist its own selection');
+  console.log('PASS aquarium-loop: natural swim, 2D motion, ambient controls, species picker, privacy and storage');
 }
 async function verifyAnimalLoop(page){
   if(await page.locator('.world-loop-app[data-race-theme="animal"]').count()!==1)
@@ -405,13 +476,14 @@ try{
         await page.waitForFunction(()=>!document.querySelector('#gameBoard')?.hasAttribute('aria-busy'),null,{timeout:12000});
         if(pageErrors.length)throw new Error(pageErrors.join('; '));
       }
-      if(['world-loop','animal-loop'].includes(game.key)){
+      if(['world-loop','animal-loop','aquarium-loop'].includes(game.key)){
         await page.waitForTimeout(450);
         await capturePreview(page,game.slug,'desktop');
       }
       if(game.key==='animal-chess')await verifyAnimalChess(page);
       if(game.key==='world-loop')await verifyWorldLoopAnimation(page);
       if(game.key==='animal-loop')await verifyAnimalLoop(page);
+      if(game.key==='aquarium-loop')await verifyAquariumLoop(page);
       await verifyMobileLayout(page,game);
       if(pageErrors.length)throw new Error(pageErrors.join('; '));
       console.log(`PASS ${game.slug}: desktop, mobile 390/320px, keyboard, animation lifecycle`);
