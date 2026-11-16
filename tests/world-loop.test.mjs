@@ -201,7 +201,7 @@ test('World Loop never starts music with Start Race and manual Sound pause cance
 
 test('World Loop orients every animal mascot toward the race direction',()=>{
   const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
-  assert.match(source,/WORLD_LOOP_FACE_RIGHT_MASCOTS=new Set\(\['🐇','🦊','🐝','🐲','🦅','🐬','🦖'\]\)/);
+  assert.match(source,/WORLD_LOOP_FACE_RIGHT_MASCOTS=new Set\(\['🏎️','🐇','🦊','🐝','🐲','🦅','🐬','🦖'\]\)/);
   assert.match(source,/WORLD_LOOP_FACE_RIGHT_MASCOTS\.has\(racer\.mascot\)\?' world-loop-mascot--face-right'/);
   assert.match(styles,/\.world-loop-mascot--face-right\{transform:scaleX\(-1\);transform-origin:center\}/);
   assert.match(styles,/\.world-loop-mascot\{display:inline-block/);

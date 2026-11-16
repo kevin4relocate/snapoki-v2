@@ -35,6 +35,26 @@ async function verifyMobileLayout(page,game){
     }));
     if(metrics.scroll>metrics.width+2)throw new Error(`${width}px mobile horizontal overflow: ${metrics.scroll}px scroll vs ${metrics.width}px viewport`);
     if(game.key==='world-loop'){
+      await page.locator('#worldLoopChange').click();
+      const picker=await page.evaluate(()=>{
+        const card=document.querySelector('.world-loop-setup-card').getBoundingClientRect();
+        const setup=document.querySelector('.world-loop-setup').getBoundingClientRect();
+        const chip=document.querySelector('.world-loop-selected-chip').getBoundingClientRect();
+        const picker=document.querySelector('.world-loop-country-trigger').getBoundingClientRect();
+        return {left:card.left,right:card.right,setupLeft:setup.left,setupRight:setup.right,
+          chipHeight:chip.height,pickerHeight:picker.height};
+      });
+      if(picker.left<picker.setupLeft-1||picker.right>picker.setupRight+1||
+         picker.chipHeight<44||picker.pickerHeight<44)
+        throw new Error(`${width}px country setup overflows or has cramped controls: ${JSON.stringify(picker)}`);
+      const country=page.locator('#worldLoopAddCountry');
+      await country.click();
+      const menuBounds=await page.locator('#worldLoopCountryMenu').boundingBox();
+      if(!menuBounds||menuBounds.width<220||menuBounds.x<0||
+         menuBounds.x+menuBounds.width>width+2)
+        throw new Error(`${width}px country menu clipped horizontally: ${JSON.stringify(menuBounds)}`);
+      await page.keyboard.press('Escape');
+      await page.locator('#worldLoopStart').click();
       const align=await page.evaluate(()=>({
         raceLeft:document.querySelector('.world-loop-panel').getBoundingClientRect().left,
         headerLeft:document.querySelector('.site-header-inner').getBoundingClientRect().left+
@@ -195,10 +215,57 @@ async function verifyWorldLoopAnimation(page){
   await page.waitForTimeout(160);
   if(await count()>stopped+1)throw new Error('World Loop RAF continues after Stop');
   if(!(await page.locator('#worldLoopSetup').isVisible()))throw new Error('Stop did not return to the country picker');
+
+  const geometry=await page.evaluate(()=>{
+    const card=document.querySelector('.world-loop-setup-card'),chip=document.querySelector('.world-loop-selected-chip');
+    const grid=document.querySelector('.world-loop-selected');
+    return {cardWidth:card.getBoundingClientRect().width,chipWidth:chip.getBoundingClientRect().width,
+      chipHeight:chip.getBoundingClientRect().height,chipFont:parseFloat(getComputedStyle(chip.querySelector('strong')).fontSize),
+      gridColumns:getComputedStyle(grid).gridTemplateColumns.split(' ').length};
+  });
+  if(geometry.cardWidth<950||geometry.cardWidth>1040||geometry.chipWidth<180||
+     geometry.chipHeight<48||geometry.chipFont<11||geometry.gridColumns!==4)
+    throw new Error('Country picker remains cramped on desktop: '+JSON.stringify(geometry));
+
+  const carFacing=await page.evaluate(()=>{
+    const car=document.createElement('span');
+    car.className='world-loop-mascot world-loop-mascot--face-right';
+    car.textContent='🏎️';
+    document.querySelector('.world-loop-racer').append(car);
+    const transform=getComputedStyle(car).transform;
+    car.remove();
+    return new DOMMatrixReadOnly(transform).a;
+  });
+  if(Math.abs(carFacing+1)>.01)throw new Error('The red racing-car emoji still faces left.');
+
   const add=page.locator('#worldLoopAddCountry');
   await add.focus();
   await page.keyboard.press('Enter');
   if(await add.getAttribute('aria-expanded')!=='true')throw new Error('Country picker not keyboard-accessible');
+  const searchGeometry=await page.evaluate(()=>{
+    const menu=document.querySelector('#worldLoopCountryMenu'),track=document.querySelector('.world-loop-viewport');
+    const option=document.querySelector('.world-loop-country-option');
+    const grid=document.querySelector('.world-loop-country-options');
+    const rect=menu.getBoundingClientRect(),bounds=track.getBoundingClientRect();
+    return {width:rect.width,height:rect.height,top:rect.top,bottom:rect.bottom,
+      trackTop:bounds.top,trackBottom:bounds.bottom,
+      columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length,
+      optionHeight:option.getBoundingClientRect().height};
+  });
+  if(searchGeometry.width<850||searchGeometry.height<155||searchGeometry.columns!==2||
+     searchGeometry.optionHeight<44||searchGeometry.top<searchGeometry.trackTop-5||
+     searchGeometry.bottom>searchGeometry.trackBottom+5)
+    throw new Error('Country search menu is clipped or too small: '+JSON.stringify(searchGeometry));
+  await page.locator('#worldLoopCountrySearch').fill('Argentina');
+  await page.locator('.world-loop-country-option[data-code="AR"]').click();
+  if(await page.locator('#worldLoopSelected .world-loop-selected-chip').count()!==9)
+    throw new Error('Selecting a country from the bigger menu did not update the roster');
+  await page.keyboard.press('Escape');
+  await page.locator('.world-loop-selected-chip[aria-label="Remove Argentina"]').click();
+  if(await page.locator('#worldLoopSelected .world-loop-selected-chip').count()!==8)
+    throw new Error('Removing a country did not update the roster');
+  await add.focus();
+  await page.keyboard.press('Enter');
   await page.keyboard.press('Escape');
   if(await add.getAttribute('aria-expanded')!=='false')throw new Error('Escape did not close country picker');
   if(await page.evaluate(()=>document.activeElement?.id)!=='worldLoopAddCountry')throw new Error('Country picker focus not restored');

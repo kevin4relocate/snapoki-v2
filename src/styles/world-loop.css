@@ -301,3 +301,127 @@ body[data-game="world-loop"] .world-loop-viewport{height:clamp(540px,72vh,940px)
 @media(max-width:680px){
   .world-loop-title{flex:1 1 100%;width:100%;max-width:100%}
 }
+
+
+/* Roomy country selection overlay: the ambient race has enough horizontal
+   space for readable, full country names instead of six tiny chips per row. */
+.world-loop-setup{
+  padding:clamp(18px,4vh,42px) 16px 16px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.world-loop-setup-card{
+  width:min(1020px,100%);
+  max-width:100%;
+  padding:24px;
+  border-radius:20px;
+}
+.world-loop-setup-card h2{
+  margin-bottom:16px;
+  font-size:clamp(20px,2vw,25px);
+}
+.world-loop-pick-head{gap:14px;margin-bottom:14px}
+.world-loop-pick-head strong{font-size:13px}
+.world-loop-pick-head>div{gap:9px}
+.world-loop-pick-head button{min-height:40px;padding:9px 14px;font-size:12px}
+.world-loop-selected{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  min-height:50px;
+  margin-bottom:14px;
+}
+.world-loop-selected-chip{
+  min-height:50px;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:12px;
+}
+.world-loop-selected-chip span{font-size:22px}
+.world-loop-selected-chip strong{font-size:12px;font-weight:750}
+.world-loop-selected-chip i{font-size:16px}
+.world-loop-country-trigger{
+  min-height:52px;
+  padding:11px 16px;
+  border-radius:12px;
+}
+.world-loop-country-trigger b{font-size:13px}
+.world-loop-country-trigger span{font-size:11px}
+.world-loop-country-menu{
+  display:flex;
+  flex-direction:column;
+  top:calc(100% + 8px);
+  bottom:auto;
+  max-height:320px;
+  padding:11px;
+  border-radius:14px;
+}
+.world-loop-country-menu.open-up{
+  top:auto;
+  bottom:calc(100% + 8px);
+}
+.world-loop-country-menu input{
+  flex:0 0 auto;
+  height:45px;
+  margin-bottom:9px;
+  padding-inline:13px;
+  font-size:13px;
+}
+.world-loop-country-options{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px 9px;
+  flex:1 1 auto;
+  min-height:0;
+  max-height:255px;
+}
+.world-loop-country-option{
+  grid-template-columns:28px minmax(0,1fr) 30px 20px;
+  gap:9px;
+  min-height:46px;
+  padding:9px 11px;
+  border-radius:10px;
+}
+.world-loop-country-option>span{font-size:21px}
+.world-loop-country-option strong{font-size:12px}
+.world-loop-country-option small{font-size:10px}
+.world-loop-start{
+  min-height:52px;
+  margin-top:14px;
+  padding:12px 16px;
+  border-radius:12px;
+  font-size:13px;
+}
+@media(max-width:950px){
+  .world-loop-setup-card{padding:20px}
+  .world-loop-selected{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:680px){
+  .world-loop-setup{padding:16px 10px;overflow-y:auto}
+  .world-loop-setup-card{padding:16px;border-radius:16px}
+  .world-loop-setup-card h2{margin-bottom:11px;font-size:20px}
+  .world-loop-selected{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    max-height:238px;
+    overflow-y:auto;
+    margin-bottom:11px;
+  }
+  .world-loop-selected-chip{min-height:46px;padding:8px 9px;gap:7px}
+  .world-loop-selected-chip strong{font-size:11px}
+  .world-loop-selected-chip span{font-size:19px}
+  .world-loop-country-options{grid-template-columns:1fr;max-height:200px}
+  .world-loop-country-menu{max-height:270px;padding:9px}
+  .world-loop-country-menu input{height:43px;font-size:12px}
+  .world-loop-country-option{min-height:44px}
+  .world-loop-country-trigger{min-height:48px;padding:10px 12px}
+  .world-loop-start{min-height:48px;margin-top:11px}
+  .world-loop-pick-head strong{font-size:11px}
+  .world-loop-pick-head button{min-height:40px;padding:7px 10px;font-size:11px}
+}
+@media(max-width:360px){
+  .world-loop-setup{padding:12px 8px}
+  .world-loop-setup-card{padding:12px}
+  .world-loop-pick-head{flex-wrap:wrap}
+  .world-loop-selected{grid-template-columns:1fr;max-height:215px}
+  .world-loop-selected-chip strong{font-size:12px}
+}
