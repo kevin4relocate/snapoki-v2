@@ -4,8 +4,8 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(path,'utf8');
 
 test('Cruise, Dynamic and Sprint remain grouped with Pause, Restart and Stop',()=>{
-  const runtime=read('src/js/games/world-loop.js');
-  const markup=runtime.slice(runtime.indexOf("host.innerHTML='<div class=\"world-loop-app\">'"),runtime.indexOf("const app=host.querySelector"));
+  const runtime=(read('src/js/games/world-loop.js')+'\n'+read('src/js/endless-race/engine.js')+'\n'+read('src/js/endless-race/themes/flag.js'));
+  const markup=runtime.slice(runtime.indexOf("host.innerHTML='<div class=\"world-loop-app\""),runtime.indexOf("const app=host.querySelector"));
   assert.match(markup,/class="world-loop-race-actions"><div class="world-loop-session-controls"><div id="worldLoopPace"/);
   for(const item of ['worldLoopPace','worldLoopPause','worldLoopRestart','worldLoopChange'])
     assert.ok(markup.includes('id="'+item+'"'),item);
@@ -16,7 +16,7 @@ test('Cruise, Dynamic and Sprint remain grouped with Pause, Restart and Stop',()
 });
 
 test('CURRENT ORDER keeps the same nodes and fixed-width slots between HUD updates',()=>{
-  const runtime=read('src/js/games/world-loop.js');
+  const runtime=(read('src/js/games/world-loop.js')+'\n'+read('src/js/endless-race/engine.js')+'\n'+read('src/js/endless-race/themes/flag.js'));
   const stylesheet=read('src/styles/world-loop.css');
   const block=runtime.slice(runtime.indexOf('function renderOrder(ordered)'),runtime.indexOf('function renderHud('));
   assert.match(block,/orderHost\.children\.length!==visible\+\(hasMore\?1:0\)/);
@@ -30,7 +30,7 @@ test('CURRENT ORDER keeps the same nodes and fixed-width slots between HUD updat
 });
 
 test('Play Sound label and width remain stable through audio state changes',()=>{
-  const runtime=read('src/js/games/world-loop.js');
+  const runtime=(read('src/js/games/world-loop.js')+'\n'+read('src/js/endless-race/engine.js')+'\n'+read('src/js/endless-race/themes/flag.js'));
   const stylesheet=read('src/styles/world-loop.css');
   const block=runtime.slice(runtime.indexOf('function syncAudioUi()'),runtime.indexOf('function setMasterAudioLevel('));
   assert.match(block,/soundToggleButton\.textContent='♪ Play Sound'/);

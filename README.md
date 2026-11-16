@@ -13,8 +13,9 @@ Snapoki is a guest-first browser game platform with a registry-driven architectu
 7. Bridges
 8. Animal Chess — a 7×9 local or CPU strategy board game (Dou Shou Qi).
 9. World Loop — an endless lane-race screensaver with 196 selectable countries (including Taiwan), no finish line, continuously increasing distance and a scrolling camera.
+10. Animal Loop — a relaxing, no-flag endless race screensaver with 24 animal characters, 4–12 selectable racers and the same live pace/sound controls.
 
-The first seven games are puzzles; Animal Chess is a board game, and World Loop is a simulation. Both opt out of puzzle-only Daily completion and public rankings.
+The first seven games are puzzles; Animal Chess is a board game, while World Loop (Flag theme) and Animal Loop are simulations. Both simulations opt out of puzzle-only Daily completion and public rankings.
 
 ## Public product rules
 
@@ -39,6 +40,8 @@ Shared runtime:
 - `src/js/site.js` — public navigation only.
 - `src/js/game-page.js` — shared game lifecycle and capability handling.
 - `src/js/game-status.js` — shared board feedback/progress.
+- `src/js/endless-race/engine.js` — one shared Flag/Animal simulation, Top 5, picker, pace, optional soundtrack and Full Screen runtime.
+- `src/js/endless-race/themes/` — data-only theme definitions; see [Endless Race Themes](docs/ENDLESS_RACE_THEMES.md).
 - `src/js/games/<slug>.js` — stable game entry exporting `createGame()` plus `generate<PascalCaseSlug>()`.
 - `src/styles/<slug>.css` — optional game-specific presentation.
 - `src/js/social-renderers/<slug>.js` — Content Desk/social preview renderer.

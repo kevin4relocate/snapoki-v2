@@ -25,7 +25,7 @@ test('World Loop is built as a full-width ambient screensaver, without puzzle si
 });
 
 test('World Loop has three immediately selectable pace controls inside the race toolbar',()=>{
-  const source=read('src/js/games/world-loop.js');
+  const source=(read('src/js/games/world-loop.js')+'\n'+read('src/js/endless-race/engine.js')+'\n'+read('src/js/endless-race/themes/flag.js'));
   assert.match(source,/id="worldLoopPace"/);
   for(const pace of ['easy','medium','hard'])assert.ok(source.includes(`data-pace="${pace}"`));
   assert.match(source,/for\(const button of paceButtons\)button\.addEventListener\('click',\(\)=>setPace\(button\.dataset\.pace\)\)/);
@@ -37,7 +37,7 @@ test('World Loop has three immediately selectable pace controls inside the race 
 });
 
 test('World Loop auto-starts an ambient race but never auto-plays sound',()=>{
-  const source=read('src/js/games/world-loop.js');
+  const source=(read('src/js/games/world-loop.js')+'\n'+read('src/js/endless-race/engine.js')+'\n'+read('src/js/endless-race/themes/flag.js'));
   assert.match(source,/loadSelection\(\);renderPicker\(\);syncPace\(\);syncAudioUi\(\)/);
   assert.match(source,/beginSession\(String\(seed\)\+':ambient:'\+Date\.now\(\)\)/);
   const begin=source.slice(source.indexOf('function beginSession('),source.indexOf('function restartSession('));

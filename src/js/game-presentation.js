@@ -60,6 +60,14 @@ const PRESENTATION={
     tools:[['Undo','take back one move'],['Restart','new local game']],
     socialHook:'Can you reach the enemy den?'
   },
+  'animal-loop':{
+    styles:['world-loop.css','animal-loop.css'],
+    solutionLabel:'Guide',
+    goal:{tokens:['PICK ANIMALS','WATCH FOREVER'],joiner:'→',note:'No finish line'},
+    rows:[['Choose','Pick four to twelve animals or try Random 8.'],['Watch','The same endless race rules apply, with no winner and no automatic reset.'],['Relax','Use Cruise for a gentle pace or change to Dynamic and Sprint live.']],
+    tools:[['Pause','freeze / resume'],['Full Screen','ambient screensaver'],['Restart','new endless session']],
+    socialHook:'Which animal will lead the pack next?'
+  },
   'world-loop':{
     styles:['world-loop.css'],
     solutionLabel:'Guide',

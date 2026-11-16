@@ -1,5 +1,5 @@
 import {createServer} from 'node:http';
-import {readFile,stat} from 'node:fs/promises';
+import {readFile,stat,mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
@@ -25,16 +25,24 @@ await listen();
 const port=server.address().port;
 let browser;
 const failures=[];
+const screenshots=process.env.SNAPOKI_PREVIEW_SCREENSHOTS==='1';
+async function capturePreview(page,slug,mode){
+  if(!screenshots||!['world-loop','animal-loop'].includes(slug))return;
+  await mkdir('preview-screenshots',{recursive:true});
+  await page.screenshot({path:`preview-screenshots/${slug}-${mode}.png`,fullPage:true,animations:'disabled'});
+}
+
 
 async function verifyMobileLayout(page,game){
   for(const width of [390,320]){
     await page.setViewportSize({width,height:844});
+    if(width===390)await capturePreview(page,game.slug,'mobile');
     const metrics=await page.evaluate(()=>({
       scroll:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
       width:document.documentElement.clientWidth
     }));
     if(metrics.scroll>metrics.width+2)throw new Error(`${width}px mobile horizontal overflow: ${metrics.scroll}px scroll vs ${metrics.width}px viewport`);
-    if(game.key==='world-loop'){
+    if(game.experienceType==='simulation'){
       await page.locator('#worldLoopChange').click();
       const picker=await page.evaluate(()=>{
         const card=document.querySelector('.world-loop-setup-card').getBoundingClientRect();
@@ -108,6 +116,54 @@ async function verifyAnimalChess(page){
   const status=await page.locator('#animalChessStatus').textContent();
   if(!status?.includes('Red'))throw new Error('CPU Undo did not restore Red turn');
   console.log('PASS animal-chess: local play, Undo, keyboard, CPU reply, reset, versioned CSS');
+}
+async function verifyAnimalLoop(page){
+  if(await page.locator('.world-loop-app[data-race-theme="animal"]').count()!==1)
+    throw new Error('Animal Loop is not using the shared themed race runtime');
+  if(await page.locator('#worldLoopSetup').isVisible())
+    throw new Error('Animal Loop should auto-start its default eight animals');
+  if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==8)
+    throw new Error('Animal Loop is missing its eight starting lanes');
+  if(await page.locator('.world-loop-racer-flag').count())
+    throw new Error('Animal Loop should not display miniature country flags');
+  const first=await page.locator('.world-loop-lane-label span').first().textContent();
+  if(!['🐇','🐢','🦊','🐼','🦁','🐅','🐬','🦖'].includes(first))
+    throw new Error('Animal race lanes should be labeled by animal emoji, not flags');
+  if(await page.locator('#worldLoopSoundToggle').getAttribute('aria-pressed')!=='false')
+    throw new Error('Animal Loop must start with optional soundtrack off');
+  const order=page.locator('#worldLoopOrder');
+  if(await order.getAttribute('aria-label')!=='Top five animals')
+    throw new Error('Animal Loop Top 5 needs an animal label');
+  if(await order.locator('li').count()!==6)
+    throw new Error('Animal Loop should show Top 5 plus the remaining three racers');
+  await page.locator('#worldLoopPace [data-pace="hard"]').click();
+  if(await page.locator('#worldLoopPace [data-pace="hard"]').getAttribute('aria-pressed')!=='true')
+    throw new Error('Animal Loop Sprint did not activate live');
+  const elapsed=await page.locator('#worldLoopSession').textContent();
+  await page.locator('#worldLoopPause').click();
+  await page.locator('#worldLoopPause').click();
+  if(await page.locator('#worldLoopSession').textContent()==='00:00'&&elapsed!=='00:00')
+    throw new Error('Animal pace or Pause/Resume reset the session');
+  await page.locator('#worldLoopChange').click();
+  if(!(await page.locator('#worldLoopSetup').isVisible()))throw new Error('Animal Stop did not open animal picker');
+  await capturePreview(page,'animal-loop','chooser');
+  if(!/Pick 4–12 animals/.test(await page.locator('.world-loop-setup-card h2').textContent()))
+    throw new Error('Animal picker still uses country wording');
+  await page.locator('#worldLoopAddCountry').click();
+  if(!/Search 24 animals/.test(await page.locator('#worldLoopAddCountry').textContent()))
+    throw new Error('Animal picker does not announce 24 choices');
+  await page.locator('#worldLoopCountrySearch').fill('Koala');
+  await page.locator('.world-loop-country-option[data-code="KL"]').click();
+  if(await page.locator('.world-loop-selected-chip').count()!==9)
+    throw new Error('Adding a ninth animal from search failed');
+  await page.locator('#worldLoopStart').click();
+  if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==9)
+    throw new Error('Animal roster was not preserved when starting a new race');
+  if(await page.locator('.world-loop-racer-flag').count())
+    throw new Error('Animal characters unexpectedly acquired country flags');
+  const roster=await page.evaluate(()=>localStorage.getItem('snapoki:animal-loop:roster:v1'));
+  if(!roster?.includes('KL'))throw new Error('Animal theme selection was not stored separately');
+  console.log('PASS animal-loop: 24 animals, no flags, shared Top 5/pace, independent selection and restart');
 }
 async function verifyWorldLoopAnimation(page){
   const restored=await page.locator('#worldLoopSelected .world-loop-selected-chip').count();
@@ -227,6 +283,7 @@ async function verifyWorldLoopAnimation(page){
   await page.waitForTimeout(160);
   if(await count()>stopped+1)throw new Error('World Loop RAF continues after Stop');
   if(!(await page.locator('#worldLoopSetup').isVisible()))throw new Error('Stop did not return to the country picker');
+  await capturePreview(page,'world-loop','chooser');
 
   const geometry=await page.evaluate(()=>{
     const card=document.querySelector('.world-loop-setup-card'),chip=document.querySelector('.world-loop-selected-chip');
@@ -348,8 +405,13 @@ try{
         await page.waitForFunction(()=>!document.querySelector('#gameBoard')?.hasAttribute('aria-busy'),null,{timeout:12000});
         if(pageErrors.length)throw new Error(pageErrors.join('; '));
       }
+      if(['world-loop','animal-loop'].includes(game.key)){
+        await page.waitForTimeout(450);
+        await capturePreview(page,game.slug,'desktop');
+      }
       if(game.key==='animal-chess')await verifyAnimalChess(page);
       if(game.key==='world-loop')await verifyWorldLoopAnimation(page);
+      if(game.key==='animal-loop')await verifyAnimalLoop(page);
       await verifyMobileLayout(page,game);
       if(pageErrors.length)throw new Error(pageErrors.join('; '));
       console.log(`PASS ${game.slug}: desktop, mobile 390/320px, keyboard, animation lifecycle`);

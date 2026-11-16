@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(path,'utf8');
 
 test('World Loop animation is scheduled only for a visible active race',()=>{
-  const source=read('src/js/games/world-loop.js');
+  const source=(read('src/js/games/world-loop.js')+'\n'+read('src/js/endless-race/engine.js')+'\n'+read('src/js/endless-race/themes/flag.js'));
   assert.match(source,/function scheduleFrame\(\)\{/);
   assert.match(source,/if\(!raf&&running&&document\.visibilityState!=='hidden'\)raf=requestAnimationFrame\(frame\)/);
   assert.match(source,/function haltFrame\(\)\{/);
@@ -16,7 +16,7 @@ test('World Loop animation is scheduled only for a visible active race',()=>{
 });
 
 test('World Loop suspends hidden-tab music and avoids an elapsed-time jump',()=>{
-  const source=read('src/js/games/world-loop.js');
+  const source=(read('src/js/games/world-loop.js')+'\n'+read('src/js/endless-race/engine.js')+'\n'+read('src/js/endless-race/themes/flag.js'));
   assert.match(source,/document\.visibilityState==='hidden'\)\{\s*haltFrame\(\);\s*releaseWakeLock\(\);\s*void pauseBackgroundMusicForRace\(\)/);
   assert.match(source,/lastFrame=performance\.now\(\);\s*scheduleFrame\(\);\s*requestWakeLock\(\);\s*void resumeBackgroundMusicAfterRace\(\)/);
   assert.match(source,/const WORLD_LOOP_AUDIO_SCHEDULE_AHEAD=25/);
@@ -24,7 +24,7 @@ test('World Loop suspends hidden-tab music and avoids an elapsed-time jump',()=>
 });
 
 test('World Loop picker maintains selection state and keyboard focus',()=>{
-  const source=read('src/js/games/world-loop.js');
+  const source=(read('src/js/games/world-loop.js')+'\n'+read('src/js/endless-race/engine.js')+'\n'+read('src/js/endless-race/themes/flag.js'));
   assert.match(source,/aria-controls="worldLoopCountryMenu"/);
   assert.match(source,/button\.setAttribute\('aria-pressed',String\(isSelected\)\)/);
   assert.match(source,/chip\.setAttribute\('aria-label','Remove '\+country\.name\)/);

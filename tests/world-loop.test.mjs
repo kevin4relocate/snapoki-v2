@@ -6,11 +6,11 @@ import {WORLD_LOOP_AUDIO_SRC,WORLD_LOOP_COUNTRIES,WORLD_LOOP_CROSSFADE_SECONDS,W
 test('World Loop ships 196 country choices including Taiwan plus a mascot pool',()=>{assert.equal(WORLD_LOOP_COUNTRIES.length,196);assert.ok(WORLD_LOOP_MASCOTS.length>=8);assert.equal(new Set(WORLD_LOOP_COUNTRIES.map(country=>country.code)).size,196);assert.deepEqual(WORLD_LOOP_COUNTRIES.find(country=>country.code==='TW'),{code:'TW',name:'Taiwan',flag:'🇹🇼'});});
 test('World Loop racer traits are deterministic and country-neutral',()=>{const a=buildWorldLoopRoster(['VN','JP','US','BR'],'world-loop:medium:test','medium'),b=buildWorldLoopRoster(['JP','VN','BR','US'],'world-loop:medium:test','medium'),traits=list=>list.map(racer=>({baseSpeed:racer.baseSpeed,acceleration:racer.acceleration,burstSkill:racer.burstSkill,phase:racer.phase,mascot:racer.mascot}));assert.deepEqual(traits(a),traits(b),'the same seed assigns the same trait sequence regardless of flag identity');assert.deepEqual(traits(a),traits(buildWorldLoopRoster(['VN','JP','US','BR'],'world-loop:medium:test','medium')));});
 test('World Loop order and gap use unbounded distance',()=>{const racers=[{code:'A',index:0,distance:1204.2},{code:'B',index:1,distance:1299.8},{code:'C',index:2,distance:1250.5}];assert.deepEqual(worldLoopOrder(racers).map(r=>r.code),['B','C','A']);assert.ok(Math.abs(worldLoopGap(racers)-49.3)<1e-9);assert.equal(formatWorldLoopDistance(1299.8),'1.3 km');});
-test('World Loop has no finish line, winner, round or automatic position reset',()=>{const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');assert.match(source,/There is no finish line and no automatic reset/);assert.doesNotMatch(source,/finishRound|prepareRound|winner\.wins|world-loop-finish|ROUND WINNER|next round/i);assert.doesNotMatch(styles,/world-loop-finish|conic-gradient/);assert.match(source,/racer\.distance\+=pace\*dt/);});
-test('World Loop camera and road scroll forward forever while racers stay readable',()=>{const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');assert.match(source,/cameraDistance/);assert.match(source,/backgroundPositionX/);assert.match(source,/viewSpan/);assert.match(styles,/repeating-linear-gradient/);assert.match(styles,/will-change:background-position/);});
-test('World Loop exposes fullscreen screensaver mode and wake lock',()=>{const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');assert.match(source,/worldLoopFullscreen/);assert.match(source,/requestFullscreen|webkitRequestFullscreen/);assert.match(source,/navigator\.wakeLock/);assert.match(source,/visibilitychange/);assert.match(styles,/\.world-loop-app:fullscreen/);assert.match(styles,/height:100vh/);});
-test('World Loop endless runtime stays bounded and uses one animation loop',()=>{const source=fs.readFileSync('src/js/games/world-loop.js','utf8');assert.doesNotMatch(source,/winnerHistory|roundHistory|raceHistory/);assert.doesNotMatch(source,/setInterval\(|setTimeout\(/);assert.match(source,/requestAnimationFrame/);assert.match(source,/leadChanges\+\+/);});
-test('World Loop only returns to zero after an explicit started-session restart or Stop',()=>{const source=fs.readFileSync('src/js/games/world-loop.js','utf8');assert.match(source,/function restartSession/);assert.match(source,/distance:0/);assert.match(source,/reset\(\)\{if\(started\)restartSession\(\);\}/);assert.match(source,/■ Stop/);});
+test('World Loop has no finish line, winner, round or automatic position reset',()=>{const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');assert.match(source,/There is no finish line and no automatic reset/);assert.doesNotMatch(source,/finishRound|prepareRound|winner\.wins|world-loop-finish|ROUND WINNER|next round/i);assert.doesNotMatch(styles,/world-loop-finish|conic-gradient/);assert.match(source,/racer\.distance\+=pace\*dt/);});
+test('World Loop camera and road scroll forward forever while racers stay readable',()=>{const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');assert.match(source,/cameraDistance/);assert.match(source,/backgroundPositionX/);assert.match(source,/viewSpan/);assert.match(styles,/repeating-linear-gradient/);assert.match(styles,/will-change:background-position/);});
+test('World Loop exposes fullscreen screensaver mode and wake lock',()=>{const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');assert.match(source,/worldLoopFullscreen/);assert.match(source,/requestFullscreen|webkitRequestFullscreen/);assert.match(source,/navigator\.wakeLock/);assert.match(source,/visibilitychange/);assert.match(styles,/\.world-loop-app:fullscreen/);assert.match(styles,/height:100vh/);});
+test('World Loop endless runtime stays bounded and uses one animation loop',()=>{const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));assert.doesNotMatch(source,/winnerHistory|roundHistory|raceHistory/);assert.doesNotMatch(source,/setInterval\(|setTimeout\(/);assert.match(source,/requestAnimationFrame/);assert.match(source,/leadChanges\+\+/);});
+test('World Loop only returns to zero after an explicit started-session restart or Stop',()=>{const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));assert.match(source,/function restartSession/);assert.match(source,/distance:0/);assert.match(source,/reset\(\)\{if\(started\)restartSession\(\);\}/);assert.match(source,/■ Stop/);});
 
 
 test('World Loop country picker and lane order are alphabetical with Vietnam pinned last',()=>{
@@ -22,11 +22,11 @@ test('World Loop country picker and lane order are alphabetical with Vietnam pin
 });
 
 test('World Loop uses a searchable compact country picker instead of rendering all countries in the card',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   assert.match(source,/worldLoopAddCountry/);
-  assert.match(source,/Search 196 countries/);
+  assert.match(source,/theme\.items\.length/);
   assert.match(source,/worldLoopCountrySearch/);
-  assert.match(source,/WORLD_LOOP_PICKER_COUNTRIES\.filter/);
+  assert.match(source,/theme\.picker\.filter/);
   assert.match(styles,/\.world-loop-country-menu/);
   assert.match(styles,/\.world-loop-country-options\{[^}]*max-height:118px;[^}]*overflow-y:auto/);
   assert.doesNotMatch(source,/worldLoopFlagGrid/);
@@ -34,7 +34,7 @@ test('World Loop uses a searchable compact country picker instead of rendering a
 
 
 test('World Loop uses one fixed horizontal Snapoki watermark on the middle lane only',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   assert.match(source,/middleLaneIndex=Math\.floor\(racers\.length\/2\)/);
   assert.match(source,/world-loop-lane-watermark/);
   assert.match(source,/snapoki\.com/);
@@ -51,17 +51,17 @@ test('World Loop removes the full-height outer board panel frame',()=>{
 
 
 test('World Loop exposes an explicit Stop action that returns to flag selection',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));
   assert.match(source,/■ Stop/);
   assert.match(source,/function stopSession\(\)/);
   assert.match(source,/setup\.hidden=false/);
   assert.match(source,/started=false/);
   assert.match(source,/changeButton\.disabled=true/);
-  assert.match(source,/Race stopped\. Pick countries/);
+  assert.match(source,/Race stopped\. Pick '\+theme\.plural/);
 });
 
 test('World Loop uses a compact no-scroll setup card',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   assert.match(styles,/height:clamp\(350px,40vw,500px\)/);
   assert.match(styles,/\.world-loop-setup-card\{[^}]*overflow:visible;[^}]*padding:12px/);
   assert.match(styles,/\.world-loop-selected\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
@@ -71,7 +71,7 @@ test('World Loop uses a compact no-scroll setup card',()=>{
 
 
 test('World Loop current order shows Top 5 plus one compact remainder item',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   assert.match(source,/const visible=Math\.min\(5,ordered\.length\)/);
   assert.match(source,/ordered\.length>5/);
   assert.match(source,/more\.className='more'/);
@@ -99,7 +99,7 @@ test('Puzzle pages keep the shared board toolbar',()=>{
 
 
 test('World Loop selected countries stay compact while the 196-country list lives in the popup',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   assert.match(source,/world-loop-selected-chip/);
   assert.match(source,/selected\.size<12/);
   assert.match(source,/selected\.size>=12/);
@@ -117,7 +117,7 @@ test('World Loop selected countries wrap into two or three rows instead of overf
 });
 
 test('World Loop country search floats upward without expanding the setup card',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   assert.match(styles,/\.world-loop-country-menu\{[^}]*position:absolute;[^}]*bottom:calc\(100% \+ 6px\);[^}]*max-height:172px/);
   assert.match(styles,/\.world-loop-country-options\{[^}]*max-height:118px;[^}]*overflow-y:auto/);
   assert.doesNotMatch(styles,/\.world-loop-country-menu\{[^}]*position:relative/);
@@ -127,7 +127,7 @@ test('World Loop country search floats upward without expanding the setup card',
 
 
 test('World Loop Full Screen stays disabled until a race has started',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));
   assert.match(source,/worldLoopFullscreen[^>]*disabled>⛶ Full Screen/);
   assert.match(source,/fullscreenButton\.disabled=false/);
   assert.match(source,/fullscreenButton\.disabled=true/);
@@ -146,7 +146,7 @@ test('World Loop lanes use subtle alternating dark blue-gray tones',()=>{
 
 
 test('World Loop background music is opt-in and points at the future public MP3 asset',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));
   assert.equal(WORLD_LOOP_AUDIO_SRC,'/audio/world-loop/endless-circuit.mp3');
   assert.equal(WORLD_LOOP_CROSSFADE_SECONDS,10);
   assert.match(source,/worldLoopSoundToggle[^>]*disabled>♪ Play Sound/);
@@ -155,7 +155,7 @@ test('World Loop background music is opt-in and points at the future public MP3 
 });
 
 test('World Loop schedules a true 10-second Web Audio crossfade instead of hard-looping the MP3',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));
   assert.match(source,/window\.AudioContext\|\|window\.webkitAudioContext/);
   assert.match(source,/createBufferSource\(\)/);
   assert.match(source,/duration-crossfade/);
@@ -166,7 +166,7 @@ test('World Loop schedules a true 10-second Web Audio crossfade instead of hard-
 });
 
 test('World Loop music has independent play pause mute and volume controls',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   assert.match(source,/worldLoopSoundMute/);
   assert.match(source,/worldLoopVolume/);
   assert.match(source,/audioContext\.suspend\(\)/);
@@ -177,7 +177,7 @@ test('World Loop music has independent play pause mute and volume controls',()=>
 });
 
 test('World Loop race Pause temporarily pauses active music and Resume restores only that music',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));
   assert.match(source,/audioPausedByRace=false/);
   assert.match(source,/async function pauseBackgroundMusicForRace\(\)/);
   assert.match(source,/audioPausedByRace=true/);
@@ -192,7 +192,7 @@ test('World Loop race Pause temporarily pauses active music and Resume restores 
 
 
 test('World Loop never starts music with Start Race and manual Sound pause cancels race auto-resume intent',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));
   const begin=source.match(/function beginSession\(nextSeed\)\{[\s\S]*?\n  \}/)?.[0]||'';
   assert.doesNotMatch(begin,/playBackgroundMusic\(\)/);
   assert.match(source,/async function pauseBackgroundMusic\(\)[\s\S]*?audioUserPlaying=false;audioPausedByRace=false/);
@@ -201,9 +201,9 @@ test('World Loop never starts music with Start Race and manual Sound pause cance
 
 
 test('World Loop orients every animal mascot toward the race direction',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   assert.match(source,/WORLD_LOOP_FACE_RIGHT_MASCOTS=new Set\(\['🏎️','🐇','🦊','🐝','🐲','🦅','🐬','🦖'\]\)/);
-  assert.match(source,/WORLD_LOOP_FACE_RIGHT_MASCOTS\.has\(racer\.mascot\)\?' world-loop-mascot--face-right'/);
+  assert.match(source,/theme\.faceRight\.has\(racer\.mascot\)\?' world-loop-mascot--face-right'/);
   assert.match(styles,/\.world-loop-mascot--face-right\{transform:scaleX\(-1\);transform-origin:center\}/);
   assert.match(styles,/\.world-loop-mascot\{display:inline-block/);
   for(const animal of ['🐇','🦊','🐝','🐲','🦅','🐬','🦖'])assert.match(source,new RegExp(animal));
@@ -237,7 +237,7 @@ test('World Loop race meta stays on one line on desktop',()=>{
 
 
 test('World Loop avoids misleading 24/7 wording while keeping endless and wake-lock features',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));
   const config=fs.readFileSync('src/js/games-config.js','utf8');
   const presentation=fs.readFileSync('src/js/game-presentation.js','utf8');
   const launch=fs.readFileSync('scripts/launch-readiness.mjs','utf8');
@@ -253,7 +253,7 @@ test('World Loop avoids misleading 24/7 wording while keeping endless and wake-l
 
 
 test('World Loop launch controls avoid duplicate shared restart/reset actions and change pace live',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));
   const styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   const page=fs.readFileSync('src/js/game-page.js','utf8');
   const config=fs.readFileSync('src/js/games-config.js','utf8');
@@ -266,7 +266,7 @@ test('World Loop launch controls avoid duplicate shared restart/reset actions an
 });
 
 test('World Loop public copy consistently says countries and Stop instead of legacy flag/reset wording',()=>{
-  const source=fs.readFileSync('src/js/games/world-loop.js','utf8');
+  const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8'));
   const config=fs.readFileSync('src/js/games-config.js','utf8');
   const presentation=fs.readFileSync('src/js/game-presentation.js','utf8');
   const launch=fs.readFileSync('scripts/launch-readiness.mjs','utf8');
