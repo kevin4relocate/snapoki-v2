@@ -27,11 +27,11 @@ jobs:
         env:
           SNAPOKI_PREVIEW_SCREENSHOTS: ${{ github.event_name == 'pull_request' && '1' || '0' }}
         run: npm run test:browser
-      - name: Upload Flag and Animal Loop preview screenshots
+      - name: Upload Loop Universe preview screenshots
         if: ${{ github.event_name == 'pull_request' && !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: endless-race-preview-screenshots
+          name: loop-universe-preview-screenshots
           path: preview-screenshots/*.png
           if-no-files-found: warn
           retention-days: 14
