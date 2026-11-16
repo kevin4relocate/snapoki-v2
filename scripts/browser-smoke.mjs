@@ -128,8 +128,19 @@ async function verifyWorldLoopAnimation(page){
   // Changing leader flags/metres must never resize the scoreboard or recreate
   // ranking cards on every HUD tick.
   const order=page.locator('#worldLoopOrder li');
-  if(await order.count()!==4)throw new Error('Expected three stable ranking cards and More');
-  await page.evaluate(()=>{window.__wlOrderNodes=[...document.querySelectorAll('#worldLoopOrder li')];});
+  if(await order.count()!==6)throw new Error('Expected five stable ranking cards and More');
+  const ranks=await page.locator('#worldLoopOrder li:not(.more) b').allTextContents();
+  if(ranks.join(',')!=='1,2,3,4,5')throw new Error('CURRENT ORDER does not show ranks one through five: '+ranks.join(','));
+  if(await page.locator('#worldLoopOrder li.more strong').textContent()!=='+3')
+    throw new Error('Eight racers must show five ranks plus three more');
+  // All five rankings and the remainder badge should fit without a horizontal
+  // ranking scrollbar on the standard desktop width; mobile may scroll.
+  const fit=await page.evaluate(()=>{
+    const container=document.getElementById('worldLoopOrder');
+    return {client:container.clientWidth,scroll:container.scrollWidth};
+  });
+  if(fit.scroll>fit.client+2)throw new Error('Top 5 does not fit the desktop race width: '+JSON.stringify(fit));
+    await page.evaluate(()=>{window.__wlOrderNodes=[...document.querySelectorAll('#worldLoopOrder li')];});
   await page.waitForTimeout(350);
   const unchanged=await page.evaluate(()=>window.__wlOrderNodes.every((node,i)=>node===document.querySelectorAll('#worldLoopOrder li')[i]));
   if(!unchanged)throw new Error('World Loop recreated ranking cards between HUD updates');
