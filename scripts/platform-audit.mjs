@@ -88,14 +88,14 @@ for(const game of GAMES){
   if(!verifierKeys.has(game.key))fail(`${game.key}: missing server result verifier`);
   if(await exists(page)){
     const html=await fs.readFile(page,'utf8');
-    if(game.key==='world-loop'){
+    if(game.experienceType==='simulation'){
       // Ambient screensaver has its own immersive shell; puzzle rails and Daily
       // placeholders must not be generated merely to satisfy a generic audit.
-      if(!html.includes('class="game-layout world-loop-layout"'))fail('world-loop: full-width screensaver layout is missing');
+      if(!html.includes('class="game-layout world-loop-layout"'))fail(`${game.key}: full-width screensaver layout is missing`);
       if(/class="panel left-panel"|class="right-panel"|class="game-howto|class="section daily-section"/.test(html))
-        fail('world-loop: legacy puzzle sidebars or Daily section were generated');
-      if(!html.includes('/assets/styles/world-loop.css'))fail('world-loop: immersive race stylesheet is missing');
-      if(!html.includes('id="gameBoard"'))fail('world-loop: race board is missing');
+        fail(`${game.key}: legacy puzzle sidebars or Daily section were generated`);
+      if(!html.includes('/assets/styles/world-loop.css'))fail(`${game.key}: immersive race stylesheet is missing`);
+      if(!html.includes('id="gameBoard"'))fail(`${game.key}: race board is missing`);
     }else{
       if(!html.includes('class="game-howto '))fail(`${game.key}: missing shared How to Play component`);
       if(!html.includes('/assets/styles/how-to-card.css'))fail(`${game.key}: missing shared How to Play stylesheet`);
