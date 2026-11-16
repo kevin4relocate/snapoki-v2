@@ -211,7 +211,9 @@ export function restoreWorldLoopSelection(raw){
   return codes.length>=4?codes:sortWorldLoopCodes(DEFAULT_CODES);
 }
 export const WORLD_LOOP_MASCOTS=['🏎️','🚀','🐇','🦊','🤖','🛸','🐝','⚡','🐲','🦅','🐬','🦖'];
-const WORLD_LOOP_FACE_RIGHT_MASCOTS=new Set(['🐇','🦊','🐝','🐲','🦅','🐬','🦖']);
+// Emoji racing cars face left in common browser fonts; mirror only the racer
+// mascot (never the country's flag) to match the left-to-right track.
+export const WORLD_LOOP_FACE_RIGHT_MASCOTS=new Set(['🏎️','🐇','🦊','🐝','🐲','🦅','🐬','🦖']);
 
 const LEVEL={
   easy:{base:12.5,variance:.52,catchup:.046,maxCatchup:2.7,burst:1.7,burstChance:.032},
@@ -325,11 +327,23 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
       chip.addEventListener('click',()=>{selected.delete(code);renderPicker();addCountryButton.focus();});selectedHost.appendChild(chip);
     }
     pickCount.textContent=selected.size+' / 12 selected';addCountryButton.disabled=selected.size>=12;startButton.disabled=selected.size<4;renderCountryOptions();
+    if(!countryMenu.hidden)positionCountryMenu();
+  }
+  function positionCountryMenu(){
+    // Open toward the side with more usable track space. The expanded menu
+    // remains scrollable instead of being clipped on small screens.
+    const trigger=addCountryButton.getBoundingClientRect();
+    const viewport=host.querySelector('.world-loop-viewport').getBoundingClientRect();
+    const below=Math.max(0,viewport.bottom-trigger.bottom-16);
+    const above=Math.max(0,trigger.top-viewport.top-16);
+    const openUp=below<320&&above>below;
+    countryMenu.classList.toggle('open-up',openUp);
+    countryMenu.style.maxHeight=Math.max(130,Math.min(320,openUp?above:below))+'px';
   }
   function toggleCountryMenu(){
     const opening=countryMenu.hidden;
     countryMenu.hidden=!opening;addCountryButton.setAttribute('aria-expanded',String(opening));
-    if(opening){renderCountryOptions();countrySearch.focus();}
+    if(opening){renderCountryOptions();positionCountryMenu();countrySearch.focus();}
   }
   function racerSize(){return Math.round(clamp(72-selected.size*3.4,29,48));}
   function buildLanes(){
