@@ -29,7 +29,8 @@ test('World Loop picker maintains selection state and keyboard focus',()=>{
   assert.match(source,/button\.setAttribute\('aria-pressed',String\(isSelected\)\)/);
   assert.match(source,/chip\.setAttribute\('aria-label','Remove '\+country\.name\)/);
   assert.match(source,/const replacement=\[\.\.\.countryOptions\.querySelectorAll\('button'\)\]/);
-  assert.match(source,/if\(event\.key==='Escape'\)\{event\.preventDefault\(\);closeCountryMenu\(\);addCountryButton\.focus\(\);\}/);
+  assert.ok(source.includes("pickerWrap.addEventListener('keydown',event=>{if(event.key==='Escape'&&!countryMenu.hidden)"));
+  assert.ok(source.includes('if(opening){renderCountryOptions();countrySearch.focus();}'));
 });
 
 test('hidden puzzle pages stop intervals and resync the UTC date on return',()=>{
