@@ -36,7 +36,13 @@ async function verify(){
   if(expectedCommit)assert(release.commit===expectedCommit,`Stale deployment: expected commit ${expectedCommit}, live ${release.commit||'unavailable'}`);
   console.log(`Release: ${release.releaseId}; commit: ${release.commit||'(unknown)'}; built: ${release.builtAt}`);
 
-  const pages=['/','/echo-step/','/maze/','/bridges/','/world-loop/','/snapdesk-74kq/'];
+  // Each Loop route must be on the same versioned release, not merely return 200.
+  const loops=[
+    {slug:'world-loop',entry:'js/games/world-loop.js',style:'styles/world-loop.css',dependencies:['js/endless-race/engine.js','js/endless-race/themes/flag.js']},
+    {slug:'animal-loop',entry:'js/games/animal-loop.js',style:'styles/world-loop.css',dependencies:['styles/animal-loop.css','js/endless-race/engine.js','js/endless-race/themes/animal.js']},
+    {slug:'aquarium-loop',entry:'js/games/aquarium-loop.js',style:'styles/aquarium-loop.css',dependencies:['js/ambient/engine.js','js/ambient/swim.js','js/ambient/themes/aquarium.js']}
+  ];
+  const pages=['/','/echo-step/','/maze/','/bridges/',...loops.map(loop=>'/'+loop.slug+'/'),'/snapdesk-74kq/'];
   for(const route of pages){
     const result=await get(route);
     assert(result.status===200,`${route}: HTTP ${result.status}`);
@@ -44,14 +50,20 @@ async function verify(){
     assert(html.includes(release.assetsBase),`${route}: HTML does not point to current release assets`);
     assert(!/\/assets\/(?:js|styles)\/[a-z0-9/_-]+\.(?:js|css)/i.test(html),`${route}: unversioned HTML asset URL`);
     if(route==='/snapdesk-74kq/')assert(/noindex,nofollow,noarchive/.test(html),'Content Desk noindex is missing');
-    if(route==='/world-loop/'){
-      assert(html.includes('data-game="world-loop"'),'World Loop route serves the wrong HTML page');
-      assert(html.includes(release.assetsBase+'styles/world-loop.css'),'World Loop CSS missing from its page');
-      assert(html.includes(release.assetsBase+'js/game-page.js'),'World Loop engine bootstrap missing');
+    const loop=loops.find(loop=>route==='/'+loop.slug+'/');
+    if(loop){
+      assert(html.includes('data-game="'+loop.slug+'"'),loop.slug+': route serves the wrong game HTML');
+      assert(html.includes(release.assetsBase+loop.style),loop.slug+': versioned CSS missing');
+      if(loop.slug==='animal-loop')assert(html.includes(release.assetsBase+'styles/animal-loop.css'),'Animal Loop theme CSS missing');
+      assert(html.includes(release.assetsBase+'js/game-page.js'),loop.slug+': versioned game bootstrap missing');
     }
     console.log(`PASS ${route}: release URLs present`);
   }
-  for(const name of ['js/site.js','js/game-page.js','js/games/world-loop.js','js/social-renderers/world-loop.js','js/admin-content.js','styles/site.css','styles/launch.css','styles/world-loop.css']){
+  const verifiedAssets=new Set([
+    'js/site.js','js/game-page.js','js/admin-content.js','styles/site.css','styles/launch.css',
+    ...loops.flatMap(loop=>[loop.entry,loop.style,...loop.dependencies,'js/social-renderers/'+loop.slug+'.js'])
+  ]);
+  for(const name of verifiedAssets){
     const entry=release.assets[name];
     assert(entry&&/^[a-f0-9]{64}$/.test(entry.sha256),`Missing manifest digest for ${name}`);
     const result=await get(release.assetsBase+name);
@@ -59,6 +71,14 @@ async function verify(){
     const bytes=Buffer.from(await result.arrayBuffer());
     assert(hash(bytes)===entry.sha256,`${name}: byte hash mismatch, likely a stale CDN asset`);
     console.log(`PASS ${name}: HTTP 200, digest verified`);
+  }
+  for(const loop of loops){
+    const guide='/blog/how-to-play-'+loop.slug+'/';
+    const page=await get(guide);
+    assert(page.status===200,guide+': guide missing (HTTP '+page.status+')');
+    const html=await page.text();
+    assert(html.includes(release.assetsBase),guide+': guide uses a stale asset release');
+    console.log('PASS '+guide+': guide on the current release');
   }
   for(const [route,status] of [['/api/profile',410],['/api/global-rankings',410],['/api/runs/start',410],['/api/unknown-release-probe',404]]){
     const response=await get(route);
