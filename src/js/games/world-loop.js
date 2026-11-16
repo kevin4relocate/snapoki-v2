@@ -211,9 +211,13 @@ export function restoreWorldLoopSelection(raw){
   return codes.length>=4?codes:sortWorldLoopCodes(DEFAULT_CODES);
 }
 export const WORLD_LOOP_MASCOTS=['🏎️','🚀','🐇','🦊','🤖','🛸','🐝','⚡','🐲','🦅','🐬','🦖'];
-// Emoji racing cars face left in common browser fonts; mirror only the racer
-// mascot (never the country's flag) to match the left-to-right track.
+// Audit the full mascot pool for a left-to-right race. These icons commonly
+// point left in platform emoji artwork, so mirror just the mascot span (not the
+// country's flag). Rocket 🚀 already points up/right; UFO 🛸, robot 🤖 and
+// lightning ⚡ have no horizontal facing that needs correction. Emoji artwork
+// is platform-dependent, so keep this explicit inventory easy to revisit.
 export const WORLD_LOOP_FACE_RIGHT_MASCOTS=new Set(['🏎️','🐇','🦊','🐝','🐲','🦅','🐬','🦖']);
+export const WORLD_LOOP_ALREADY_RIGHT_OR_NEUTRAL_MASCOTS=new Set(['🚀','🤖','🛸','⚡']);
 
 const LEVEL={
   easy:{base:12.5,variance:.52,catchup:.046,maxCatchup:2.7,burst:1.7,burstChance:.032},
@@ -380,7 +384,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   // Reuse the same ranking cards while flags, positions and metres change.
   // Rebuilding their DOM every HUD tick caused visible flicker and width shifts.
   function renderOrder(ordered){
-    const visible=Math.min(3,ordered.length),hasMore=ordered.length>3;
+    const visible=Math.min(5,ordered.length),hasMore=ordered.length>5;
     if(orderHost.children.length!==visible+(hasMore?1:0)){
       orderHost.replaceChildren();
       for(let index=0;index<visible;index++){
@@ -405,7 +409,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
       if(metres.textContent!==distance)metres.textContent=distance;
     }
     if(hasMore){
-      const more=orderHost.lastElementChild,count='+'+(ordered.length-3);
+      const more=orderHost.lastElementChild,count='+'+(ordered.length-5);
       if(more.children[1].textContent!==count)more.children[1].textContent=count;
     }
   }
