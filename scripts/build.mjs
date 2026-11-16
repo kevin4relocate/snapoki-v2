@@ -74,7 +74,7 @@ function gamePage(g){
 }
 for(const g of GAMES){
   const dir=path.join(dist,g.slug);await fs.mkdir(dir,{recursive:true});
-  const styles=['how-to-card.css','board-status.css',...gameStyleSheets(g),'board-contract.css'];
+  const styles=g.key==='world-loop'?['board-status.css',...gameStyleSheets(g)]:['how-to-card.css','board-status.css',...gameStyleSheets(g),'board-contract.css'];
   await fs.writeFile(path.join(dir,'index.html'),shell({title:g.seoTitle,description:g.seoDescription,canonical:`${siteUrl}/${g.slug}/`,bodyClass:'game-page',bodyAttrs:`data-game="${g.key}"`,content:gamePage(g),styles,jsonLd:{'@context':'https://schema.org','@type':'Game',name:g.name,url:`${siteUrl}/${g.slug}/`,description:g.description}}));
 }
 
