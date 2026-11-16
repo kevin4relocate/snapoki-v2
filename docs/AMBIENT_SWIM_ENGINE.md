@@ -29,7 +29,7 @@ src/js/social-renderers/aquarium-loop.js  Native social preview
 
 ## Behavior
 
-- Starts an eight-creature aquarium automatically; no music/audio autoplay.
+- Starts on the chooser with eight creatures preselected (or a saved roster); swimming begins only after the user clicks Start. No music/audio autoplay.
 - Change opens a searchable 16-item picker. Select four to twelve unique
   creatures, or choose Random 8. Invalid/old browser storage safely falls
   back to eight defaults.
@@ -73,7 +73,7 @@ npm run test:browser
 
 Unit tests verify deterministic positions, gentle rotation, bounds over
 thousands of simulation steps, pace ordering, 4–12 selection and generated
-routes. Chromium confirms auto-start, actual motion, no race scoreboard,
+routes. Chromium confirms picker-first startup, Start-triggered motion, actual motion, no race scoreboard,
 Pause/Resume, settings, Stop and species selection, and 390/320px layout.
 The CI PR artifact includes a desktop and picker screenshot for the new
 aquarium, alongside the existing two race themes. Keep the PR open for
