@@ -29,6 +29,7 @@ const screenshots=process.env.SNAPOKI_PREVIEW_SCREENSHOTS==='1';
 async function capturePreview(page,slug,mode){
   if(!screenshots||!['world-loop','animal-loop','aquarium-loop'].includes(slug))return;
   await mkdir('preview-screenshots',{recursive:true});
+  await page.evaluate(()=>window.scrollTo(0,0));
   await page.screenshot({path:`preview-screenshots/${slug}-${mode}.png`,fullPage:true,animations:'disabled'});
 }
 
@@ -148,6 +149,14 @@ async function verifyAquariumLoop(page){
     throw new Error('Aquarium fish are not moving in 2-D');
   if(await page.locator('#ambientSound').getAttribute('aria-pressed')!=='false')
     throw new Error('Ocean sound must be opt-in');
+  await page.locator('#ambientSound').click();
+  await page.waitForFunction(()=>document.getElementById('ambientSound')?.getAttribute('aria-pressed')==='true',{timeout:8000});
+  await page.locator('#ambientVolume').evaluate(el=>{el.value='25';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('#ambientMute').click();
+  if(await page.locator('#ambientMute').getAttribute('aria-pressed')!=='true')
+    throw new Error('Aquarium mute switch failed');
+  await page.locator('#ambientSound').click();
+  await page.waitForFunction(()=>document.getElementById('ambientSound')?.getAttribute('aria-pressed')==='false',{timeout:8000});
   await page.locator('.ambient-pace [data-pace="hard"]').click();
   if(await page.locator('.ambient-pace [data-pace="hard"]').getAttribute('aria-pressed')!=='true')
     throw new Error('Playful pace did not activate immediately');
