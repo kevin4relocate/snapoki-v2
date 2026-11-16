@@ -405,7 +405,15 @@ export function createEndlessRace({host,difficulty='medium',seed='endless-race:m
 
   loadSelection();renderPicker();syncPace();syncAudioUi();
   onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});
-  // Ambient screensaver: begin with the saved/default roster without requiring Start.
-  beginSession(String(seed)+':ambient:'+Date.now());
+  // Animal Loop must begin with the chooser; preserve Flag / World Loop auto-start.
+  if(theme.mode==='animal'){
+    setup.hidden=false;
+    pauseButton.disabled=true;restartButton.disabled=true;changeButton.disabled=true;
+    fullscreenButton.disabled=true;soundToggleButton.disabled=true;
+    soundMuteButton.disabled=true;volumeSlider.disabled=true;
+    onStatus('Choose 4–12 animals, then select Start Endless Race.');
+  }else{
+    beginSession(String(seed)+':ambient:'+Date.now());
+  }
   return{supportsUndo:false,reset(){if(started)restartSession();},stop(){stopSession();},setDifficulty(nextDifficulty){setPace(nextDifficulty);},hint(){return false;},solution(){},hideSolution(){},previewScore(){return 0;},getResult(){const ordered=worldLoopOrder(racers);return{score:0,metadata:{elapsedMs,leadChanges,leader:ordered[0]?.code||'',racers:racers.map(racer=>({code:racer.code,distance:racer.distance}))}};},destroy(){haltFrame();running=false;releaseWakeLock();resetBackgroundMusic();if(fullscreenListener){document.removeEventListener('fullscreenchange',fullscreenListener);document.removeEventListener('webkitfullscreenchange',fullscreenListener);}if(visibilityListener)document.removeEventListener('visibilitychange',visibilityListener);if(pickerDocumentListener)document.removeEventListener('pointerdown',pickerDocumentListener);}};
 }
