@@ -270,7 +270,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   const audioSources=new Set();
 
   host.innerHTML='<div class="world-loop-app">'+
-    '<div class="world-loop-racebar"><div class="world-loop-title"><span class="world-loop-live"><i></i> ENDLESS RACE</span><strong>World Loop</strong><small id="worldLoopRaceMeta"></small></div><div class="world-loop-race-actions"><button id="worldLoopPause" type="button" disabled>Pause</button><button id="worldLoopRestart" type="button" disabled>Restart</button><button id="worldLoopChange" type="button" disabled>■ Stop</button><div class="world-loop-audio-controls" aria-label="Background music"><button id="worldLoopSoundToggle" class="world-loop-sound-toggle" type="button" disabled>♪ Play Sound</button><button id="worldLoopSoundMute" class="world-loop-sound-mute" type="button" aria-pressed="false" title="Mute sound" disabled>🔊</button><label class="world-loop-volume" title="Music volume"><input id="worldLoopVolume" type="range" min="0" max="100" step="1" value="55" aria-label="Music volume" disabled><span id="worldLoopVolumeValue">55%</span></label></div><button id="worldLoopFullscreen" class="world-loop-fullscreen" type="button" aria-pressed="false" disabled>⛶ Full Screen</button></div></div>'+
+    '<div class="world-loop-racebar"><div class="world-loop-title"><span class="world-loop-live"><i></i> ENDLESS RACE</span><strong>World Loop</strong><small id="worldLoopRaceMeta"></small></div><div id="worldLoopPace" class="world-loop-pace" role="group" aria-label="Race pace"><button type="button" data-pace="easy" aria-pressed="false" title="Cruise: gentle movement">Cruise</button><button type="button" data-pace="medium" aria-pressed="false" title="Dynamic: changing leads">Dynamic</button><button type="button" data-pace="hard" aria-pressed="false" title="Sprint: faster bursts">Sprint</button></div><div class="world-loop-race-actions"><button id="worldLoopPause" type="button" disabled>Pause</button><button id="worldLoopRestart" type="button" disabled>Restart</button><button id="worldLoopChange" type="button" disabled>■ Stop</button><div class="world-loop-audio-controls" aria-label="Background music"><button id="worldLoopSoundToggle" class="world-loop-sound-toggle" type="button" disabled>♪ Play Sound</button><button id="worldLoopSoundMute" class="world-loop-sound-mute" type="button" aria-pressed="false" title="Mute sound" disabled>🔊</button><label class="world-loop-volume" title="Music volume"><input id="worldLoopVolume" type="range" min="0" max="100" step="1" value="55" aria-label="Music volume" disabled><span id="worldLoopVolumeValue">55%</span></label></div><button id="worldLoopFullscreen" class="world-loop-fullscreen" type="button" aria-pressed="false" disabled>⛶ Full Screen</button></div></div>'+
     '<div class="world-loop-orderbar"><div class="world-loop-order-label"><span>CURRENT ORDER</span><small id="worldLoopLeaderLabel">NO FINISH LINE</small></div><ol id="worldLoopOrder"></ol></div>'+
     '<div class="world-loop-viewport"><div class="world-loop-track-top"><div><span>ENDLESS TRACK →</span><small id="worldLoopTrackDetail">Distance keeps increasing until you restart.</small></div><div id="worldLoopWake" class="world-loop-wake">SCREEN MODE</div></div><div id="worldLoopLanes" class="world-loop-lanes" aria-label="Endless lane race"></div>'+
       '<div id="worldLoopSetup" class="world-loop-setup"><div class="world-loop-setup-card"><h2>Pick 4–12 countries</h2><div class="world-loop-pick-head"><strong id="worldLoopPickCount">0 / 12 selected</strong><div><button id="worldLoopRandom" type="button">Random 8</button><button id="worldLoopClear" type="button">Clear</button></div></div><div id="worldLoopSelected" class="world-loop-selected"></div><div id="worldLoopCountryPicker" class="world-loop-country-picker"><button id="worldLoopAddCountry" class="world-loop-country-trigger" type="button" aria-controls="worldLoopCountryMenu" aria-expanded="false"><b>+ Add country</b><span>Search 196 countries</span></button><div id="worldLoopCountryMenu" class="world-loop-country-menu" hidden><input id="worldLoopCountrySearch" type="search" autocomplete="off" placeholder="Search country or code" aria-label="Search countries"><div id="worldLoopCountryOptions" class="world-loop-country-options"></div></div></div><button id="worldLoopStart" class="world-loop-start" type="button">Start Endless Race →</button></div></div>'+    '</div>'+
@@ -281,6 +281,23 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   const startButton=host.querySelector('#worldLoopStart'),pauseButton=host.querySelector('#worldLoopPause'),restartButton=host.querySelector('#worldLoopRestart'),changeButton=host.querySelector('#worldLoopChange'),fullscreenButton=host.querySelector('#worldLoopFullscreen'),soundToggleButton=host.querySelector('#worldLoopSoundToggle'),soundMuteButton=host.querySelector('#worldLoopSoundMute'),volumeSlider=host.querySelector('#worldLoopVolume'),volumeValue=host.querySelector('#worldLoopVolumeValue'),randomButton=host.querySelector('#worldLoopRandom'),clearButton=host.querySelector('#worldLoopClear'),pickerWrap=host.querySelector('#worldLoopCountryPicker'),addCountryButton=host.querySelector('#worldLoopAddCountry'),countryMenu=host.querySelector('#worldLoopCountryMenu'),countrySearch=host.querySelector('#worldLoopCountrySearch'),countryOptions=host.querySelector('#worldLoopCountryOptions');
   const orderHost=host.querySelector('#worldLoopOrder'),leaderLabel=host.querySelector('#worldLoopLeaderLabel'),raceMeta=host.querySelector('#worldLoopRaceMeta'),wakeHost=host.querySelector('#worldLoopWake'),leaderHost=host.querySelector('#worldLoopLeader'),leaderMeta=host.querySelector('#worldLoopLeaderMeta'),gapHost=host.querySelector('#worldLoopGap'),changesHost=host.querySelector('#worldLoopChanges'),sessionHost=host.querySelector('#worldLoopSession');
 
+  const paceButtons=[...host.querySelectorAll('#worldLoopPace [data-pace]')];
+  function syncPace(){
+    for(const button of paceButtons){
+      const active=button.dataset.pace===difficulty;
+      button.classList.toggle('active',active);
+      button.setAttribute('aria-pressed',String(active));
+    }
+  }
+  function setPace(next){
+    if(!Object.hasOwn(LEVEL,next)||next===difficulty)return;
+    const ratio=LEVEL[next].base/cfg.base;
+    for(const racer of racers)racer.baseSpeed*=ratio;
+    difficulty=next;
+    cfg=LEVEL[next];
+    syncPace();
+    if(started)onStatus('Pace changed to '+({easy:'Cruise',medium:'Dynamic',hard:'Sprint'}[next])+'. Race and distances continue without restarting.');
+  }
   function loadSelection(){
     selected=new Set(restoreWorldLoopSelection(storageGet(rosterStore)));
   }
@@ -376,7 +393,9 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
     const nextOrder=updateLeader();updatePositions(nextOrder);
   }
   function syncAudioUi(){
-    soundToggleButton.textContent=audioLoading?'… Loading':audioPausedByRace?'▶ Sound on Resume':audioUserPlaying?'⏸ Sound':'♪ Play Sound';
+    soundToggleButton.textContent=audioLoading?'… Loading':audioPausedByRace?'▶ Sound on Resume':audioUserPlaying?'⏸ Pause Sound':'♪ Play Sound';
+    soundToggleButton.setAttribute('aria-pressed',String(audioUserPlaying));
+    soundToggleButton.setAttribute('aria-label',audioUserPlaying?'Pause background music':'Play background music');
     soundMuteButton.textContent=audioMuted?'🔇':'🔊';
     soundMuteButton.setAttribute('aria-pressed',String(audioMuted));
     soundMuteButton.title=audioMuted?'Unmute sound':'Mute sound';
@@ -446,7 +465,12 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   }
   async function pauseBackgroundMusic(){
     if(!audioContext||!audioUserPlaying)return;
-    audioUserPlaying=false;audioPausedByRace=false;try{await audioContext.suspend();}catch{}syncAudioUi();onStatus('Background music paused.');
+    audioUserPlaying=false;audioPausedByRace=false;syncAudioUi();
+    try{await audioContext.suspend();}catch{}
+    // Clear future scheduled buffers so a later Play starts audibly right away.
+    for(const source of audioSources){try{source.onended=null;source.stop();source.disconnect();}catch{}}
+    audioSources.clear();audioNextStartTime=audioContext.currentTime+.06;audioScheduleIndex=0;
+    onStatus('Background music paused.');
   }
   async function pauseBackgroundMusicForRace(){
     if(!audioContext||!audioUserPlaying||audioContext.state!=='running')return;
@@ -516,6 +540,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
     try{if(fullscreenElement()){const exit=document.exitFullscreen||document.webkitExitFullscreen;if(exit)await exit.call(document);return;}const request=app.requestFullscreen||app.webkitRequestFullscreen;if(!request){onStatus('Full screen is not available in this browser.');return;}try{await request.call(app,{navigationUI:'hide'});}catch{await request.call(app);}requestWakeLock();}catch{onStatus('Full screen could not be opened.');}
   }
 
+  for(const button of paceButtons)button.addEventListener('click',()=>setPace(button.dataset.pace));
   addCountryButton.addEventListener('click',toggleCountryMenu);countrySearch.addEventListener('input',renderCountryOptions);countrySearch.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();closeCountryMenu();addCountryButton.focus();}});
   pickerDocumentListener=event=>{if(!pickerWrap.contains(event.target))closeCountryMenu();};document.addEventListener('pointerdown',pickerDocumentListener);
   startButton.addEventListener('click',()=>{restartCounter++;beginSession(String(seed)+':start:'+restartCounter+':'+Date.now());});pauseButton.addEventListener('click',togglePause);restartButton.addEventListener('click',restartSession);changeButton.addEventListener('click',stopSession);soundToggleButton.addEventListener('click',toggleBackgroundMusic);soundMuteButton.addEventListener('click',toggleBackgroundMute);volumeSlider.addEventListener('input',setBackgroundVolume);fullscreenButton.addEventListener('click',toggleFullscreen);
@@ -533,6 +558,9 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
     }
   };document.addEventListener('visibilitychange',visibilityListener);
 
-  loadSelection();renderPicker();onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});onStatus('');
-  return{supportsUndo:false,reset(){if(started)restartSession();},stop(){stopSession();},setDifficulty(nextDifficulty){cfg=LEVEL[nextDifficulty]||LEVEL.medium;},hint(){return false;},solution(){},hideSolution(){},previewScore(){return 0;},getResult(){const ordered=worldLoopOrder(racers);return{score:0,metadata:{elapsedMs,leadChanges,leader:ordered[0]?.code||'',racers:racers.map(racer=>({code:racer.code,distance:racer.distance}))}};},destroy(){haltFrame();running=false;releaseWakeLock();resetBackgroundMusic();if(fullscreenListener){document.removeEventListener('fullscreenchange',fullscreenListener);document.removeEventListener('webkitfullscreenchange',fullscreenListener);}if(visibilityListener)document.removeEventListener('visibilitychange',visibilityListener);if(pickerDocumentListener)document.removeEventListener('pointerdown',pickerDocumentListener);}};
+  loadSelection();renderPicker();syncPace();syncAudioUi();
+  onMetrics({distance:'0 m',leader:'—',gap:'0 m',racers:selected.size});
+  // Ambient screensaver: begin with the saved/default roster without requiring Start.
+  beginSession(String(seed)+':ambient:'+Date.now());
+  return{supportsUndo:false,reset(){if(started)restartSession();},stop(){stopSession();},setDifficulty(nextDifficulty){setPace(nextDifficulty);},hint(){return false;},solution(){},hideSolution(){},previewScore(){return 0;},getResult(){const ordered=worldLoopOrder(racers);return{score:0,metadata:{elapsedMs,leadChanges,leader:ordered[0]?.code||'',racers:racers.map(racer=>({code:racer.code,distance:racer.distance}))}};},destroy(){haltFrame();running=false;releaseWakeLock();resetBackgroundMusic();if(fullscreenListener){document.removeEventListener('fullscreenchange',fullscreenListener);document.removeEventListener('webkitfullscreenchange',fullscreenListener);}if(visibilityListener)document.removeEventListener('visibilitychange',visibilityListener);if(pickerDocumentListener)document.removeEventListener('pointerdown',pickerDocumentListener);}};
 }
