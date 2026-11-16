@@ -102,7 +102,7 @@ function tick(){
   setMetric('time',formatTime(ms));
   if(state.engine?.previewScore&&metricElement('score'))setMetric('score',Number(state.engine.previewScore(ms,state.hints)).toLocaleString());
 }
-function beginTimer(){stopTimer();state.startedAt=Date.now();tick();if(document.visibilityState!=='hidden')state.timer=setInterval(tick,250);}
+function beginTimer(){stopTimer();state.startedAt=Date.now();if(game.experienceType==='simulation')return;tick();if(document.visibilityState!=='hidden')state.timer=setInterval(tick,250);}
 function guestSeed(reuseSeed=false,previousSeed=''){
   if(review)return review.seed;
   if(reuseSeed&&previousSeed)return previousSeed;
@@ -200,7 +200,7 @@ async function startPuzzle({reuseSeed=false}={}){
   const token=++state.startToken,previousSeed=state.seed,previousRunId=state.runId;
   closeResult(false);hidePracticeNotice();hideSolutionNavigator();
   state.engine?.destroy?.();state.engine=null;state.engineLocked=false;state.loading=true;state.completed=false;state.practiceComplete=false;state.hints=0;state.solutionUsed=false;state.solutionVisible=false;state.ranked=false;state.unrankedReason=review?'review_mode':'';state.smartNext=null;
-  stopTimer();setPracticeUi(false,false);resetMetricDefaults();setStatus(review?`Loading calibration sample ${review.score}…`:'Preparing puzzle…');
+  stopTimer();setPracticeUi(false,false);resetMetricDefaults();setStatus(review?`Loading calibration sample ${review.score}…`:game.experienceType==='simulation'?'Starting ambient screensaver…':'Preparing puzzle…');
   $('#gameBoard')?.setAttribute('aria-busy','true');updateActiveControls();
   try{
     const enginePromise=loadEngineFactory(),attemptPromise=rankedAttempt(reuseSeed?previousRunId:'');
@@ -219,7 +219,7 @@ async function startPuzzle({reuseSeed=false}={}){
     else if(state.unrankedReason==='daily_solution_viewed')setStatus('Daily Practice: Solution was viewed for this level today, so it cannot count toward today’s streak.');
   }catch(error){
     if(token!==state.startToken)return;
-    console.error(error);state.loading=false;setStatus('This puzzle could not start. Please try New Puzzle.');updateActiveControls();
+    console.error(error);state.loading=false;setStatus(game.experienceType==='simulation'?'The screensaver could not start. Reload to try again.':'This puzzle could not start. Please try New Puzzle.');updateActiveControls();
   }finally{if(token===state.startToken)$('#gameBoard')?.removeAttribute('aria-busy');}
 }
 
@@ -367,7 +367,7 @@ function syncVisibleTimers(){
   }
   updateCountdown();
   if(!dailyCountdownInterval)dailyCountdownInterval=setInterval(updateCountdown,1000);
-  if(!state.timer&&state.startedAt&&!state.completed&&!state.loading&&!state.engineLocked){
+  if(game.experienceType!=='simulation'&&!state.timer&&state.startedAt&&!state.completed&&!state.loading&&!state.engineLocked){
     tick();state.timer=setInterval(tick,250);
   }
 }
