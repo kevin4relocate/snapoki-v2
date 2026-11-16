@@ -51,6 +51,8 @@ For performance, responsive layout and keyboard-accessibility regression checks,
 
 If `/world-loop/` returns 404 on production despite GitHub CI passing, follow [World Loop production 404 diagnosis](docs/WORLD_LOOP_PRODUCTION_404.md) to verify Cloudflare Pages deployment, domain routing and the live release commit. A successful GitHub build alone does not update the public site.
 
+World Loop is a full-width ambient screensaver, separate from the puzzle controls. Opening its page automatically starts the saved/default country roster with sound off. Cruise, Dynamic and Sprint are in the race toolbar and switch live without clearing the session timer, racer distances or music. Play/Pause Sound, Mute and Volume also work independently during a race. Stop opens country selection, while Restart resets the current race intentionally.
+
 World Loop is deliberately different from the puzzle catalog:
 
 - search 196 country choices, including Taiwan, then choose 4–12 racers;
