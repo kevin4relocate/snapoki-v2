@@ -299,7 +299,11 @@ export function createAmbientExperience({host,theme=AQUARIUM_THEME,difficulty='m
   listen(fullscreenButton,'click',()=>{void toggleFullscreen();});
   listen(document,'visibilitychange',visibilityChange);
   listen(document,'fullscreenchange',()=>{updateUi();if(document.fullscreenElement!==app)releaseWakeLock();});
-  selected=selected.slice(0,12);renderSelection();startSwim();
+  // The first view is always the picker, including when a saved roster exists.
+  selected=selected.slice(0,12);
+  picker.hidden=false;
+  renderSelection();updateUi();updateElapsed();
+  onStatus('Choose 4–12 sea creatures, then start the aquarium.');
   return {
     reset(){if(started)startSwim();},
     setDifficulty(next){if(MOODS[next]){pace=next;updateUi();}},
