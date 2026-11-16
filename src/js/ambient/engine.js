@@ -28,7 +28,7 @@ export function createAmbientExperience({host,theme=AQUARIUM_THEME,difficulty='m
   let pace=MOODS[difficulty]?difficulty:'medium',selected=safeSwimSelection(theme,safeStore(theme.storageKey));
   let swimmers=[],started=false,paused=false,destroyed=false,frameId=0,lastFrame=0,seconds=0,runNumber=0;
   let audioContext=null,audioSource=null,audioGain=null,audioWanted=false,audioVolume=38,muted=false;
-  let wakeLock=null;
+  let wakeLock=null,wakeLockRequest=0;
   const index=new Map(theme.items.map(item=>[item.code,item]));
   host.innerHTML=
     '<div class="ambient-app" data-ambient-theme="'+theme.id+'">'+
@@ -220,10 +220,23 @@ export function createAmbientExperience({host,theme=AQUARIUM_THEME,difficulty='m
     updateUi();
   }
   async function requestWakeLock(){
-    if(!started||paused||document.visibilityState==='hidden'||document.fullscreenElement!==app||!navigator.wakeLock?.request)return;
-    try{wakeLock=await navigator.wakeLock.request('screen');}catch{wakeLock=null;}
+    if(!started||paused||destroyed||document.visibilityState==='hidden'||document.fullscreenElement!==app||!navigator.wakeLock?.request)return;
+    const requestId=++wakeLockRequest;
+    try{
+      const lock=await navigator.wakeLock.request('screen');
+      // A pending request may resolve after Pause, Stop, tab hide or fullscreen exit.
+      if(requestId!==wakeLockRequest||!started||paused||destroyed||document.visibilityState==='hidden'||document.fullscreenElement!==app){
+        void lock.release().catch(()=>{});
+        return;
+      }
+      if(wakeLock&&wakeLock!==lock)void wakeLock.release().catch(()=>{});
+      wakeLock=lock;
+    }catch{ /* Screen Wake Lock is optional; animation should continue. */ }
   }
-  function releaseWakeLock(){if(wakeLock){void wakeLock.release().catch(()=>{});wakeLock=null;}}
+  function releaseWakeLock(){
+    ++wakeLockRequest;
+    if(wakeLock){void wakeLock.release().catch(()=>{});wakeLock=null;}
+  }
   function startSwim(resetSelection=false){
     if(destroyed||selected.length<4||selected.length>12)return;
     haltFrame();runNumber++;seconds=0;
