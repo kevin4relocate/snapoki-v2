@@ -1,0 +1,33 @@
+name: Verify Cloudflare production routes
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: Public Snapoki URL to verify (must already be deployed)
+        required: true
+        default: https://snapoki.com
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Check live Pages deployment, World Loop and release assets
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Verify the production deployment matches the selected main commit
+        env:
+          SITE_URL: ${{ inputs.site_url }}
+        run: |
+          set -euo pipefail
+          COMMIT="$(git rev-parse HEAD)"
+          echo "Expected production commit: $COMMIT"
+          echo "Checking: $SITE_URL"
+          node scripts/verify-production.mjs --url "$SITE_URL" --expected-commit "$COMMIT"

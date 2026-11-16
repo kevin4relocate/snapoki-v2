@@ -11,9 +11,10 @@ Snapoki is a guest-first browser game platform with a registry-driven architectu
 5. Lights Out
 6. Loop Puzzle
 7. Bridges
-8. World Loop — an endless lane-race screensaver with 196 selectable countries (including Taiwan), no finish line, continuously increasing distance and a scrolling camera.
+8. Animal Chess — a 7×9 local or CPU strategy board game (Dou Shou Qi).
+9. World Loop — an endless lane-race screensaver with 196 selectable countries (including Taiwan), no finish line, continuously increasing distance and a scrolling camera.
 
-The first seven games are puzzle experiences. World Loop intentionally uses the same platform shell while opting out of puzzle-only capabilities such as Hint, Solution, Daily completion and scoring.
+The first seven games are puzzles; Animal Chess is a board game, and World Loop is a simulation. Both opt out of puzzle-only Daily completion and public rankings.
 
 ## Public product rules
 
@@ -47,6 +48,8 @@ Generated public output is written to `dist/`.
 For performance, responsive layout and keyboard-accessibility regression checks, see [Stage 5 Performance & Accessibility](docs/STAGE5_PERFORMANCE_ACCESSIBILITY.md).
 
 ## World Loop
+
+If `/world-loop/` returns 404 on production despite GitHub CI passing, follow [World Loop production 404 diagnosis](docs/WORLD_LOOP_PRODUCTION_404.md) to verify Cloudflare Pages deployment, domain routing and the live release commit. A successful GitHub build alone does not update the public site.
 
 World Loop is deliberately different from the puzzle catalog:
 

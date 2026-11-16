@@ -81,6 +81,8 @@ async function verifyAnimalChess(page){
   console.log('PASS animal-chess: local play, Undo, keyboard, CPU reply, reset, versioned CSS');
 }
 async function verifyWorldLoopAnimation(page){
+  const restored=await page.locator('#worldLoopSelected .world-loop-selected-chip').count();
+  if(restored!==8)throw new Error('World Loop did not recover its default eight racers after malformed saved settings');
   await page.evaluate(()=>{
     const native=window.requestAnimationFrame.bind(window);
     window.__wlRafCalls=0;
@@ -123,7 +125,17 @@ try{
     const page=await browser.newPage({viewport:{width:1280,height:900}});
     const pageErrors=[];
     page.on('pageerror',error=>pageErrors.push(error.message));
+    // A valid JSON value that is not an array must never crash World Loop.
+    if(game.key==='world-loop')await page.addInitScript(()=>{
+      try{localStorage.setItem('snapoki:world-loop:roster:v1','{"corrupted":true}');}catch{}
+    });
     try{
+      if(game.key==='world-loop'){
+        const res=await page.request.get(`http://127.0.0.1:${port}/world-loop/index.html`);
+        if(res.status()!==200)throw new Error('Static World Loop index.html route not served from dist');
+        const guide=await page.request.get(`http://127.0.0.1:${port}/blog/how-to-play-world-loop/`);
+        if(guide.status()!==200)throw new Error('World Loop guide missing from built output');
+      }
       await page.goto(`http://127.0.0.1:${port}/${game.slug}/`,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>document.querySelector('#gameBoard')?.children.length>0 || document.querySelector('#gameStatus')?.textContent?.includes('could not start'),null,{timeout:12000}).catch(async error=>{
         const status=await page.locator('#gameStatus').textContent();

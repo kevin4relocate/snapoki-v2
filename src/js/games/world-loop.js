@@ -203,6 +203,13 @@ export const WORLD_LOOP_COUNTRIES=WORLD_LOOP_COUNTRY_DATA.map(([code,name])=>({c
 const COUNTRY_MAP=new Map(WORLD_LOOP_COUNTRIES.map(country=>[country.code,country]));
 export const WORLD_LOOP_PICKER_COUNTRIES=[...WORLD_LOOP_COUNTRIES].sort((a,b)=>a.code==='VN'?1:b.code==='VN'?-1:a.name.localeCompare(b.name,'en'));
 export function sortWorldLoopCodes(codes=[]){return [...codes].filter(code=>COUNTRY_MAP.has(code)).sort((a,b)=>a==='VN'?1:b==='VN'?-1:COUNTRY_MAP.get(a).name.localeCompare(COUNTRY_MAP.get(b).name,'en'));}
+export function restoreWorldLoopSelection(raw){
+  let stored;
+  try{stored=JSON.parse(raw||'[]');}catch{stored=[];}
+  const valid=Array.isArray(stored)?stored.filter(code=>typeof code==='string'&&COUNTRY_MAP.has(code)):[];
+  const codes=sortWorldLoopCodes([...new Set(valid)].slice(0,12));
+  return codes.length>=4?codes:sortWorldLoopCodes(DEFAULT_CODES);
+}
 export const WORLD_LOOP_MASCOTS=['🏎️','🚀','🐇','🦊','🤖','🛸','🐝','⚡','🐲','🦅','🐬','🦖'];
 const WORLD_LOOP_FACE_RIGHT_MASCOTS=new Set(['🐇','🦊','🐝','🐲','🦅','🐬','🦖']);
 
@@ -275,8 +282,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   const orderHost=host.querySelector('#worldLoopOrder'),leaderLabel=host.querySelector('#worldLoopLeaderLabel'),raceMeta=host.querySelector('#worldLoopRaceMeta'),wakeHost=host.querySelector('#worldLoopWake'),leaderHost=host.querySelector('#worldLoopLeader'),leaderMeta=host.querySelector('#worldLoopLeaderMeta'),gapHost=host.querySelector('#worldLoopGap'),changesHost=host.querySelector('#worldLoopChanges'),sessionHost=host.querySelector('#worldLoopSession');
 
   function loadSelection(){
-    let codes=[];try{codes=JSON.parse(storageGet(rosterStore)||'[]');}catch{}
-    codes=sortWorldLoopCodes(codes.filter(code=>COUNTRY_MAP.has(code)).slice(0,12));if(codes.length<4)codes=sortWorldLoopCodes(DEFAULT_CODES);selected=new Set(codes);
+    selected=new Set(restoreWorldLoopSelection(storageGet(rosterStore)));
   }
   function saveSelection(){storageSet(rosterStore,JSON.stringify([...selected]));}
   function closeCountryMenu(){
@@ -484,7 +490,18 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   async function releaseWakeLock(){const lock=wakeLock;wakeLock=null;if(lock){try{await lock.release();}catch{}}wakeHost.textContent='SCREEN MODE';}
   async function requestWakeLock(){
     if(!started||!running||document.visibilityState==='hidden'||!navigator.wakeLock?.request){wakeHost.textContent='SCREEN MODE';return;}if(wakeLock){wakeHost.textContent='SCREEN AWAKE';return;}
-    try{wakeLock=await navigator.wakeLock.request('screen');wakeHost.textContent='SCREEN AWAKE';wakeLock.addEventListener('release',()=>{wakeLock=null;wakeHost.textContent='SCREEN MODE';},{once:true});}catch{wakeHost.textContent='SCREEN MODE';}
+    try{
+      const acquired=await navigator.wakeLock.request('screen');
+      // The user may have stopped the race while the asynchronous request was pending.
+      if(!started||!running||document.visibilityState==='hidden'){
+        await acquired.release();
+        wakeHost.textContent='SCREEN MODE';
+        return;
+      }
+      wakeLock=acquired;
+      wakeHost.textContent='SCREEN AWAKE';
+      acquired.addEventListener('release',()=>{if(wakeLock===acquired){wakeLock=null;wakeHost.textContent='SCREEN MODE';}},{once:true});
+    }catch{wakeHost.textContent='SCREEN MODE';}
   }
   function beginSession(nextSeed){
     closeCountryMenu();saveSelection();sessionRng=rngFromSeed(String(nextSeed)+':endless:v4');racers=buildWorldLoopRoster(sortWorldLoopCodes([...selected]),nextSeed,difficulty).map(racer=>({...racer,distance:0,surgeUntil:0,surgePower:0,node:null,distanceLabel:null}));elapsedMs=0;lastHudAt=-Infinity;cameraDistance=0;leaderCode='';leadChanges=0;running=true;started=true;pauseButton.disabled=false;restartButton.disabled=false;changeButton.disabled=false;fullscreenButton.disabled=false;soundToggleButton.disabled=false;soundMuteButton.disabled=false;volumeSlider.disabled=false;pauseButton.textContent='Pause';setup.hidden=true;buildLanes();const ordered=updateLeader();updatePositions(ordered);renderHud(true);lastFrame=performance.now();scheduleFrame();requestWakeLock();resumeBackgroundMusicAfterRace();onStatus('Endless race started. There is no finish line and no automatic reset.');
