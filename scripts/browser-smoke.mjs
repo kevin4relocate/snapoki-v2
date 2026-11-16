@@ -57,6 +57,13 @@ async function verifyMobileLayout(page,game){
          picker.chipHeight<44||picker.pickerHeight<44)
         throw new Error(`${width}px country setup overflows or has cramped controls: ${JSON.stringify(picker)}`);
       const country=page.locator('#worldLoopAddCountry');
+      if(await country.isDisabled()){
+        if(game.key!=='animal-loop'||await page.locator('.world-loop-selected-chip').count()!==12)
+          throw new Error('Country picker unexpectedly disabled below the twelve-item cap');
+        // After exercising the saved 12-item maximum, remove one before testing Add.
+        await page.locator('.world-loop-selected-chip').last().click();
+        if(await country.isDisabled())throw new Error('Add did not become enabled when roster dropped to eleven');
+      }
       await country.click();
       const menuBounds=await page.locator('#worldLoopCountryMenu').boundingBox();
       if(!menuBounds||menuBounds.width<220||menuBounds.x<0||
