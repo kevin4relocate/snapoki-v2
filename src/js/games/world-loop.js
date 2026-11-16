@@ -329,7 +329,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   function toggleCountryMenu(){
     const opening=countryMenu.hidden;
     countryMenu.hidden=!opening;addCountryButton.setAttribute('aria-expanded',String(opening));
-    if(opening){renderCountryOptions();requestAnimationFrame(()=>countrySearch.focus());}
+    if(opening){renderCountryOptions();countrySearch.focus();}
   }
   function racerSize(){return Math.round(clamp(72-selected.size*3.4,29,48));}
   function buildLanes(){
@@ -541,7 +541,7 @@ export function createGame({host,difficulty='medium',seed='world-loop:medium:pre
   }
 
   for(const button of paceButtons)button.addEventListener('click',()=>setPace(button.dataset.pace));
-  addCountryButton.addEventListener('click',toggleCountryMenu);countrySearch.addEventListener('input',renderCountryOptions);countrySearch.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();closeCountryMenu();addCountryButton.focus();}});
+  addCountryButton.addEventListener('click',toggleCountryMenu);countrySearch.addEventListener('input',renderCountryOptions);pickerWrap.addEventListener('keydown',event=>{if(event.key==='Escape'&&!countryMenu.hidden){event.preventDefault();closeCountryMenu();addCountryButton.focus();}});
   pickerDocumentListener=event=>{if(!pickerWrap.contains(event.target))closeCountryMenu();};document.addEventListener('pointerdown',pickerDocumentListener);
   startButton.addEventListener('click',()=>{restartCounter++;beginSession(String(seed)+':start:'+restartCounter+':'+Date.now());});pauseButton.addEventListener('click',togglePause);restartButton.addEventListener('click',restartSession);changeButton.addEventListener('click',stopSession);soundToggleButton.addEventListener('click',toggleBackgroundMusic);soundMuteButton.addEventListener('click',toggleBackgroundMute);volumeSlider.addEventListener('input',setBackgroundVolume);fullscreenButton.addEventListener('click',toggleFullscreen);
   randomButton.addEventListener('click',()=>{selected=new Set(shuffle(WORLD_LOOP_COUNTRIES,Math.random).slice(0,8).map(country=>country.code));renderPicker();});clearButton.addEventListener('click',()=>{selected=new Set();renderPicker();});
