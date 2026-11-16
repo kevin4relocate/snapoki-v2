@@ -10,7 +10,7 @@ test('racing-car mascot faces right without mirroring the attached flag',()=>{
   assert.ok(WORLD_LOOP_FACE_RIGHT_MASCOTS.has('🏎️'),'Left-facing racing car must be mirrored');
   assert.match(css,/\.world-loop-mascot--face-right\{transform:scaleX\(-1\);transform-origin:center\}/);
   assert.match(source,/theme\.faceRight\.has\(racer\.mascot\)/);
-  assert.match(source,/<span class="'\+mascotClass\+'">'\+racer\.mascot\+'<\/span><span class="world-loop-racer-flag">/);
+  assert.match(source,/const miniBadge=theme\.showMiniBadge\?/);
   assert.doesNotMatch(css,/\.world-loop-racer-flag\s*\{[^}]*scaleX\(-1\)/);
 });
 
