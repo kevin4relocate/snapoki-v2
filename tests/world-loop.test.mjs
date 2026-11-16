@@ -57,7 +57,7 @@ test('World Loop exposes an explicit Stop action that returns to flag selection'
   assert.match(source,/setup\.hidden=false/);
   assert.match(source,/started=false/);
   assert.match(source,/changeButton\.disabled=true/);
-  assert.match(source,/Race stopped\. Pick countries/);
+  assert.match(source,/Race stopped\. Pick '\+theme\.plural/);
 });
 
 test('World Loop uses a compact no-scroll setup card',()=>{
@@ -203,7 +203,7 @@ test('World Loop never starts music with Start Race and manual Sound pause cance
 test('World Loop orients every animal mascot toward the race direction',()=>{
   const source=(fs.readFileSync('src/js/games/world-loop.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+fs.readFileSync('src/js/endless-race/themes/flag.js','utf8')),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
   assert.match(source,/WORLD_LOOP_FACE_RIGHT_MASCOTS=new Set\(\['🏎️','🐇','🦊','🐝','🐲','🦅','🐬','🦖'\]\)/);
-  assert.match(source,/WORLD_LOOP_FACE_RIGHT_MASCOTS\.has\(racer\.mascot\)\?' world-loop-mascot--face-right'/);
+  assert.match(source,/theme\.faceRight\.has\(racer\.mascot\)\?' world-loop-mascot--face-right'/);
   assert.match(styles,/\.world-loop-mascot--face-right\{transform:scaleX\(-1\);transform-origin:center\}/);
   assert.match(styles,/\.world-loop-mascot\{display:inline-block/);
   for(const animal of ['🐇','🦊','🐝','🐲','🦅','🐬','🦖'])assert.match(source,new RegExp(animal));
