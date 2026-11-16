@@ -332,6 +332,7 @@ function renderDaily(){
 }
 let currentDailyDate=utcDate();
 function updateCountdown(){
+  if(!capability('daily')||!$('#dailyCountdown'))return;
   const now=new Date(),today=utcDate(now);
   if(today!==currentDailyDate){
     currentDailyDate=today;
@@ -365,8 +366,10 @@ function syncVisibleTimers(){
     if(dailyCountdownInterval){clearInterval(dailyCountdownInterval);dailyCountdownInterval=null;}
     return;
   }
-  updateCountdown();
-  if(!dailyCountdownInterval)dailyCountdownInterval=setInterval(updateCountdown,1000);
+  if(capability('daily')){
+    updateCountdown();
+    if(!dailyCountdownInterval)dailyCountdownInterval=setInterval(updateCountdown,1000);
+  }
   if(game.experienceType!=='simulation'&&!state.timer&&state.startedAt&&!state.completed&&!state.loading&&!state.engineLocked){
     tick();state.timer=setInterval(tick,250);
   }
