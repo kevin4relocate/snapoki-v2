@@ -84,6 +84,37 @@ withContract({
     ranking:{enabled:false,proofType:'none',scoreModel:'none'},
     modeLabel:'Endless Race',
     ui:{controlTitle:'Race pace',controlHint:'Choose the feel',guideControlTitle:'Race pace presets',newLabel:'Change Countries',resetLabel:'Restart Race'}
+  }),
+  withContract({
+    key:'animal-loop',slug:'animal-loop',experienceType:'simulation',
+    name:'Animal Loop',featured:false,category:'Simulation',
+    tagline:'Pick your animals. Watch them run forever.',
+    description:'Choose 4–12 animals from 24 friendly characters and enjoy an endless, calming side-scrolling race with no finish line. Change Cruise, Dynamic or Sprint at any time without resetting.',
+    socialInsight:'Animal Loop is a relaxing race to watch: each animal runs at a neutral, independently seeded pace, with gentle surprises and occasional changes of leader.',
+    heroPills:['24 animals · choose 4–12','No flags · no finish line','Live pace · optional music'],
+    metrics:[['distance','LEADER DISTANCE'],['leader','LEADER'],['gap','P1 → P2 GAP'],['racers','RACERS']],
+    levels:[['easy','Cruise','slower pace · gentle movement'],['medium','Dynamic','balanced pace · changing leads'],['hard','Sprint','faster pace · stronger bursts']],
+    howTo:[
+      'Choose four to twelve animals from the searchable list or use Random 8. Each animal gets its own lane and recognizable animal character instead of a flag.',
+      'The animals run continuously in the same shared endless race engine used by World Loop. There is no finish line or automatic round reset.',
+      'Switch Cruise, Dynamic or Sprint while the race continues. The current session, distances and animal selection are preserved.',
+      'Pause to freeze the animation, Restart to start the same animals again from zero, or Stop to change the animal roster. Music is optional and off by default.'
+    ],
+    guide:{
+      focus:'Animal Loop is a gentle, watch-forever animal race. Pick your favorite animals, then enjoy how their positions shift naturally over time. It is a relaxing screensaver rather than a competitive puzzle or a betting game.',
+      tips:['Choose four to eight animals for an uncluttered view of the track.','Use Cruise for a relaxing ambient screen or Dynamic for occasional changes of leader.','Use Full Screen and optional music when you want to let the animals run in the background.'],
+      mistakes:['Expecting an automatic winner or finish line.','Using Restart instead of Pause when you want to keep the current distance.','Assuming each animal species has a built-in speed advantage; speed is seeded independently of the character.'],
+      controls:{heading:'Live screensaver controls',body:'Choose Cruise, Dynamic or Sprint without resetting the race. Pause and Resume hold the same session. Restart resets all distances. Stop lets you choose animals again. Play Sound, Mute and Volume work independently.'},
+      format:{heading:'Relaxed endless format',body:'This simulation has no finish line, rounds or winner. Animal characters are for fun; speed and bursts are chosen independently of species. The displayed Top 5 and distance counters update continuously.'},
+      difficultyCopy:'The Cruise, Dynamic and Sprint presets alter movement speed and bursts. They are visual pace settings, not difficulty levels, and changing them never restarts the race.',
+      ctaCopy:'Pick four to twelve animals or start with the default eight, then leave the soothing race running as long as you like.'
+    },
+    seoTitle:'Animal Loop – Endless Animal Race Screensaver | Snapoki',
+    seoDescription:'Pick from 24 cute animals and watch a relaxing endless race. No finish line, no flags, live Cruise/Dynamic/Sprint, optional music, Top 5 and full-screen screensaver.',
+    capabilities:{hint:false,solution:false,solutionSteps:false,drag:false,daily:false,ranking:false},
+    ranking:{enabled:false,proofType:'none',scoreModel:'none'},
+    modeLabel:'Endless Race',
+    ui:{controlTitle:'Race pace',controlHint:'Choose the mood',guideControlTitle:'Race pace presets',newLabel:'Change Animals',resetLabel:'Restart Race'}
   })
 
 ];
