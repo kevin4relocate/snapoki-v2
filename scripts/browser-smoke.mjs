@@ -97,6 +97,40 @@ async function verifyWorldLoopAnimation(page){
   if(!layout||layout.width<page.viewportSize().width*.90)throw new Error('World Loop race canvas did not expand to page width');
   if(await page.locator('#worldLoopSetup').isVisible())throw new Error('Ambient race should auto-start with default countries');
   if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==8)throw new Error('Auto-start race has wrong racer count');
+  // The pace and session actions must share one layout group.
+  const group=await page.evaluate(()=>{
+    const parent=document.querySelector('#worldLoopPace')?.parentElement;
+    return parent?.classList.contains('world-loop-session-controls')&&
+      ['worldLoopPause','worldLoopRestart','worldLoopChange'].every(id=>parent.contains(document.getElementById(id)));
+  });
+  if(!group)throw new Error('Pace buttons are not grouped with Pause/Restart/Stop');
+
+  // Changing leader flags/metres must never resize the scoreboard or recreate
+  // ranking cards on every HUD tick.
+  const order=page.locator('#worldLoopOrder li');
+  if(await order.count()!==4)throw new Error('Expected three stable ranking cards and More');
+  await page.evaluate(()=>{window.__wlOrderNodes=[...document.querySelectorAll('#worldLoopOrder li')];});
+  await page.waitForTimeout(350);
+  const unchanged=await page.evaluate(()=>window.__wlOrderNodes.every((node,i)=>node===document.querySelectorAll('#worldLoopOrder li')[i]));
+  if(!unchanged)throw new Error('World Loop recreated ranking cards between HUD updates');
+  const sizes=await page.evaluate(()=>{
+    const list=document.querySelector('#worldLoopOrder'),li=list.children[0];
+    const label=document.querySelector('.world-loop-order-label');
+    const cardBefore=li.getBoundingClientRect(),labelBefore=label.getBoundingClientRect();
+    li.children[1].textContent='🇬🇧';
+    li.children[2].textContent='GB';
+    li.children[3].textContent='9,999,999 m';
+    document.getElementById('worldLoopLeaderLabel').textContent='🇬🇧 GB LEADS';
+    const cardAfter=li.getBoundingClientRect(),labelAfter=label.getBoundingClientRect();
+    return {
+      cardWidthDiff:cardAfter.width-cardBefore.width,
+      labelWidthDiff:labelAfter.width-labelBefore.width,
+      cardLeftDiff:cardAfter.left-cardBefore.left,
+      cardHeightDiff:cardAfter.height-cardBefore.height
+    };
+  });
+  if(Object.values(sizes).some(x=>Math.abs(x)>1))throw new Error('Scoreboard shifts when flag or metres change: '+JSON.stringify(sizes));
+
   const pace=page.locator('#worldLoopPace [data-pace]');
   if(await pace.count()!==3)throw new Error('Missing live pace switch');
   const speed=key=>page.locator('#worldLoopPace [data-pace="'+key+'"]');
@@ -125,8 +159,13 @@ async function verifyWorldLoopAnimation(page){
   if(await speed('easy').getAttribute('aria-pressed')!=='true')throw new Error('Cruise did not activate instantly');
 
   const sound=page.locator('#worldLoopSoundToggle');
+  const soundBefore=await sound.boundingBox();
+  if(await sound.textContent()!=='♪ Play Sound')throw new Error('Unexpected initial sound label');
   await sound.click();
   await page.waitForFunction(()=>document.querySelector('#worldLoopSoundToggle')?.getAttribute('aria-pressed')==='true',null,{timeout:12000});
+  const soundDuring=await sound.boundingBox();
+  if(await sound.textContent()!=='♪ Play Sound'||Math.abs(soundDuring.x-soundBefore.x)>1||
+     Math.abs(soundDuring.width-soundBefore.width)>1)throw new Error('Play Sound moved or changed size while playing');
   const mute=page.locator('#worldLoopSoundMute');
   await mute.click();
   if(await mute.getAttribute('aria-pressed')!=='true')throw new Error('Mute did not apply immediately');
@@ -134,6 +173,9 @@ async function verifyWorldLoopAnimation(page){
   if(await page.locator('#worldLoopVolumeValue').textContent()!=='18%')throw new Error('Sound volume did not update live');
   await sound.click();
   await page.waitForFunction(()=>document.querySelector('#worldLoopSoundToggle')?.getAttribute('aria-pressed')==='false');
+  const soundAfter=await sound.boundingBox();
+  if(await sound.textContent()!=='♪ Play Sound'||Math.abs(soundAfter.x-soundBefore.x)>1||
+     Math.abs(soundAfter.width-soundBefore.width)>1)throw new Error('Play Sound moved or changed size after pausing');
   if(await distance()<after)throw new Error('Sound interaction reset the race');
 
   await page.locator('#worldLoopPause').click();

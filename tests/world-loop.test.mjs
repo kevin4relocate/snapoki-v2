@@ -72,7 +72,7 @@ test('World Loop uses a compact no-scroll setup card',()=>{
 
 test('World Loop current order shows Top 3 plus one compact remainder item',()=>{
   const source=fs.readFileSync('src/js/games/world-loop.js','utf8'),styles=fs.readFileSync('src/styles/world-loop.css','utf8');
-  assert.match(source,/ordered\.slice\(0,3\)\.forEach/);
+  assert.match(source,/const visible=Math\.min\(3,ordered\.length\)/);
   assert.match(source,/ordered\.length>3/);
   assert.match(source,/more\.className='more'/);
   assert.match(styles,/\.world-loop-orderbar li\.more/);

@@ -142,3 +142,162 @@ body[data-game="world-loop"] .world-loop-viewport{height:clamp(540px,72vh,940px)
   .world-loop-race-actions button{font-size:10px}
   .world-loop-pace button{padding:7px 6px}
 }
+
+
+/* Controls stay in stable groups when pace, pause state, or audio state changes. */
+.world-loop-race-actions{
+  display:flex;
+  flex:1 1 auto;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:nowrap;
+  gap:8px;
+  min-width:0;
+}
+.world-loop-session-controls{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+.world-loop-session-controls > button{
+  flex:0 0 72px;
+  min-width:72px;
+  white-space:nowrap;
+}
+.world-loop-session-controls .world-loop-pace{
+  order:0;
+  display:flex;
+  flex:0 0 auto;
+  width:auto;
+  min-width:0;
+  margin-right:5px;
+}
+.world-loop-session-controls .world-loop-pace button{
+  flex:0 0 76px;
+  min-width:76px;
+}
+.world-loop-audio-controls{
+  flex:0 0 auto;
+  width:auto;
+  order:0;
+  flex-wrap:nowrap;
+  justify-content:flex-start;
+  white-space:nowrap;
+}
+.world-loop-audio-controls .world-loop-sound-toggle{
+  flex:0 0 110px;
+  width:110px;
+  min-width:110px;
+  white-space:nowrap;
+}
+.world-loop-volume span{
+  flex:0 0 34px;
+  min-width:34px;
+  font-variant-numeric:tabular-nums;
+}
+.world-loop-race-actions .world-loop-fullscreen{
+  flex:0 0 140px;
+  width:140px;
+  white-space:nowrap;
+}
+
+/* Never size leaderboard cards from changing flags, leaders or metre values. */
+.world-loop-orderbar{grid-template-columns:132px minmax(0,1fr)}
+.world-loop-order-label{width:132px;min-width:132px}
+.world-loop-order-label small{
+  display:block;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.world-loop-orderbar ol{align-items:stretch}
+.world-loop-orderbar li{
+  box-sizing:border-box;
+  flex:0 0 166px;
+  width:166px;
+  min-width:166px;
+  max-width:166px;
+  grid-template-columns:12px 24px 24px minmax(0,1fr);
+  font-variant-numeric:tabular-nums;
+}
+.world-loop-orderbar li > span{
+  display:block;
+  width:24px;
+  min-width:24px;
+  text-align:center;
+  overflow:hidden;
+}
+.world-loop-orderbar li > strong{display:block;min-width:24px;white-space:nowrap}
+.world-loop-orderbar li > small{
+  display:block;
+  min-width:0;
+  text-align:right;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.world-loop-orderbar li.more{
+  box-sizing:border-box;
+  flex:0 0 98px;
+  width:98px;
+  min-width:98px;
+  max-width:98px;
+  grid-template-columns:18px 25px 1fr;
+}
+.world-loop-title small,.world-loop-lane-label small,
+.world-loop-story-grid article>strong{font-variant-numeric:tabular-nums}
+
+/* Responsive: wrap whole control groups rather than reshuffling buttons. */
+@media(max-width:1170px){
+  .world-loop-racebar{flex-wrap:wrap}
+  .world-loop-race-actions{
+    flex:1 1 100%;
+    max-width:none;
+    justify-content:flex-start;
+    flex-wrap:wrap;
+  }
+}
+@media(max-width:680px){
+  .world-loop-session-controls{
+    order:0;
+    width:100%;
+    flex:1 1 100%;
+    flex-wrap:wrap;
+  }
+  .world-loop-session-controls .world-loop-pace{
+    order:0;
+    width:auto;
+    flex:0 0 auto;
+    justify-content:flex-start;
+  }
+  .world-loop-session-controls .world-loop-pace button{
+    flex:0 0 auto;
+    min-width:64px;
+    min-height:44px;
+    padding-inline:8px;
+  }
+  .world-loop-session-controls > button{
+    flex:0 0 72px;
+    min-height:44px;
+  }
+  .world-loop-race-actions{order:0;gap:7px}
+  .world-loop-audio-controls{order:0;width:auto;justify-content:flex-start}
+  .world-loop-orderbar{grid-template-columns:minmax(0,1fr)}
+  .world-loop-order-label{width:100%;min-width:0}
+  .world-loop-orderbar li{min-width:166px}
+}
+
+
+/* Leader changes and growing metre counts must not change toolbar geometry. */
+.world-loop-title{flex:0 0 240px;width:240px;min-width:0}
+.world-loop-title small{
+  width:100%;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+@media(max-width:680px){
+  .world-loop-title{flex:1 1 100%;width:100%;max-width:100%}
+}
