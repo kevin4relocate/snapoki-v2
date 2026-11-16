@@ -60,6 +60,11 @@ function howToCard(g){
   return `<div class="game-howto game-howto--${g.slug}"><div class="game-howto-goal"><strong>Goal</strong><div>${goal}${ui.goal.note?`<em>${esc(ui.goal.note)}</em>`:''}</div></div>${rows}<div class="game-howto-tools">${tools}</div></div>`;
 }
 function gamePage(g){
+  // World Loop is an ambient screensaver, not a puzzle in a three-column layout.
+  // Build only the immersive race canvas: pace and sound live inside its toolbar.
+  if(g.key==='world-loop'){
+    return `<section class="game-hero world-loop-hero"><span class="eyebrow">Ambient screensaver</span><h1>${esc(g.tagline)}</h1><p>${esc(g.description)}</p><div class="hero-pills">${g.heroPills.map(p=>`<span>${esc(p)}</span>`).join('')}</div></section><section class="game-layout world-loop-layout"><section class="panel board-panel world-loop-panel"><div id="gameBoard" class="game-board" aria-live="off"></div><p id="gameStatus" class="board-feedback" aria-live="polite" hidden></p></section></section><script type="module" src="/assets/js/game-page.js"></script>`;
+  }
   const dailyEnabled=g.capabilities?.daily!==false;
   const difficulty=g.levels.map(([key,label,detail],i)=>`<button class="difficulty-button${i===0?' active':''}" data-difficulty="${key}" type="button"><span>${label}</span><small>${detail}</small></button>`).join('');
   const metrics=g.metrics.map(([key,label])=>`<div class="metric"><b data-metric-value="${key}">${key==='time'?'00:00':'0'}</b><small>${label}</small></div>`).join('');
