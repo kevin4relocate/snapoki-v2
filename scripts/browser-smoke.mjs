@@ -1,5 +1,5 @@
 import {createServer} from 'node:http';
-import {readFile,stat} from 'node:fs/promises';
+import {readFile,stat,mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
@@ -25,10 +25,18 @@ await listen();
 const port=server.address().port;
 let browser;
 const failures=[];
+const screenshots=process.env.SNAPOKI_PREVIEW_SCREENSHOTS==='1';
+async function capturePreview(page,slug,mode){
+  if(!screenshots||!['world-loop','animal-loop'].includes(slug))return;
+  await mkdir('preview-screenshots',{recursive:true});
+  await page.screenshot({path:`preview-screenshots/${slug}-${mode}.png`,fullPage:true,animations:'disabled'});
+}
+
 
 async function verifyMobileLayout(page,game){
   for(const width of [390,320]){
     await page.setViewportSize({width,height:844});
+    if(width===390)await capturePreview(page,game.slug,'mobile');
     const metrics=await page.evaluate(()=>({
       scroll:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
       width:document.documentElement.clientWidth
@@ -138,6 +146,7 @@ async function verifyAnimalLoop(page){
     throw new Error('Animal pace or Pause/Resume reset the session');
   await page.locator('#worldLoopChange').click();
   if(!(await page.locator('#worldLoopSetup').isVisible()))throw new Error('Animal Stop did not open animal picker');
+  await capturePreview(page,'animal-loop','chooser');
   if(!/Pick 4–12 animals/.test(await page.locator('.world-loop-setup-card h2').textContent()))
     throw new Error('Animal picker still uses country wording');
   await page.locator('#worldLoopAddCountry').click();
@@ -274,6 +283,7 @@ async function verifyWorldLoopAnimation(page){
   await page.waitForTimeout(160);
   if(await count()>stopped+1)throw new Error('World Loop RAF continues after Stop');
   if(!(await page.locator('#worldLoopSetup').isVisible()))throw new Error('Stop did not return to the country picker');
+  await capturePreview(page,'world-loop','chooser');
 
   const geometry=await page.evaluate(()=>{
     const card=document.querySelector('.world-loop-setup-card'),chip=document.querySelector('.world-loop-selected-chip');
@@ -394,6 +404,10 @@ try{
         await page.locator('#newPuzzle').click();
         await page.waitForFunction(()=>!document.querySelector('#gameBoard')?.hasAttribute('aria-busy'),null,{timeout:12000});
         if(pageErrors.length)throw new Error(pageErrors.join('; '));
+      }
+      if(['world-loop','animal-loop'].includes(game.key)){
+        await page.waitForTimeout(450);
+        await capturePreview(page,game.slug,'desktop');
       }
       if(game.key==='animal-chess')await verifyAnimalChess(page);
       if(game.key==='world-loop')await verifyWorldLoopAnimation(page);
