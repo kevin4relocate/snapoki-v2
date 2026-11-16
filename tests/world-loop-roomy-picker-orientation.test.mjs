@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {WORLD_LOOP_MASCOTS,WORLD_LOOP_FACE_RIGHT_MASCOTS,WORLD_LOOP_ALREADY_RIGHT_OR_NEUTRAL_MASCOTS} from '../src/js/games/world-loop.js';
-const source=readFileSync('src/js/games/world-loop.js','utf8');
+const source=(readFileSync('src/js/games/world-loop.js','utf8')+'\n'+readFileSync('src/js/endless-race/engine.js','utf8')+'\n'+readFileSync('src/js/endless-race/themes/flag.js','utf8'));
 const css=readFileSync('src/styles/world-loop.css','utf8');
 
 test('racing-car mascot faces right without mirroring the attached flag',()=>{
   assert.ok(WORLD_LOOP_MASCOTS.includes('🏎️'),'Racing car must be in racer pool');
   assert.ok(WORLD_LOOP_FACE_RIGHT_MASCOTS.has('🏎️'),'Left-facing racing car must be mirrored');
   assert.match(css,/\.world-loop-mascot--face-right\{transform:scaleX\(-1\);transform-origin:center\}/);
-  assert.match(source,/WORLD_LOOP_FACE_RIGHT_MASCOTS\.has\(racer\.mascot\)/);
+  assert.match(source,/theme\.faceRight\.has\(racer\.mascot\)/);
   assert.match(source,/<span class="'\+mascotClass\+'">'\+racer\.mascot\+'<\/span><span class="world-loop-racer-flag">/);
   assert.doesNotMatch(css,/\.world-loop-racer-flag\s*\{[^}]*scaleX\(-1\)/);
 });
