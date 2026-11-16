@@ -120,7 +120,7 @@ test('World Loop country search floats upward without expanding the setup card',
   assert.match(styles,/\.world-loop-country-menu\{[^}]*position:absolute;[^}]*bottom:calc\(100% \+ 6px\);[^}]*max-height:172px/);
   assert.match(styles,/\.world-loop-country-options\{[^}]*max-height:118px;[^}]*overflow-y:auto/);
   assert.doesNotMatch(styles,/\.world-loop-country-menu\{[^}]*position:relative/);
-  assert.match(source,/onMetrics\(\{distance:'0 m'[\s\S]*?onStatus\(''\);/);
+  assert.match(source,/loadSelection\(\);renderPicker\(\);syncPace\(\);syncAudioUi\(\)/);
   assert.doesNotMatch(source,/Pick 4–12 flags, then start the endless 24\/7 race\./);
 });
 
@@ -257,7 +257,7 @@ test('World Loop launch controls avoid duplicate shared restart/reset actions an
   const page=fs.readFileSync('src/js/game-page.js','utf8');
   const config=fs.readFileSync('src/js/games-config.js','utf8');
   assert.match(styles,/body\[data-game="world-loop"\] \.left-panel \.control-stack\{display:none!important\}/);
-  assert.match(source,/setDifficulty\(nextDifficulty\)\{cfg=LEVEL\[nextDifficulty\]\|\|LEVEL\.medium;\}/);
+  assert.match(source,/setDifficulty\(nextDifficulty\)\{setPace\(nextDifficulty\);\}/);
   assert.match(source,/reset\(\)\{if\(started\)restartSession\(\);\}/);
   assert.match(page,/game\.key==='world-loop'&&state\.engine\?\.setDifficulty/);
   assert.match(config,/modeLabel:'Endless Race'/);
