@@ -192,7 +192,27 @@ async function verifyAquariumLoop(page){
     throw new Error('Aquarium did not start with selected creatures');
   const stored=await page.evaluate(()=>localStorage.getItem('snapoki:aquarium-loop:roster:v1'));
   if(!stored?.includes('SH'))throw new Error('Aquarium did not persist its own selection');
-  console.log('PASS aquarium-loop: natural swim, 2D motion, ambient controls, species picker, privacy and storage');
+  // Twelve is an enforceable cap, including after reload and Change.
+  await page.locator('#ambientStop').click();
+  await page.locator('#ambientSearch').fill('');
+  for(let i=0;i<3;i++){
+    await page.locator('.ambient-species-choice[aria-pressed="false"]:not([disabled])').first().click();
+  }
+  if(await page.locator('.ambient-selected-chip').count()!==12)
+    throw new Error('Aquarium cannot reach the maximum twelve creatures');
+  if(await page.locator('.ambient-species-choice[aria-pressed="false"]:not([disabled])').count())
+    throw new Error('Aquarium allowed a thirteenth creature');
+  await page.locator('#ambientStart').click();
+  if(await page.locator('.ambient-swimmer').count()!==12)
+    throw new Error('Aquarium does not animate all twelve creatures');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('.ambient-app'));
+  if(!(await page.locator('#ambientPicker').isVisible())||await page.locator('.ambient-selected-chip').count()!==12)
+    throw new Error('Aquarium reload must restore twelve saved creatures to the chooser, without auto-start');
+  await page.locator('#ambientStart').click();
+  if(await page.locator('.ambient-swimmer').count()!==12)
+    throw new Error('Aquarium could not resume twelve saved creatures');
+  console.log('PASS aquarium-loop: natural swim, picker-first, 12-creature cap, reload, audio, mobile and storage');
 }
 async function verifyAnimalLoop(page){
   if(await page.locator('.world-loop-app[data-race-theme="animal"]').count()!==1)
@@ -246,7 +266,27 @@ async function verifyAnimalLoop(page){
     throw new Error('Animal characters unexpectedly acquired country flags');
   const roster=await page.evaluate(()=>localStorage.getItem('snapoki:animal-loop:roster:v1'));
   if(!roster?.includes('KL'))throw new Error('Animal theme selection was not stored separately');
-  console.log('PASS animal-loop: 24 animals, no flags, shared Top 5/pace, independent selection and restart');
+  await page.locator('#worldLoopChange').click();
+  await page.locator('#worldLoopAddCountry').click();
+  await page.locator('#worldLoopCountrySearch').fill('');
+  for(let i=0;i<3;i++){
+    await page.locator('.world-loop-country-option[aria-pressed="false"]').first().click();
+  }
+  if(await page.locator('.world-loop-selected-chip').count()!==12)
+    throw new Error('Animal Loop cannot select twelve racers');
+  if(!(await page.locator('#worldLoopAddCountry').isDisabled()))
+    throw new Error('Animal Loop must disable Add at twelve racers');
+  await page.locator('#worldLoopStart').click();
+  if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==12)
+    throw new Error('Animal Loop did not start all twelve racers');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('.world-loop-app'));
+  if(!(await page.locator('#worldLoopSetup').isVisible())||await page.locator('.world-loop-selected-chip').count()!==12)
+    throw new Error('Animal reload must restore saved twelve to the picker without racing');
+  await page.locator('#worldLoopStart').click();
+  if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==12)
+    throw new Error('Animal Loop failed to start saved twelve racers');
+  console.log('PASS animal-loop: chooser-first, max twelve, saved reload, no flags and shared race controls');
 }
 async function verifyWorldLoopAnimation(page){
   const restored=await page.locator('#worldLoopSelected .world-loop-selected-chip').count();
