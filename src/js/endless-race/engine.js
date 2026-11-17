@@ -118,8 +118,9 @@ export function createEndlessRace({host,difficulty='medium',seed='endless-race:m
     if(!matches.length){countryOptions.innerHTML='<div class="world-loop-country-empty">No '+theme.plural+' found.</div>';return;}
     for(const country of matches){
       const button=document.createElement('button'),isSelected=selected.has(country.code);
-      button.type='button';button.className='world-loop-country-option'+(isSelected?' selected':'');button.dataset.code=country.code;button.setAttribute('aria-pressed',String(isSelected));button.innerHTML='<span>'+country.flag+'</span><strong class="world-loop-country-name">'+country.name+'</strong><small>'+country.code+'</small><i>'+(isSelected?'✓':'')+'</i>';
-      button.addEventListener('click',()=>{if(isSelected)selected.delete(country.code);else if(selected.size<12)selected.add(country.code);renderPicker();const replacement=[...countryOptions.querySelectorAll('button')].find(option=>option.dataset.code===country.code);if(replacement&&!addCountryButton.disabled)replacement.focus();else{closeCountryMenu();addCountryButton.focus();}});
+      button.type='button';button.className='world-loop-country-option'+(isSelected?' selected':'');button.dataset.code=country.code;button.setAttribute('aria-pressed',String(isSelected));
+      if(theme.mode==='animal')button.disabled=!isSelected&&selected.size>=12;button.innerHTML='<span>'+country.flag+'</span><strong class="world-loop-country-name">'+country.name+'</strong><small>'+country.code+'</small><i>'+(isSelected?'✓':'')+'</i>';
+      button.addEventListener('click',()=>{if(isSelected)selected.delete(country.code);else if(selected.size<12)selected.add(country.code);renderPicker();const replacement=[...countryOptions.querySelectorAll('button')].find(option=>option.dataset.code===country.code);if(theme.mode==='animal'){if(replacement&&!replacement.disabled)replacement.focus();else countrySearch.focus();return;}if(replacement&&!addCountryButton.disabled)replacement.focus();else{closeCountryMenu();addCountryButton.focus();}});
       countryOptions.appendChild(button);
     }
   }
@@ -128,10 +129,11 @@ export function createEndlessRace({host,difficulty='medium',seed='endless-race:m
     for(const code of sortRaceCodes(theme,[...selected])){
       const country=itemMap.get(code),chip=document.createElement('button');
       chip.type='button';chip.className='world-loop-selected-chip';chip.title='Remove '+country.name;chip.setAttribute('aria-label','Remove '+country.name);chip.innerHTML='<span>'+country.flag+'</span><strong>'+country.name+'</strong><i>×</i>';
-      chip.addEventListener('click',()=>{selected.delete(code);renderPicker();addCountryButton.focus();});selectedHost.appendChild(chip);
+      chip.addEventListener('click',()=>{selected.delete(code);renderPicker();if(theme.mode==='animal')countrySearch.focus();else addCountryButton.focus();});selectedHost.appendChild(chip);
     }
     pickCount.textContent=selected.size+' / 12 selected';addCountryButton.disabled=selected.size>=12;startButton.disabled=selected.size<4;renderCountryOptions();
-    if(!countryMenu.hidden)positionCountryMenu();
+    if(theme.mode==='animal'){countryMenu.hidden=false;countryMenu.classList.remove('open-up');countryMenu.style.maxHeight='none';}
+    else if(!countryMenu.hidden)positionCountryMenu();
   }
   function positionCountryMenu(){
     // Open toward the side with more usable track space. The expanded menu
@@ -145,6 +147,7 @@ export function createEndlessRace({host,difficulty='medium',seed='endless-race:m
     countryMenu.style.maxHeight=Math.max(130,Math.min(320,openUp?above:below))+'px';
   }
   function toggleCountryMenu(){
+    if(theme.mode==='animal'){countrySearch.focus();return;}
     const opening=countryMenu.hidden;
     countryMenu.hidden=!opening;addCountryButton.setAttribute('aria-expanded',String(opening));
     if(opening){renderCountryOptions();positionCountryMenu();countrySearch.focus();}
@@ -387,7 +390,7 @@ export function createEndlessRace({host,difficulty='medium',seed='endless-race:m
 
   for(const button of paceButtons)button.addEventListener('click',()=>setPace(button.dataset.pace));
   addCountryButton.addEventListener('click',toggleCountryMenu);countrySearch.addEventListener('input',renderCountryOptions);pickerWrap.addEventListener('keydown',event=>{if(event.key==='Escape'&&!countryMenu.hidden){event.preventDefault();closeCountryMenu();addCountryButton.focus();}});
-  pickerDocumentListener=event=>{if(!pickerWrap.contains(event.target))closeCountryMenu();};document.addEventListener('pointerdown',pickerDocumentListener);
+  pickerDocumentListener=event=>{if(theme.mode!=='animal'&&!pickerWrap.contains(event.target))closeCountryMenu();};document.addEventListener('pointerdown',pickerDocumentListener);
   startButton.addEventListener('click',()=>{restartCounter++;beginSession(String(seed)+':start:'+restartCounter+':'+Date.now());});pauseButton.addEventListener('click',togglePause);restartButton.addEventListener('click',restartSession);changeButton.addEventListener('click',stopSession);soundToggleButton.addEventListener('click',toggleBackgroundMusic);soundMuteButton.addEventListener('click',toggleBackgroundMute);volumeSlider.addEventListener('input',setBackgroundVolume);fullscreenButton.addEventListener('click',toggleFullscreen);
   randomButton.addEventListener('click',()=>{selected=new Set(shuffle(theme.items,Math.random).slice(0,8).map(entry=>entry.code));renderPicker();});clearButton.addEventListener('click',()=>{selected=new Set();renderPicker();});
   fullscreenListener=syncFullscreen;document.addEventListener('fullscreenchange',fullscreenListener);document.addEventListener('webkitfullscreenchange',fullscreenListener);visibilityListener=()=>{

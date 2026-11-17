@@ -18,6 +18,8 @@ Snapoki is a guest-first browser game platform with a registry-driven architectu
 
 The first seven games are puzzles; Animal Chess is a board game, while World Loop (Flag theme), Animal Loop and Aquarium Loop are simulations. These simulations opt out of puzzle-only Daily completion and public rankings.
 
+Animal and Aquarium Loop start on a chooser, not an autoplay simulation. Their choosers display up to 12 saved or selected creatures and the full theme catalogue in a compact grid within the scene without nested scrolling. The Animal theme exposes all 24 choices inline; Aquarium exposes its 16 sea creatures inline. The search field filters the visible choices; Start begins the scene and Change returns to the same chooser. Flag/World Loop keeps its existing country dropdown behavior.
+
 ## Public product rules
 
 - **Guest-only public play.** No public registration, Login, Profile or Leaderboard.
