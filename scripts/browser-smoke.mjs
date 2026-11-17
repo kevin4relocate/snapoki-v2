@@ -88,6 +88,8 @@ async function verifyMobileLayout(page,game){
       const card=await page.locator('.ambient-picker-card').boundingBox();
       if(!card||card.x<0||card.x+card.width>width+1)
         throw new Error(`${width}px Aquarium picker overflows the viewport`);
+      if(!(await page.locator('#ambientStart').isVisible()))
+        throw new Error(`${width}px Aquarium Start button is hidden inside the picker`);
       await page.locator('#ambientStart').click();
       if(!(await page.locator('#ambientScene').isVisible()))
         throw new Error('Aquarium failed to restart on mobile');
@@ -147,6 +149,15 @@ async function verifyAquariumLoop(page){
     throw new Error('Aquarium should not swim before user clicks Start');
   if(await page.locator('.ambient-selected-chip').count()!==8)
     throw new Error('Aquarium should preselect eight creatures for editing');
+  const chooserLayout=await page.evaluate(()=>{
+    const card=document.querySelector('.ambient-picker-card').getBoundingClientRect();
+    const scene=document.querySelector('#ambientScene').getBoundingClientRect();
+    const start=document.querySelector('#ambientStart').getBoundingClientRect();
+    const roster=getComputedStyle(document.querySelector('.ambient-selected'));
+    return {cardHeight:card.height,sceneBottom:scene.bottom,startBottom:start.bottom,columns:roster.gridTemplateColumns.split(' ').length};
+  });
+  if(chooserLayout.cardHeight>520||chooserLayout.startBottom>chooserLayout.sceneBottom+1||chooserLayout.columns!==6)
+    throw new Error('Aquarium desktop chooser should stay compact with Start visible: '+JSON.stringify(chooserLayout));
   await capturePreview(page,'aquarium-loop','chooser');
   await page.locator('#ambientStart').click();
   if(await page.locator('.ambient-swimmer').count()!==8)
