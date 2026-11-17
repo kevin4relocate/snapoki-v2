@@ -90,6 +90,17 @@ async function verifyMobileLayout(page,game){
         throw new Error(`${width}px Aquarium picker overflows the viewport`);
       if(!(await page.locator('#ambientStart').isVisible()))
         throw new Error(`${width}px Aquarium Start button is hidden inside the picker`);
+      const fit=await page.evaluate(()=>{
+        const picker=document.querySelector('#ambientPicker'),card=document.querySelector('.ambient-picker-card'),scene=document.querySelector('#ambientScene');
+        const grid=document.querySelector('#ambientSpeciesGrid'),selected=document.querySelector('#ambientSelected');
+        const start=document.querySelector('#ambientStart').getBoundingClientRect();
+        return {allVisible:card.getBoundingClientRect().top>=scene.getBoundingClientRect().top-1&&
+          start.bottom<=scene.getBoundingClientRect().bottom+1,
+          overflow:[picker,card,grid,selected].map(el=>el.scrollHeight>el.clientHeight+2||
+            ['auto','scroll'].includes(getComputedStyle(el).overflowY))};
+      });
+      if(!fit.allVisible||fit.overflow.some(Boolean))
+        throw new Error(`${width}px Aquarium must fit the entire chooser without nested scrollbars: ${JSON.stringify(fit)}`);
       await page.locator('#ambientStart').click();
       if(!(await page.locator('#ambientScene').isVisible()))
         throw new Error('Aquarium failed to restart on mobile');
@@ -158,6 +169,23 @@ async function verifyAquariumLoop(page){
   });
   if(chooserLayout.cardHeight>520||chooserLayout.startBottom>chooserLayout.sceneBottom+1||chooserLayout.columns!==6)
     throw new Error('Aquarium desktop chooser should stay compact with Start visible: '+JSON.stringify(chooserLayout));
+  const noScroll=await page.evaluate(()=>{
+    const picker=document.querySelector('#ambientPicker');
+    const grid=document.querySelector('#ambientSpeciesGrid');
+    const selected=document.querySelector('#ambientSelected');
+    const card=document.querySelector('.ambient-picker-card');
+    const scene=document.querySelector('#ambientScene');
+    const last=grid.lastElementChild.getBoundingClientRect();
+    const start=document.querySelector('#ambientStart').getBoundingClientRect();
+    return {
+      gridVisible: [...grid.querySelectorAll('button')].length===16,
+      overflow:[picker,grid,selected,card].map(el=>({name:el.className,scroll:el.scrollHeight,client:el.clientHeight,style:getComputedStyle(el).overflowY})),
+      fullyInside:card.getBoundingClientRect().top>=scene.getBoundingClientRect().top-1&&
+        start.bottom<=scene.getBoundingClientRect().bottom+1&&last.bottom<=start.top
+    };
+  });
+  if(!noScroll.gridVisible||!noScroll.fullyInside||noScroll.overflow.some(x=>x.scroll>x.client+2||x.style==='scroll'||x.style==='auto'))
+    throw new Error('Aquarium must show all 16 options and Start in one screen without scrollbars: '+JSON.stringify(noScroll));
   await capturePreview(page,'aquarium-loop','chooser');
   await page.locator('#ambientStart').click();
   if(await page.locator('.ambient-swimmer').count()!==8)
