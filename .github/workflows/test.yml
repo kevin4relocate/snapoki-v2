@@ -21,6 +21,34 @@ jobs:
         run: |
           set -o pipefail
           npm test 2>&1 | tee test-output.txt
+      - name: Audit live production (report only)
+        if: ${{ github.event_name == 'pull_request' }}
+        continue-on-error: true
+        run: |
+          set +e
+          npm run verify:production -- --url https://snapoki.com > production-audit.log 2>&1
+          result=$?
+          cat production-audit.log
+          {
+            echo '### Snapoki live production audit'
+            echo ''
+            if [ "$result" -eq 0 ]; then
+              echo '✅ Current live routes, guides, assets and public API passed verification.'
+            else
+              echo '⚠️ Current production could not be verified; this does **not** mean the PR code failed.'
+            fi
+            echo ''
+            echo 'See the production-audit artifact for the HTTP/release diagnostics.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - name: Upload production audit logs
+        if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-audit-log
+          path: production-audit.log
+          if-no-files-found: warn
+          retention-days: 14
       - name: Install Chromium for browser smoke tests
         run: npx playwright install --with-deps chromium
       - name: Run real-browser smoke tests
