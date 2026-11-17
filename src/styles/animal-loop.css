@@ -65,3 +65,87 @@ body[data-game="animal-loop"] .world-loop-viewport{height:clamp(540px,72vh,940px
   body[data-game="animal-loop"] .world-loop-viewport{height:clamp(510px,75vh,760px)}
   .world-loop-app[data-race-theme="animal"] .world-loop-orderbar li{min-width:180px}
 }
+
+/* Animal chooser: all 24 species + up to 12 selections visible without
+   internal scrollbars. Restrict to Animal theme: Flag keeps its country popup. */
+.world-loop-app[data-race-theme="animal"] .world-loop-setup{
+  display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-setup[hidden]{display:none}
+.world-loop-app[data-race-theme="animal"] .world-loop-setup-card{
+  width:min(940px,100%);max-height:100%;margin:0;padding:12px 15px;overflow:visible;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-setup-card h2{font-size:21px;margin-bottom:6px}
+.world-loop-app[data-race-theme="animal"] .world-loop-pick-head{margin-bottom:6px;gap:8px}
+.world-loop-app[data-race-theme="animal"] .world-loop-pick-head button{min-height:36px;padding:6px 10px}
+.world-loop-app[data-race-theme="animal"] .world-loop-selected{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));min-height:0;
+  max-height:none;overflow:visible;gap:5px;margin-bottom:7px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-selected-chip{
+  grid-template-columns:22px minmax(0,1fr) 11px;min-height:36px;
+  gap:5px;padding:5px 7px;border-radius:8px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-selected-chip span{font-size:18px}
+.world-loop-app[data-race-theme="animal"] .world-loop-selected-chip strong{font-size:10px}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-trigger{display:none}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-menu{
+  position:static;inset:auto;display:flex;flex-direction:column;
+  max-height:none!important;overflow:visible;padding:6px;
+  border-radius:10px;box-shadow:none;background:rgba(6,18,20,.45);
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-menu[hidden]{display:none}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-menu input{
+  height:36px;min-height:36px;margin-bottom:6px;padding:0 9px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-options{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+  max-height:none;min-height:0;overflow:visible;gap:5px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-option{
+  grid-template-columns:20px minmax(0,1fr) 11px;
+  min-height:35px;padding:4px 5px;gap:4px;border-radius:7px;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-option>span{font-size:18px}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-option strong{font-size:9px}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-option small{display:none}
+.world-loop-app[data-race-theme="animal"] .world-loop-country-option:disabled{opacity:.42;cursor:not-allowed}
+.world-loop-app[data-race-theme="animal"] .world-loop-start{
+  min-height:42px;margin-top:7px;padding:8px 12px;
+}
+@media(min-width:681px) and (max-width:900px){
+  .world-loop-app[data-race-theme="animal"] .world-loop-setup-card{padding:11px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-selected{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .world-loop-app[data-race-theme="animal"] .world-loop-country-options{grid-template-columns:repeat(4,minmax(0,1fr))}
+  body[data-game="animal-loop"] .world-loop-viewport{height:clamp(580px,75vh,780px)}
+}
+@media(max-width:680px){
+  body[data-game="animal-loop"] .world-loop-viewport{height:clamp(690px,85dvh,820px)}
+  .world-loop-app[data-race-theme="animal"] .world-loop-setup{padding:6px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-setup-card{padding:9px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-setup-card h2{font-size:17px;margin-bottom:5px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-pick-head{margin-bottom:5px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-pick-head strong{font-size:10px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-pick-head button{min-height:34px;padding:5px 7px;font-size:10px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-selected{
+    grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-bottom:6px;
+  }
+  .world-loop-app[data-race-theme="animal"] .world-loop-selected-chip{
+    grid-template-columns:17px minmax(0,1fr) 10px;
+    min-height:33px;padding:4px;gap:3px;
+  }
+  .world-loop-app[data-race-theme="animal"] .world-loop-selected-chip span{font-size:16px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-selected-chip strong{font-size:9px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-country-menu{padding:5px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-country-menu input{height:34px;min-height:34px;margin-bottom:5px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-country-options{
+    grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;
+  }
+  .world-loop-app[data-race-theme="animal"] .world-loop-country-option{
+    grid-template-columns:17px minmax(0,1fr) 9px;
+    min-height:33px;padding:3px;gap:3px;
+  }
+  .world-loop-app[data-race-theme="animal"] .world-loop-country-option>span{font-size:15px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-country-option strong{font-size:9px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-start{min-height:42px;margin-top:6px}
+}
