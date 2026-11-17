@@ -425,3 +425,72 @@ body[data-game="world-loop"] .world-loop-viewport{height:clamp(540px,72vh,940px)
   .world-loop-selected{grid-template-columns:1fr;max-height:215px}
   .world-loop-selected-chip strong{font-size:12px}
 }
+
+
+/* Unified Loop toolbar: use Aquarium's filled segmented-control interaction,
+   with theme-specific accent tokens (World blue, Animal green). */
+.world-loop-app[data-race-theme="flag"]{
+  --wl-pace-from:#2153a2;
+  --wl-pace-to:#397be8;
+  --wl-pace-border:rgba(119,177,255,.55);
+}
+.world-loop-app[data-race-theme="animal"]{
+  --wl-pace-from:#126855;
+  --wl-pace-to:#259f78;
+  --wl-pace-border:rgba(96,236,183,.55);
+}
+.world-loop-app .world-loop-pace{
+  border-radius:13px;
+  background:rgba(8,20,30,.72);
+  border-color:color-mix(in srgb,var(--wl-accent) 28%,transparent);
+}
+.world-loop-app .world-loop-pace button{
+  border-radius:9px;
+  min-height:38px;
+  transition:background .18s ease,color .18s ease,box-shadow .18s ease;
+}
+.world-loop-app .world-loop-pace button:hover:not(:disabled):not([aria-pressed="true"]){
+  color:#fff;
+  background:color-mix(in srgb,var(--wl-accent) 14%,transparent);
+}
+.world-loop-app .world-loop-pace button.active,
+.world-loop-app .world-loop-pace button[aria-pressed="true"],
+.world-loop-app .world-loop-pace button[aria-pressed="true"]:hover:not(:disabled){
+  background:linear-gradient(135deg,var(--wl-pace-from,#2153a2),var(--wl-pace-to,#397be8));
+  border-color:var(--wl-pace-border,rgba(119,177,255,.55));
+  color:#fff;
+  box-shadow:0 2px 10px rgba(3,13,31,.35);
+}
+.world-loop-app .world-loop-race-actions button:hover:not(:disabled),
+.world-loop-app .world-loop-pick-head button:hover:not(:disabled){
+  border-color:color-mix(in srgb,var(--wl-accent) 58%,rgba(255,255,255,.12));
+  background:color-mix(in srgb,var(--wl-accent) 14%,rgba(255,255,255,.04));
+  color:#fff;
+}
+.world-loop-app .world-loop-start:not(:disabled){
+  color:#071b20;
+  background:linear-gradient(110deg,var(--wl-accent),var(--wl-accent2));
+  border:1px solid transparent;
+  box-shadow:0 4px 16px rgba(0,0,0,.17);
+}
+.world-loop-app .world-loop-start:hover:not(:disabled){
+  color:#071b20;
+  background:linear-gradient(110deg,color-mix(in srgb,var(--wl-accent) 76%,white),color-mix(in srgb,var(--wl-accent2) 77%,white));
+  border-color:rgba(255,255,255,.55);
+  box-shadow:0 7px 24px rgba(0,0,0,.22);
+  transform:translateY(-1px);
+}
+.world-loop-app .world-loop-start:active:not(:disabled){transform:translateY(0)}
+.world-loop-app .world-loop-start:disabled{opacity:.42;cursor:not-allowed}
+.world-loop-app .world-loop-race-actions button:focus-visible,
+.world-loop-app .world-loop-pick-head button:focus-visible,
+.world-loop-app .world-loop-start:focus-visible,
+.world-loop-app .world-loop-selected-chip:focus-visible,
+.world-loop-app .world-loop-country-option:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--wl-accent) 70%,white);
+  outline-offset:2px;
+}
+@media(prefers-reduced-motion:reduce){
+  .world-loop-app .world-loop-pace button{transition:none}
+  .world-loop-app .world-loop-start:hover:not(:disabled){transform:none}
+}
