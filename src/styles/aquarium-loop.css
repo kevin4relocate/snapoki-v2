@@ -292,6 +292,49 @@ body[data-game="aquarium-loop"] .game-hero.world-loop-hero .hero-pills{margin-to
   .ambient-species-choice{gap:4px;padding:6px 7px}
   .ambient-species-choice strong{font-size:9px}
 }
+/* Compact aquarium chooser: a two-row roster and a short scrollable catalogue.
+   Keep comfortable hit targets and an always-visible Start action on desktop. */
+@media(min-width:801px){
+  .ambient-picker{padding:12px}
+  .ambient-picker-card{width:min(920px,100%);padding:16px 18px;border-radius:16px}
+  .ambient-picker h2{font-size:23px;margin-bottom:7px}
+  .ambient-picker-heading{margin-bottom:7px}
+  .ambient-picker-heading button{min-height:36px;padding:6px 12px}
+  .ambient-selected{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:9px}
+  .ambient-selected-chip{grid-template-columns:22px minmax(0,1fr) 12px;gap:5px;min-height:38px;padding:5px 7px;border-radius:8px}
+  .ambient-selected-chip span{font-size:19px}
+  .ambient-selected-chip strong{font-size:10px}
+  .ambient-selected-chip i{font-size:16px}
+  .ambient-search-label{margin-bottom:4px}
+  .ambient-picker input[type="search"]{height:38px;margin-bottom:8px}
+  .ambient-species-grid{gap:6px;max-height:140px}
+  .ambient-species-choice{grid-template-columns:24px minmax(0,1fr) 14px;gap:5px;min-height:38px;padding:5px 8px;border-radius:8px}
+  .ambient-species-choice>span{font-size:18px}
+  .ambient-start{min-height:44px;margin-top:9px;padding:9px}
+}
+@media(min-width:681px) and (max-width:800px){
+  .ambient-picker-card{padding:15px}
+  .ambient-picker h2{margin-bottom:8px;font-size:22px}
+  .ambient-selected{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px}
+  .ambient-selected-chip{min-height:40px;padding:6px 8px}
+  .ambient-species-grid{max-height:150px}
+  .ambient-species-choice{min-height:42px}
+  .ambient-picker input[type="search"]{height:40px}
+  .ambient-start{min-height:44px;margin-top:9px}
+}
+@media(max-width:680px){
+  .ambient-picker h2{font-size:20px;margin-bottom:8px}
+  .ambient-picker-heading{margin-bottom:7px}
+  .ambient-picker-heading button{min-height:40px}
+  .ambient-selected{max-height:124px;margin-bottom:9px;gap:5px}
+  .ambient-selected-chip{min-height:40px;padding:5px 7px}
+  .ambient-selected-chip span{font-size:19px}
+  .ambient-search-label{margin-bottom:4px}
+  .ambient-picker input[type="search"]{height:42px;margin-bottom:8px}
+  .ambient-species-grid{max-height:155px;gap:5px}
+  .ambient-species-choice{min-height:42px}
+  .ambient-start{min-height:46px;margin-top:9px}
+}
 @media(prefers-reduced-motion:reduce){
   .ambient-bubble,.ambient-reef i{animation:none!important}
   .ambient-controls button,.ambient-picker button{transition:none}
