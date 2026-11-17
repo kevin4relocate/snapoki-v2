@@ -335,6 +335,55 @@ body[data-game="aquarium-loop"] .game-hero.world-loop-hero .hero-pills{margin-to
   .ambient-species-choice{min-height:42px}
   .ambient-start{min-height:46px;margin-top:9px}
 }
+/* One-screen chooser: render every selected chip and all 16 options without
+   independent scrollbars. Compact grid adapts instead of clipping the Start button. */
+.ambient-picker{overflow:hidden;display:flex;align-items:center;justify-content:center;padding:10px}
+.ambient-picker-card{flex:0 1 auto;max-height:100%;margin:0;overflow:visible}
+.ambient-selected,.ambient-species-grid{max-height:none;overflow:visible;overscroll-behavior:auto}
+@media(min-width:801px){
+  .ambient-scene{min-height:535px}
+  .ambient-picker-card{padding:12px 16px}
+  .ambient-picker h2{font-size:21px;margin-bottom:5px}
+  .ambient-picker-heading{margin-bottom:5px}
+  .ambient-selected{gap:5px;margin-bottom:7px}
+  .ambient-selected-chip{min-height:36px}
+  .ambient-picker input[type="search"]{height:36px;margin-bottom:6px}
+  .ambient-species-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  .ambient-species-choice{min-height:35px}
+  .ambient-start{min-height:42px;margin-top:7px}
+}
+@media(min-width:681px) and (max-width:800px){
+  .ambient-scene{min-height:570px}
+  .ambient-picker-card{padding:12px}
+  .ambient-selected{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+  .ambient-selected-chip{grid-template-columns:20px minmax(0,1fr) 12px;gap:4px;min-height:38px}
+  .ambient-selected-chip span{font-size:18px}
+  .ambient-selected-chip strong{font-size:10px}
+  .ambient-species-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  .ambient-species-choice{min-height:38px}
+}
+@media(max-width:680px){
+  .ambient-scene{height:clamp(675px,82dvh,780px)}
+  .ambient-picker{padding:7px}
+  .ambient-picker-card{padding:10px}
+  .ambient-picker h2{font-size:17px;margin-bottom:5px}
+  .ambient-picker-heading{gap:5px;margin-bottom:5px}
+  .ambient-picker-heading>span{font-size:10px}
+  .ambient-picker-heading button{min-height:34px;padding:5px 8px;font-size:10px}
+  .ambient-selected{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-bottom:6px}
+  .ambient-selected-chip{grid-template-columns:18px minmax(0,1fr) 10px;gap:3px;min-height:34px;padding:4px;border-radius:7px}
+  .ambient-selected-chip span{font-size:16px}
+  .ambient-selected-chip strong{font-size:9px}
+  .ambient-selected-chip i{font-size:13px}
+  .ambient-search-label{font-size:10px;margin-bottom:3px}
+  .ambient-picker input[type="search"]{height:35px;margin-bottom:6px;padding:0 8px;font-size:11px}
+  .ambient-species-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+  .ambient-species-choice{grid-template-columns:19px minmax(0,1fr) 9px;gap:3px;min-height:35px;padding:4px 5px;border-radius:7px}
+  .ambient-species-choice>span{font-size:16px}
+  .ambient-species-choice strong{font-size:9px}
+  .ambient-species-choice i{font-size:11px}
+  .ambient-start{min-height:42px;margin-top:7px;padding:8px}
+}
 @media(prefers-reduced-motion:reduce){
   .ambient-bubble,.ambient-reef i{animation:none!important}
   .ambient-controls button,.ambient-picker button{transition:none}
