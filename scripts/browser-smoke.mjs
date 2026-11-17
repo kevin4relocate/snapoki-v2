@@ -43,7 +43,24 @@ async function verifyMobileLayout(page,game){
       width:document.documentElement.clientWidth
     }));
     if(metrics.scroll>metrics.width+2)throw new Error(`${width}px mobile horizontal overflow: ${metrics.scroll}px scroll vs ${metrics.width}px viewport`);
-    if(['world-loop','animal-loop'].includes(game.key)){
+    if(game.key==='animal-loop'){
+      await page.locator('#worldLoopChange').click();
+      const fit=await page.evaluate(()=>{
+        const setup=document.querySelector('#worldLoopSetup'),card=document.querySelector('.world-loop-setup-card');
+        const options=document.querySelector('.world-loop-country-options');
+        const selected=document.querySelector('.world-loop-selected');
+        const scene=document.querySelector('.world-loop-viewport').getBoundingClientRect();
+        const start=document.querySelector('#worldLoopStart').getBoundingClientRect();
+        return {inside:card.getBoundingClientRect().top>=scene.top-1&&start.bottom<=scene.bottom+1,
+          count:options.querySelectorAll('button').length,
+          scrolling:[setup,card,options,selected].some(el=>el.scrollHeight>el.clientHeight+2||
+            ['auto','scroll'].includes(getComputedStyle(el).overflowY))};
+      });
+      if(!fit.inside||fit.count!==24||fit.scrolling)
+        throw new Error(`${width}px Animal chooser must show 24 animals and Start without internal scrolling: ${JSON.stringify(fit)}`);
+      await page.locator('#worldLoopStart').click();
+    }
+    if(game.key==='world-loop'){
       await page.locator('#worldLoopChange').click();
       const picker=await page.evaluate(()=>{
         const card=document.querySelector('.world-loop-setup-card').getBoundingClientRect();
@@ -298,9 +315,19 @@ async function verifyAnimalLoop(page){
   await capturePreview(page,'animal-loop','chooser');
   if(!/Pick 4–12 animals/.test(await page.locator('.world-loop-setup-card h2').textContent()))
     throw new Error('Animal picker still uses country wording');
-  await page.locator('#worldLoopAddCountry').click();
-  if(!/Search 24 animals/.test(await page.locator('#worldLoopAddCountry').textContent()))
-    throw new Error('Animal picker does not announce 24 choices');
+  if(!(await page.locator('#worldLoopCountryMenu').isVisible())||
+     await page.locator('.world-loop-country-option').count()!==24)
+    throw new Error('Animal chooser must display all 24 choices inline');
+  const allOptionsFit=await page.evaluate(()=>{
+    const box=document.querySelector('.world-loop-setup-card').getBoundingClientRect();
+    const viewport=document.querySelector('.world-loop-viewport').getBoundingClientRect();
+    const items=document.querySelector('.world-loop-country-options');
+    const start=document.querySelector('#worldLoopStart').getBoundingClientRect();
+    return {visible:box.top>=viewport.top-1&&start.bottom<=viewport.bottom+1,
+      scroll:[document.querySelector('.world-loop-setup'),items,document.querySelector('.world-loop-selected')].some(el=>el.scrollHeight>el.clientHeight+2||['auto','scroll'].includes(getComputedStyle(el).overflowY))};
+  });
+  if(!allOptionsFit.visible||allOptionsFit.scroll)
+    throw new Error('Animal chooser must show all animals without internal scrollbars: '+JSON.stringify(allOptionsFit));
   await page.locator('#worldLoopCountrySearch').fill('Koala');
   await page.locator('.world-loop-country-option[data-code="KL"]').click();
   if(await page.locator('.world-loop-selected-chip').count()!==9)
@@ -313,15 +340,14 @@ async function verifyAnimalLoop(page){
   const roster=await page.evaluate(()=>localStorage.getItem('snapoki:animal-loop:roster:v1'));
   if(!roster?.includes('KL'))throw new Error('Animal theme selection was not stored separately');
   await page.locator('#worldLoopChange').click();
-  await page.locator('#worldLoopAddCountry').click();
   await page.locator('#worldLoopCountrySearch').fill('');
   for(let i=0;i<3;i++){
     await page.locator('.world-loop-country-option[aria-pressed="false"]').first().click();
   }
   if(await page.locator('.world-loop-selected-chip').count()!==12)
     throw new Error('Animal Loop cannot select twelve racers');
-  if(!(await page.locator('#worldLoopAddCountry').isDisabled()))
-    throw new Error('Animal Loop must disable Add at twelve racers');
+  if(await page.locator('.world-loop-country-option[aria-pressed="false"]:not([disabled])').count())
+    throw new Error('Animal Loop must disable unselected choices at twelve racers');
   await page.locator('#worldLoopStart').click();
   if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==12)
     throw new Error('Animal Loop did not start all twelve racers');
