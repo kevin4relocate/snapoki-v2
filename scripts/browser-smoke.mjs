@@ -168,6 +168,38 @@ async function verifyAnimalChess(page){
   if(!status?.includes('Red'))throw new Error('CPU Undo did not restore Red turn');
   console.log('PASS animal-chess: local play, Undo, keyboard, CPU reply, reset, versioned CSS');
 }
+async function verifyLoopControlContrast(page,{paceSelector,startSelector}){
+  const active=page.locator(paceSelector+' [aria-pressed="true"]');
+  if(await active.count()!==1)throw new Error('Loop pace must have exactly one active button');
+  const activeBase=await active.evaluate(el=>({
+    background:getComputedStyle(el).backgroundImage,
+    color:getComputedStyle(el).color
+  }));
+  if(!activeBase.background.includes('gradient')||activeBase.color!=='rgb(255, 255, 255)')
+    throw new Error('Active Loop pace must have a filled gradient and white text: '+JSON.stringify(activeBase));
+  await active.hover();
+  const activeHover=await active.evaluate(el=>({
+    background:getComputedStyle(el).backgroundImage,
+    color:getComputedStyle(el).color
+  }));
+  if(!activeHover.background.includes('gradient')||activeHover.color!=='rgb(255, 255, 255)')
+    throw new Error('Hover must not erase active Loop pace fill: '+JSON.stringify(activeHover));
+  if(startSelector){
+    const start=page.locator(startSelector);
+    if(await start.isDisabled())throw new Error('Loop Start unexpectedly disabled with a valid roster');
+    await start.hover();
+    const hover=await start.evaluate(el=>({
+      background:getComputedStyle(el).backgroundImage,
+      color:getComputedStyle(el).color,
+      opacity:getComputedStyle(el).opacity
+    }));
+    if(!hover.background.includes('gradient')||hover.opacity==='0'||hover.color==='rgb(255, 255, 255)')
+      throw new Error('Loop Start hover lost its bright gradient/dark readable text: '+JSON.stringify(hover));
+    await start.focus();
+    const focus=await start.evaluate(el=>getComputedStyle(el).outlineStyle);
+    if(focus==='none')throw new Error('Loop Start keyboard focus is invisible');
+  }
+}
 async function verifyAquariumLoop(page){
   if(await page.locator('.ambient-app[data-ambient-theme="aquarium"]').count()!==1)
     throw new Error('Aquarium must render the standalone Ambient Engine');
@@ -177,6 +209,7 @@ async function verifyAquariumLoop(page){
     throw new Error('Aquarium should not swim before user clicks Start');
   if(await page.locator('.ambient-selected-chip').count()!==8)
     throw new Error('Aquarium should preselect eight creatures for editing');
+  await verifyLoopControlContrast(page,{paceSelector:'.ambient-pace',startSelector:'#ambientStart'});
   const chooserLayout=await page.evaluate(()=>{
     const card=document.querySelector('.ambient-picker-card').getBoundingClientRect();
     const scene=document.querySelector('#ambientScene').getBoundingClientRect();
@@ -286,6 +319,7 @@ async function verifyAnimalLoop(page){
     throw new Error('Animal Loop must not race before user clicks Start');
   if(await page.locator('.world-loop-selected-chip').count()!==8)
     throw new Error('Animal Loop should preselect eight animals for editing');
+  await verifyLoopControlContrast(page,{paceSelector:'#worldLoopPace',startSelector:'#worldLoopStart'});
   await capturePreview(page,'animal-loop','chooser');
   await page.locator('#worldLoopStart').click();
   if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==8)
@@ -361,6 +395,7 @@ async function verifyAnimalLoop(page){
   console.log('PASS animal-loop: chooser-first, max twelve, saved reload, no flags and shared race controls');
 }
 async function verifyWorldLoopAnimation(page){
+  await verifyLoopControlContrast(page,{paceSelector:'#worldLoopPace'});
   const restored=await page.locator('#worldLoopSelected .world-loop-selected-chip').count();
   if(restored!==8)throw new Error('World Loop must recover its default eight racers');
   if(await page.locator('.left-panel,.right-panel,.game-howto').count())throw new Error('Screensaver still has puzzle side panels');

@@ -388,3 +388,43 @@ body[data-game="aquarium-loop"] .game-hero.world-loop-hero .hero-pills{margin-to
   .ambient-bubble,.ambient-reef i{animation:none!important}
   .ambient-controls button,.ambient-picker button{transition:none}
 }
+
+
+/* Shared Loop control language: keep the primary CTA bright on every state.
+   The generic picker hover rule previously replaced its gradient with dark teal. */
+.ambient-picker .ambient-start:not(:disabled){
+  color:#062a32;
+  background:linear-gradient(110deg,#79d5ef,#46e4ad);
+  border:1px solid transparent;
+  box-shadow:0 4px 16px rgba(40,219,172,.18);
+}
+.ambient-picker .ambient-start:hover:not(:disabled){
+  color:#05242d;
+  background:linear-gradient(110deg,#a5ecff,#6af5c5);
+  border-color:rgba(192,255,237,.8);
+  box-shadow:0 7px 24px rgba(46,222,180,.3);
+  transform:translateY(-1px);
+}
+.ambient-picker .ambient-start:active:not(:disabled){
+  transform:translateY(0);
+  background:linear-gradient(110deg,#65c9e4,#38cf9c);
+  box-shadow:0 2px 8px rgba(18,165,135,.22);
+}
+.ambient-picker .ambient-start:disabled{
+  opacity:.42;
+  color:#05242d;
+  background:linear-gradient(110deg,#79d5ef,#46e4ad);
+  cursor:not-allowed;
+}
+.ambient-pace button:hover:not(:disabled):not([aria-pressed="true"]){
+  color:#fff;background:rgba(83,223,202,.13);
+}
+.ambient-pace button[aria-pressed="true"],
+.ambient-pace button[aria-pressed="true"]:hover:not(:disabled){
+  color:#fff;background:linear-gradient(135deg,#115d71,#198f7a);
+  border-color:rgba(121,245,218,.35);
+  box-shadow:0 2px 10px rgba(3,13,31,.35);
+}
+@media(prefers-reduced-motion:reduce){
+  .ambient-picker .ambient-start:hover:not(:disabled){transform:none}
+}
