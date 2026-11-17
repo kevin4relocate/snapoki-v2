@@ -26,16 +26,16 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          npm run verify:production -- --url https://snapoki.com > production-audit.log 2>&1
+          npm run verify:production -- --url https://snapoki.com --expected-commit "${{ github.event.pull_request.base.sha }}" > production-audit.log 2>&1
           result=$?
           cat production-audit.log
           {
             echo '### Snapoki live production audit'
             echo ''
             if [ "$result" -eq 0 ]; then
-              echo '✅ Current live routes, guides, assets and public API passed verification.'
+              echo '✅ Current live routes, guides, assets, public API and expected base commit passed verification.'
             else
-              echo '⚠️ Current production could not be verified; this does **not** mean the PR code failed.'
+              echo '⚠️ Production is stale or could not be verified against the PR base commit; this does **not** mean the PR code failed.'
             fi
             echo ''
             echo 'See the production-audit artifact for the HTTP/release diagnostics.'
