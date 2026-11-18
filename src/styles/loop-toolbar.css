@@ -1,0 +1,193 @@
+/* Shared Loop toolbar shell for Aquarium, Animal, and World.
+   Engines retain separate gameplay logic, but all three render the same
+   semantic wrapper, brand area, control rhythm and responsive behavior. */
+.loop-toolbar{
+  box-sizing:border-box;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  width:100%;
+  min-width:0;
+  padding:12px 16px;
+  border:1px solid rgba(135,229,233,.17);
+  border-radius:17px;
+  background:linear-gradient(120deg,#0e1e2c,#101927);
+  box-shadow:0 7px 25px rgba(0,0,0,.12);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.loop-toolbar .loop-toolbar__brand{
+  display:flex;
+  flex:0 0 190px;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:center;
+  gap:4px;
+  width:190px;
+  min-width:0;
+  max-width:none;
+  padding:0;
+}
+.loop-toolbar__brand > span,
+.loop-toolbar__brand > .world-loop-live{
+  display:inline-flex;
+  align-items:center;
+  align-self:flex-start;
+  gap:6px;
+  width:auto;
+  min-width:0;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
+  line-height:1.25;
+}
+.loop-toolbar__brand > strong{
+  font-size:19px;
+  font-weight:850;
+  line-height:1.2;
+  letter-spacing:-.025em;
+}
+.loop-toolbar__brand > small{
+  display:block;
+  grid-column:auto;
+  width:100%;
+  min-width:0;
+  overflow:hidden;
+  color:#a4cfce;
+  font-size:11px;
+  line-height:1.3;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.loop-toolbar .loop-toolbar__controls{
+  display:flex;
+  flex:1 1 740px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:7px;
+  width:auto;
+  min-width:0;
+  max-width:none;
+  padding:0;
+}
+.loop-toolbar__controls button{
+  box-sizing:border-box;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:750;
+  line-height:1.2;
+  white-space:nowrap;
+}
+.loop-toolbar .world-loop-session-controls{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  flex-wrap:nowrap;
+  gap:7px;
+  width:auto;
+  min-width:0;
+}
+.loop-toolbar .world-loop-session-controls .world-loop-pace{
+  display:flex;
+  flex:0 0 auto;
+  width:auto;
+  margin:0;
+}
+.loop-toolbar .world-loop-session-controls .world-loop-pace button{
+  flex:0 0 70px;
+  min-width:70px;
+  min-height:38px;
+  padding:7px 9px;
+}
+.loop-toolbar .world-loop-session-controls > button,
+.loop-toolbar .world-loop-audio-controls > button,
+.loop-toolbar .world-loop-race-actions > .world-loop-fullscreen{
+  flex:0 0 auto;
+  width:auto;
+  min-width:66px;
+  min-height:42px;
+  padding:9px 11px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:11px;
+  background:rgba(255,255,255,.045);
+  color:#e2f1f8;
+}
+.loop-toolbar .world-loop-audio-controls{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:flex-start;
+  flex-wrap:nowrap;
+  gap:6px;
+  width:auto;
+}
+.loop-toolbar .world-loop-audio-controls .world-loop-sound-toggle{
+  flex:0 0 auto;
+  width:auto;
+  min-width:112px;
+}
+.loop-toolbar .world-loop-audio-controls .world-loop-sound-mute{
+  min-width:43px;
+  width:43px;
+}
+.loop-toolbar .world-loop-volume{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.loop-toolbar .world-loop-volume input{width:64px}
+.loop-toolbar .world-loop-volume span{
+  min-width:30px;
+  font-size:10px;
+  text-align:right;
+}
+.loop-toolbar .world-loop-race-actions > .world-loop-fullscreen{
+  flex:0 0 auto;
+  min-width:116px;
+}
+.loop-toolbar button:focus-visible,
+.loop-toolbar input:focus-visible{
+  outline:3px solid #73f9d7;
+  outline-offset:2px;
+}
+@media(max-width:1080px){
+  .loop-toolbar .loop-toolbar__brand{
+    flex:1 1 100%;
+    width:100%;
+  }
+  .loop-toolbar .loop-toolbar__controls{
+    flex:1 1 100%;
+    justify-content:flex-start;
+  }
+}
+@media(max-width:680px){
+  .loop-toolbar{gap:10px;padding:10px}
+  .loop-toolbar .loop-toolbar__controls{gap:6px}
+  .loop-toolbar .world-loop-session-controls{
+    flex:1 1 100%;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .loop-toolbar .world-loop-session-controls .world-loop-pace{
+    flex:1 1 100%;
+    width:100%;
+    box-sizing:border-box;
+  }
+  .loop-toolbar .world-loop-session-controls .world-loop-pace button{
+    flex:1 1 0;
+    min-width:0;
+    min-height:44px;
+  }
+  .loop-toolbar .world-loop-session-controls > button{
+    flex:1 1 70px;
+    min-width:0;
+    min-height:44px;
+  }
+  .loop-toolbar .world-loop-audio-controls{flex-wrap:wrap}
+  .loop-toolbar .world-loop-race-actions > .world-loop-fullscreen{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+  .loop-toolbar button{transition:none}
+}

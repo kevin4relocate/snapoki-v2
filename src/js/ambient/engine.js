@@ -32,9 +32,9 @@ export function createAmbientExperience({host,theme=AQUARIUM_THEME,difficulty='m
   const index=new Map(theme.items.map(item=>[item.code,item]));
   host.innerHTML=
     '<div class="ambient-app" data-ambient-theme="'+theme.id+'">'+
-      '<div class="ambient-toolbar">'+
-        '<div class="ambient-brand"><span>AMBIENT LOOP</span><strong>'+theme.title+'</strong><small id="ambientSummary">A calm underwater world</small></div>'+
-        '<div class="ambient-controls">'+
+      '<div class="ambient-toolbar loop-toolbar">'+
+        '<div class="ambient-brand loop-toolbar__brand"><span>AMBIENT LOOP</span><strong>'+theme.title+'</strong><small id="ambientSummary">A calm underwater world</small></div>'+
+        '<div class="ambient-controls loop-toolbar__controls">'+
           '<div class="ambient-pace" role="group" aria-label="Swim speed">'+
             '<button data-pace="easy" type="button">Drift</button><button data-pace="medium" type="button">Flow</button><button data-pace="hard" type="button">Playful</button>'+
           '</div>'+

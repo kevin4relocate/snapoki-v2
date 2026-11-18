@@ -224,7 +224,29 @@ async function verifyChooserTypography(page,theme){
      styles.chip.family!==styles.option.family)
     throw new Error(theme+' chooser typography inconsistent: '+JSON.stringify(styles));
 }
+async function verifySharedLoopToolbar(page,mode){
+  const root=mode==='aquarium'?'.ambient-toolbar':'.world-loop-racebar';
+  const toolbar=page.locator(root+'.loop-toolbar');
+  if(await toolbar.count()!==1)throw new Error(mode+': shared Loop toolbar is missing');
+  const info=await page.evaluate(root=>{
+    const toolbar=document.querySelector(root);
+    const brand=toolbar.querySelector('.loop-toolbar__brand');
+    const controls=toolbar.querySelector('.loop-toolbar__controls');
+    const a=toolbar.getBoundingClientRect();
+    const b=brand.getBoundingClientRect();
+    const c=controls.getBoundingClientRect();
+    const style=getComputedStyle(toolbar);
+    return {hasStyle:style.borderTopStyle==='solid'&&style.backgroundImage.includes('gradient'),
+      brandFlex:getComputedStyle(brand).display==='flex',
+      shellWidth:a.width,controlsInside:c.left>=a.left-2&&c.right<=a.right+2,
+      brandInside:b.left>=a.left-2&&b.right<=a.right+2,
+      controls:controls.querySelectorAll('button').length};
+  },root);
+  if(!info.hasStyle||!info.brandFlex||!info.controlsInside||!info.brandInside||info.controls<6)
+    throw new Error(mode+': toolbar must share one bordered responsive shell: '+JSON.stringify(info));
+}
 async function verifyAquariumLoop(page){
+  await verifySharedLoopToolbar(page,'aquarium');
   if(await page.locator('.ambient-app[data-ambient-theme="aquarium"]').count()!==1)
     throw new Error('Aquarium must render the standalone Ambient Engine');
   if(!(await page.locator('#ambientPicker').isVisible()))
@@ -336,6 +358,7 @@ async function verifyAquariumLoop(page){
   console.log('PASS aquarium-loop: natural swim, picker-first, 12-creature cap, reload, audio, mobile and storage');
 }
 async function verifyAnimalLoop(page){
+  await verifySharedLoopToolbar(page,'animal');
   if(await page.locator('.world-loop-app[data-race-theme="animal"]').count()!==1)
     throw new Error('Animal Loop is not using the shared themed race runtime');
   if(!(await page.locator('#worldLoopSetup').isVisible()))
@@ -421,6 +444,7 @@ async function verifyAnimalLoop(page){
   console.log('PASS animal-loop: chooser-first, max twelve, saved reload, no flags and shared race controls');
 }
 async function verifyWorldLoopAnimation(page){
+  await verifySharedLoopToolbar(page,'world');
   await verifyLoopControlContrast(page,{paceSelector:'#worldLoopPace'});
   const restored=await page.locator('#worldLoopSelected .world-loop-selected-chip').count();
   if(restored!==8)throw new Error('World Loop must recover its default eight racers');

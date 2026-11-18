@@ -6,7 +6,9 @@ const read=path=>readFileSync(path,'utf8');
 test('Cruise, Dynamic and Sprint remain grouped with Pause, Restart and Stop',()=>{
   const runtime=(read('src/js/games/world-loop.js')+'\n'+read('src/js/endless-race/engine.js')+'\n'+read('src/js/endless-race/themes/flag.js'));
   const markup=runtime.slice(runtime.indexOf("host.innerHTML='<div class=\"world-loop-app\""),runtime.indexOf("const app=host.querySelector"));
-  assert.match(markup,/class="world-loop-race-actions"><div class="world-loop-session-controls"><div id="worldLoopPace"/);
+  assert.match(markup,/class="world-loop-race-actions loop-toolbar__controls"><div class="world-loop-session-controls"><div id="worldLoopPace"/);
+  assert.match(markup,/class="world-loop-racebar loop-toolbar"/);
+  assert.match(markup,/class="world-loop-title loop-toolbar__brand"/);
   for(const item of ['worldLoopPace','worldLoopPause','worldLoopRestart','worldLoopChange'])
     assert.ok(markup.includes('id="'+item+'"'),item);
   const controls=markup.slice(markup.indexOf('class="world-loop-session-controls"'),markup.indexOf('class="world-loop-audio-controls"'));

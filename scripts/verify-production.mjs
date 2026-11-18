@@ -54,13 +54,14 @@ async function verify(){
     if(loop){
       assert(html.includes('data-game="'+loop.slug+'"'),loop.slug+': route serves the wrong game HTML');
       assert(html.includes(release.assetsBase+loop.style),loop.slug+': versioned CSS missing');
+      assert(html.includes(release.assetsBase+'styles/loop-toolbar.css'),loop.slug+': shared Loop toolbar stylesheet missing');
       if(loop.slug==='animal-loop')assert(html.includes(release.assetsBase+'styles/animal-loop.css'),'Animal Loop theme CSS missing');
       assert(html.includes(release.assetsBase+'js/game-page.js'),loop.slug+': versioned game bootstrap missing');
     }
     console.log(`PASS ${route}: release URLs present`);
   }
   const verifiedAssets=new Set([
-    'js/site.js','js/game-page.js','js/admin-content.js','styles/site.css','styles/launch.css',
+    'js/site.js','js/game-page.js','js/admin-content.js','styles/site.css','styles/launch.css','styles/loop-toolbar.css',
     ...loops.flatMap(loop=>[loop.entry,loop.style,...loop.dependencies,'js/social-renderers/'+loop.slug+'.js'])
   ]);
   for(const name of verifiedAssets){
