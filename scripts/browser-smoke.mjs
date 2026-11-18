@@ -200,6 +200,30 @@ async function verifyLoopControlContrast(page,{paceSelector,startSelector}){
     if(focus==='none')throw new Error('Loop Start keyboard focus is invisible');
   }
 }
+async function verifyChooserTypography(page,theme){
+  const selectors=theme==='aquarium'
+    ?{root:'.ambient-picker-card',title:'.ambient-picker h2',chip:'.ambient-selected-chip strong',option:'.ambient-species-choice strong',start:'#ambientStart'}
+    :{root:'.world-loop-setup-card',title:'.world-loop-setup-card h2',chip:'.world-loop-selected-chip strong',option:'.world-loop-country-option strong',start:'#worldLoopStart'};
+  const styles=await page.evaluate(selectors=>{
+    const resolve=selector=>{
+      const element=document.querySelector(selector);
+      if(!element)return null;
+      const computed=getComputedStyle(element);
+      return {size:parseFloat(computed.fontSize),weight:Number(computed.fontWeight),
+        family:computed.fontFamily,lineHeight:computed.lineHeight};
+    };
+    return {root:resolve(selectors.root),title:resolve(selectors.title),
+      chip:resolve(selectors.chip),option:resolve(selectors.option),start:resolve(selectors.start)};
+  },selectors);
+  if(Object.values(styles).some(v=>!v))throw new Error(theme+' picker missing typography target: '+JSON.stringify(styles));
+  const compact=(await page.viewportSize()).width<=680;
+  const labelSize=compact?10:11;
+  if(Math.abs(styles.chip.size-labelSize)>.1||Math.abs(styles.option.size-labelSize)>.1||
+     styles.chip.weight!==800||styles.option.weight!==800||
+     styles.title.weight!==850||styles.start.weight!==850||
+     styles.chip.family!==styles.option.family)
+    throw new Error(theme+' chooser typography inconsistent: '+JSON.stringify(styles));
+}
 async function verifyAquariumLoop(page){
   if(await page.locator('.ambient-app[data-ambient-theme="aquarium"]').count()!==1)
     throw new Error('Aquarium must render the standalone Ambient Engine');
@@ -210,6 +234,7 @@ async function verifyAquariumLoop(page){
   if(await page.locator('.ambient-selected-chip').count()!==8)
     throw new Error('Aquarium should preselect eight creatures for editing');
   await verifyLoopControlContrast(page,{paceSelector:'.ambient-pace',startSelector:'#ambientStart'});
+  await verifyChooserTypography(page,'aquarium');
   const chooserLayout=await page.evaluate(()=>{
     const card=document.querySelector('.ambient-picker-card').getBoundingClientRect();
     const scene=document.querySelector('#ambientScene').getBoundingClientRect();
@@ -320,6 +345,7 @@ async function verifyAnimalLoop(page){
   if(await page.locator('.world-loop-selected-chip').count()!==8)
     throw new Error('Animal Loop should preselect eight animals for editing');
   await verifyLoopControlContrast(page,{paceSelector:'#worldLoopPace',startSelector:'#worldLoopStart'});
+  await verifyChooserTypography(page,'animal');
   await capturePreview(page,'animal-loop','chooser');
   await page.locator('#worldLoopStart').click();
   if(await page.locator('#worldLoopLanes .world-loop-lane').count()!==8)
@@ -513,6 +539,7 @@ async function verifyWorldLoopAnimation(page){
   await page.waitForTimeout(160);
   if(await count()>stopped+1)throw new Error('World Loop RAF continues after Stop');
   if(!(await page.locator('#worldLoopSetup').isVisible()))throw new Error('Stop did not return to the country picker');
+  await verifyChooserTypography(page,'world');
   await capturePreview(page,'world-loop','chooser');
 
   const geometry=await page.evaluate(()=>{
