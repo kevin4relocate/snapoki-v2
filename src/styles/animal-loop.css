@@ -149,3 +149,22 @@ body[data-game="animal-loop"] .world-loop-viewport{height:clamp(540px,72vh,940px
   .world-loop-app[data-race-theme="animal"] .world-loop-country-option strong{font-size:9px}
   .world-loop-app[data-race-theme="animal"] .world-loop-start{min-height:42px;margin-top:6px}
 }
+
+
+/* Animal-specific rules were more specific than the shared Loop type scale. */
+.world-loop-app[data-race-theme="animal"] .world-loop-selected-chip strong,
+.world-loop-app[data-race-theme="animal"] .world-loop-country-option strong{
+  font-family:inherit;font-size:11px;font-weight:800;line-height:1.25;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-pick-head strong{
+  font-size:12px;font-weight:800;
+}
+.world-loop-app[data-race-theme="animal"] .world-loop-pick-head button{
+  font-size:12px;font-weight:800;
+}
+@media(max-width:680px){
+  .world-loop-app[data-race-theme="animal"] .world-loop-selected-chip strong,
+  .world-loop-app[data-race-theme="animal"] .world-loop-country-option strong{font-size:10px}
+  .world-loop-app[data-race-theme="animal"] .world-loop-pick-head strong,
+  .world-loop-app[data-race-theme="animal"] .world-loop-pick-head button{font-size:10px}
+}
