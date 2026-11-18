@@ -61,7 +61,7 @@ const PRESENTATION={
     socialHook:'Can you reach the enemy den?'
   },
   'aquarium-loop':{
-    styles:['aquarium-loop.css'],
+    styles:['aquarium-loop.css','loop-toolbar.css'],
     solutionLabel:'Guide',
     goal:{tokens:['CHOOSE CREATURES','WATCH THEM SWIM'],joiner:'→',note:'No race or winner'},
     rows:[['Choose','Select 4–12 sea creatures from the aquarium.'],['Relax','Fish wander in 2D, turn gently and stay within the tank.'],['Adjust','Change Drift, Flow or Playful without starting over.']],
@@ -69,7 +69,7 @@ const PRESENTATION={
     socialHook:'Who is swimming in your aquarium today?'
   },
   'animal-loop':{
-    styles:['world-loop.css','animal-loop.css'],
+    styles:['world-loop.css','animal-loop.css','loop-toolbar.css'],
     solutionLabel:'Guide',
     goal:{tokens:['PICK ANIMALS','WATCH FOREVER'],joiner:'→',note:'No finish line'},
     rows:[['Choose','Pick four to twelve animals or try Random 8.'],['Watch','The same endless race rules apply, with no winner and no automatic reset.'],['Relax','Use Cruise for a gentle pace or change to Dynamic and Sprint live.']],
@@ -77,7 +77,7 @@ const PRESENTATION={
     socialHook:'Which animal will lead the pack next?'
   },
   'world-loop':{
-    styles:['world-loop.css'],
+    styles:['world-loop.css','loop-toolbar.css'],
     solutionLabel:'Guide',
     goal:{tokens:['PICK COUNTRIES','WATCH FOREVER'],joiner:'→',note:'No finish line'},
     rows:[['Run','Every country has one lane and keeps moving forward continuously. There is no finish line.'],['Distance','The camera scrolls with the pack while each racer accumulates distance forever instead of resetting.'],['Control','Pause keeps the same session. Stop returns to country selection; Restart returns all distances to zero with the same countries.']],
